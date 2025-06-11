@@ -11,4 +11,15 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 10000,
+  reporters: [
+    'default',
+    [
+      'jest-junit',
+      {
+        classNameTemplate: '{filepath}',
+        outputDirectory: './coverage',
+        outputName: 'junit.xml',
+      },
+    ],
+  ],
 };
