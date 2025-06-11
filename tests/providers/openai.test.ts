@@ -1,39 +1,65 @@
 import { OpenAIProvider } from '../../src/providers/openai';
 import type { Message, GenerationOptions, OpenAIConfig, StreamChunk } from '../../src/types';
+import nock from 'nock';
+import { Readable } from 'node:stream';
+import {
+  userText,
+  systemText,
+  userImage,
+  assistantWithToolCalls,
+  toolResult as toolResultMsg,
+} from '../../src/createFuncs';
+import { textChunk, stopChunk, toolCallChunk } from '../helpers/openaiChunks';
 
-// Mock the OpenAI SDK
-jest.mock('openai', () => ({
-  OpenAI: jest.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: jest.fn(),
-      },
-    },
-  })),
-}));
+/**
+ * Helper to create a chunked SSE response body for the OpenAI streaming API.
+ */
+function createSSEStream(chunks: any[]): Readable {
+  const stream = new Readable({ read() {} });
+  chunks.forEach(chunk => {
+    stream.push(`data: ${JSON.stringify(chunk)}\n`);
+  });
+  stream.push('data: [DONE]\n');
+  stream.push(null); // end of stream
+  return stream;
+}
+
+/**
+ * Set up nock to intercept the chat completion request and return the provided chunks.
+ * The intercepted request body is captured so that callers can assert on it.
+ */
+function mockChatCompletion(expectedChunks: any[], captureBody: (body: any) => void): nock.Scope {
+  return nock('https://api.openai.com')
+    .post('/v1/chat/completions', body => {
+      captureBody(body);
+      return true; // allow the request
+    })
+    .reply(200, () => createSSEStream(expectedChunks), {
+      'Content-Type': 'text/event-stream',
+    });
+}
 
 describe('OpenAIProvider', () => {
-  let provider: OpenAIProvider;
-  let mockOpenAI: any;
   const mockConfig: OpenAIConfig = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.openai.com/v1',
     timeout: 30000,
   };
 
+  let provider: OpenAIProvider;
+
+  // Ensure no real HTTP requests are made
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { OpenAI } = require('openai');
-    mockOpenAI = {
-      chat: {
-        completions: {
-          create: jest.fn(),
-        },
-      },
-    };
-    OpenAI.mockReturnValue(mockOpenAI);
     provider = new OpenAIProvider(mockConfig);
-    jest.clearAllMocks();
+    nock.cleanAll();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
   });
 
   describe('constructor', () => {
@@ -49,19 +75,10 @@ describe('OpenAIProvider', () => {
         'o1-mini',
       ]);
     });
-
-    it('should have correct provider configuration', () => {
-      expect(provider).toBeDefined();
-    });
   });
 
   describe('generate', () => {
-    const mockMessages: Message[] = [
-      {
-        role: 'user',
-        content: [{ type: 'text', text: 'Hello' }],
-      },
-    ];
+    const mockMessages: Message[] = [userText('Hello')];
 
     const mockOptions: GenerationOptions = {
       model: 'gpt-4o',
@@ -70,80 +87,76 @@ describe('OpenAIProvider', () => {
     };
 
     it('should call OpenAI API with correct parameters', async () => {
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Hello!' }, finish_reason: null }] },
-        { choices: [{ delta: {}, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Hello!'), stopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody).toMatchObject({
         model: 'gpt-4o',
-        messages: [{ role: 'user', content: 'Hello' }],
         stream: true,
         max_tokens: 100,
         temperature: 0.7,
-        top_p: undefined,
-        stop: undefined,
       });
+
+      // Verify the user message using concise matchers
+      expect(requestBody.messages).toEqual([
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Hello' }],
+        },
+      ]);
     });
 
     it('should transform system messages correctly', async () => {
       const messagesWithSystem: Message[] = [
-        {
-          role: 'system',
-          content: [{ type: 'text', text: 'You are a helpful assistant' }],
-        },
+        systemText('You are a helpful assistant'),
         ...mockMessages,
       ];
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Hi!' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion([textChunk('Hi!', 'stop')], body => (requestBody = body));
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.messages).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages).toEqual([
         { role: 'system', content: 'You are a helpful assistant' },
-        { role: 'user', content: 'Hello' },
+        {
+          role: 'user',
+          content: [{ type: 'text', text: 'Hello' }],
+        },
       ]);
     });
 
     it('should handle multimodal content with images', async () => {
       const messagesWithImage: Message[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'What is in this image?' },
-            { type: 'image', image: 'data:image/jpeg;base64,iVBORw0KGgo=' },
-          ],
-        },
+        userImage('What is in this image?', 'data:image/jpeg;base64,iVBORw0KGgo='),
       ];
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'I see an image' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('I see an image', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.messages[0].content).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages[0].content).toEqual([
         { type: 'text', text: 'What is in this image?' },
         { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,iVBORw0KGgo=' } },
       ]);
@@ -166,35 +179,24 @@ describe('OpenAIProvider', () => {
         toolChoice: 'auto',
       };
 
-      const mockStream = createMockStream([
-        {
-          choices: [
-            {
-              delta: {
-                tool_calls: [
-                  {
-                    index: 0,
-                    id: 'call_123',
-                    type: 'function',
-                    function: { name: 'get_weather', arguments: '{"location": "SF"}' },
-                  },
-                ],
-              },
-              finish_reason: 'tool_calls',
-            },
-          ],
-        },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [
+          toolCallChunk(
+            { index: 0, id: 'call_123', name: 'get_weather', args: '{"location": "SF"}' },
+            'tool_calls'
+          ),
+        ],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.tools).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tools).toEqual([
         {
           type: 'function',
           function: {
@@ -208,35 +210,29 @@ describe('OpenAIProvider', () => {
           },
         },
       ]);
-      expect(call.tool_choice).toBe('auto');
+      expect(requestBody.tool_choice).toBe('auto');
     });
 
     it('should handle assistant messages with tool calls', async () => {
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: [{ type: 'text', text: 'I need to check the weather' }],
-        toolCalls: [
-          {
-            id: 'call_123',
-            name: 'get_weather',
-            arguments: { location: 'San Francisco' },
-          },
-        ],
-      };
+      const assistantMsg: Message = assistantWithToolCalls('I need to check the weather', {
+        id: 'call_123',
+        name: 'get_weather',
+        arguments: { location: 'San Francisco' },
+      });
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Let me check...' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Let me check...', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMessage], mockOptions)) {
+      for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.messages[0]).toEqual({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages[0]).toEqual({
         role: 'assistant',
         content: 'I need to check the weather',
         tool_calls: [
@@ -253,30 +249,24 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle tool result messages', async () => {
-      const toolResultMessage: Message = {
-        role: 'tool',
-        content: [
-          {
-            type: 'tool_result',
-            toolCallId: 'call_123',
-            result: '{"temperature": 72, "condition": "sunny"}',
-          },
-        ],
-      };
+      const toolResult: Message = toolResultMsg(
+        'call_123',
+        '{"temperature": 72, "condition": "sunny"}'
+      );
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'The weather is sunny' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('The weather is sunny', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResultMessage], mockOptions)) {
+      for await (const chunk of provider.generate([toolResult], mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.messages[0]).toEqual({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages[0]).toEqual({
         role: 'tool',
         tool_call_id: 'call_123',
         content: '{"temperature": 72, "condition": "sunny"}',
@@ -284,20 +274,17 @@ describe('OpenAIProvider', () => {
     });
 
     it('should process streaming response correctly', async () => {
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Hello' }, finish_reason: null }] },
-        { choices: [{ delta: { content: ' there' }, finish_reason: null }] },
-        { choices: [{ delta: { content: '!' }, finish_reason: null }] },
-        { choices: [{ delta: {}, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      const scope = mockChatCompletion(
+        [textChunk('Hello'), textChunk(' there'), textChunk('!'), stopChunk()],
+        () => {}
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
+      expect(scope.isDone()).toBe(true);
       expect(chunks).toHaveLength(4);
       expect(chunks[0]).toMatchObject({ delta: 'Hello', content: 'Hello' });
       expect(chunks[1]).toMatchObject({ delta: ' there', content: 'Hello there' });
@@ -314,19 +301,19 @@ describe('OpenAIProvider', () => {
         stopSequences: ['END', 'STOP'],
       };
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Response' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, detailedOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call).toMatchObject({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody).toMatchObject({
         model: 'gpt-4',
         max_tokens: 500,
         temperature: 0.8,
@@ -337,109 +324,61 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle messages with unknown roles', async () => {
-      const unknownRoleMessage: Message = {
+      const unknownRoleMsg: Message = {
         role: 'unknown' as any,
-        content: [{ type: 'text', text: 'Unknown role message' }],
+        content: [{ type: 'text', text: 'Unknown role' }],
       };
 
-      const mockStream = createMockStream([
-        { choices: [{ delta: { content: 'Response' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
+      for await (const chunk of provider.generate([unknownRoleMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
-      // Should skip the unknown role message and generate with empty messages array
-      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
-      expect(call.messages).toEqual([]);
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages).toEqual([]);
     });
 
     it('should handle malformed JSON in tool arguments', async () => {
-      const mockStream = createMockStream([
-        {
-          choices: [
-            {
-              delta: {
-                tool_calls: [
-                  {
-                    index: 0,
-                    id: 'call_123',
-                    type: 'function',
-                    function: { name: 'get_weather', arguments: '{"location": "SF"' }, // malformed JSON
-                  },
-                ],
-              },
-              finish_reason: null,
-            },
-          ],
-        },
-        {
-          choices: [
-            {
-              delta: {
-                tool_calls: [
-                  {
-                    index: 0,
-                    function: { arguments: '}' }, // complete JSON
-                  },
-                ],
-              },
-              finish_reason: 'tool_calls',
-            },
-          ],
-        },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      const scope = mockChatCompletion(
+        [
+          toolCallChunk(
+            { index: 0, id: 'call_123', name: 'get_weather', args: '{"location": "SF"' },
+            null
+          ),
+          toolCallChunk({ index: 0, args: '}' }, 'tool_calls'),
+        ],
+        () => {}
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      // Should eventually parse the complete JSON and include tool calls
-      const lastChunk = chunks[chunks.length - 1];
-      expect(lastChunk.toolCalls).toEqual([
-        {
-          id: 'call_123',
-          name: 'get_weather',
-          arguments: { location: 'SF' },
-        },
+      expect(scope.isDone()).toBe(true);
+      const last = chunks[chunks.length - 1];
+      expect(last.toolCalls).toEqual([
+        { id: 'call_123', name: 'get_weather', arguments: { location: 'SF' } },
       ]);
     });
 
     it('should handle empty chunks without choices', async () => {
-      const mockStream = createMockStream([
-        {}, // chunk without choices
-        { choices: [] }, // chunk with empty choices
-        { choices: [{ delta: { content: 'Hello' }, finish_reason: 'stop' }] },
-      ]);
-
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+      const scope = mockChatCompletion([{}, { choices: [] }, textChunk('Hello', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      // Should only process the valid chunk
+      expect(scope.isDone()).toBe(true);
       expect(chunks).toHaveLength(1);
       expect(chunks[0]).toMatchObject({ delta: 'Hello', content: 'Hello' });
     });
   });
 });
-
-// Helper function to create mock async iterators for OpenAI streaming responses
-function createMockStream(chunks: any[]) {
-  return {
-    async *[Symbol.asyncIterator]() {
-      for (const chunk of chunks) {
-        yield chunk;
-      }
-    },
-  };
-}

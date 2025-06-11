@@ -1,19 +1,20 @@
-import { OpenAI } from 'openai';
-import type { AIProvider, Message, OpenAIConfig, GenerationOptions, StreamChunk } from '../types';
-import { MessageTransformer, ToolFormatter, ToolChoiceHandler, FinishReasonMapper } from './utils';
-
-// Minimal subset of OpenAI tool call delta type used within this provider
-interface OpenAIToolCallDelta {
-  index?: number;
-  id?: string;
-  function?: {
-    name?: string;
-    arguments?: string;
-  };
-}
+import type {
+  AIProvider,
+  Message,
+  OpenAIConfig,
+  GenerationOptions,
+  StreamChunk,
+  Tool,
+  ToolCall,
+} from '../types';
+import { MessageTransformer } from './utils';
+import { StreamingAPIClient } from './api';
 
 export class OpenAIProvider implements AIProvider {
-  private openai: OpenAI;
+  private client: StreamingAPIClient;
+  private transformer: OpenAIMessageTransformer;
+  private streamProcessor: OpenAIStreamProcessor;
+
   readonly models = [
     'gpt-4o',
     'gpt-4o-mini',
@@ -26,136 +27,48 @@ export class OpenAIProvider implements AIProvider {
   ];
 
   constructor(config: OpenAIConfig) {
-    this.openai = new OpenAI(config);
+    const {
+      apiKey,
+      baseURL = 'https://api.openai.com/v1',
+      organization,
+      project,
+      timeout,
+      maxRetries,
+    } = config;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    };
+    if (organization) {
+      headers['OpenAI-Organization'] = organization;
+    }
+    if (project) {
+      headers['OpenAI-Project'] = project;
+    }
+
+    this.client = new StreamingAPIClient(baseURL, headers, timeout, maxRetries);
+    this.transformer = new OpenAIMessageTransformer();
+    this.streamProcessor = new OpenAIStreamProcessor();
   }
 
   async *generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk> {
-    const openaiMessages = this.transformMessages(messages);
-    const params = this.buildRequestParams(openaiMessages, options);
-
-    const stream = await this.openai.chat.completions.create(params);
-    yield* this.processStream(stream);
+    const params = this.transformer.buildRequestParams(messages, options);
+    const stream = await this.client.stream('/chat/completions', params);
+    const lineStream = this.client.processStreamAsLines(stream);
+    yield* this.streamProcessor.processStream(lineStream);
   }
+}
 
-  private transformMessages(
-    messages: Message[]
-  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
-    const result: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-
-    for (const msg of messages) {
-      const transformed = this.transformMessage(msg);
-      if (transformed) {
-        if (Array.isArray(transformed)) {
-          result.push(...transformed);
-        } else {
-          result.push(transformed);
-        }
-      }
-    }
-
-    return result;
-  }
-
-  private transformMessage(
-    msg: Message
-  ):
-    | OpenAI.Chat.Completions.ChatCompletionMessageParam
-    | OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-    | null {
-    switch (msg.role) {
-      case 'system':
-        return this.transformSystemMessage(msg);
-      case 'tool':
-        return this.transformToolMessage(msg);
-      case 'user':
-        return this.transformUserMessage(msg);
-      case 'assistant':
-        return this.transformAssistantMessage(msg);
-      default:
-        return null;
-    }
-  }
-
-  private transformSystemMessage(
-    msg: Message
-  ): OpenAI.Chat.Completions.ChatCompletionSystemMessageParam {
-    return {
-      role: 'system',
-      content: MessageTransformer.extractTextContent(msg.content),
-    };
-  }
-
-  private transformToolMessage(
-    msg: Message
-  ): OpenAI.Chat.Completions.ChatCompletionToolMessageParam[] {
-    const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-    return toolResults.map(content => ({
-      role: 'tool',
-      tool_call_id: content.toolCallId,
-      content: content.result,
-    }));
-  }
-
-  private transformUserMessage(
-    msg: Message
-  ): OpenAI.Chat.Completions.ChatCompletionUserMessageParam {
-    const contentParts = this.buildContentParts(msg.content);
-    return {
-      role: 'user',
-      content:
-        contentParts.length === 1 && contentParts[0].type === 'text'
-          ? contentParts[0].text
-          : contentParts,
-    };
-  }
-
-  private transformAssistantMessage(
-    msg: Message
-  ): OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam {
-    const contentParts = this.buildContentParts(msg.content);
-    const message: OpenAI.Chat.Completions.ChatCompletionAssistantMessageParam = {
-      role: 'assistant',
-      content:
-        contentParts.length === 1 && contentParts[0].type === 'text' ? contentParts[0].text : null,
-    };
-
-    if (msg.toolCalls) {
-      message.tool_calls = msg.toolCalls.map(tc => ({
-        id: tc.id,
-        type: 'function',
-        function: {
-          name: tc.name,
-          arguments: JSON.stringify(tc.arguments),
-        },
-      }));
-    }
-
-    return message;
-  }
-
-  private buildContentParts(
-    content: Message['content']
-  ): OpenAI.Chat.Completions.ChatCompletionContentPart[] {
-    return content
-      .map(c => {
-        if (c.type === 'text') {
-          return { type: 'text', text: c.text };
-        }
-        if (c.type === 'image') {
-          return { type: 'image_url', image_url: { url: c.image } };
-        }
-        return null;
-      })
-      .filter(Boolean) as OpenAI.Chat.Completions.ChatCompletionContentPart[];
-  }
-
-  private buildRequestParams(
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+class OpenAIMessageTransformer {
+  buildRequestParams(
+    messages: Message[],
     options: GenerationOptions
-  ): OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming {
-    const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
+  ): ChatCompletionCreateParamsStreaming {
+    const openaiMessages = this.transformMessages(messages);
+    const params: ChatCompletionCreateParamsStreaming = {
       model: options.model,
-      messages,
+      messages: openaiMessages,
       stream: true,
       max_tokens: options.maxTokens,
       temperature: options.temperature,
@@ -164,62 +77,186 @@ export class OpenAIProvider implements AIProvider {
     };
 
     if (options.tools) {
-      params.tools = ToolFormatter.formatForOpenAI(options.tools);
+      params.tools = this.formatTools(options.tools);
       if (options.toolChoice) {
-        params.tool_choice = ToolChoiceHandler.formatForOpenAI(options.toolChoice);
+        params.tool_choice = this.formatToolChoice(options.toolChoice);
       }
     }
 
     return params;
   }
 
-  private async *processStream(
-    stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>
-  ): AsyncIterable<StreamChunk> {
-    let content = '';
-    const toolCallStates: Record<string, { id: string; name: string; arguments: string }> = {};
-    const completedToolCalls: Record<
-      string,
-      {
-        id: string;
-        name: string;
-        arguments: Record<string, unknown>;
+  private formatTools(tools: Tool[]): any[] {
+    return tools.map(tool => ({
+      type: 'function' as const,
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+      },
+    }));
+  }
+
+  private formatToolChoice(
+    toolChoice: GenerationOptions['toolChoice']
+  ): 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } } {
+    if (!toolChoice) {
+      return 'auto';
+    }
+    if (typeof toolChoice === 'object') {
+      return { type: 'function', function: { name: toolChoice.name } };
+    }
+    return toolChoice;
+  }
+
+  private transformMessages(messages: Message[]): ChatCompletionMessageParam[] {
+    return messages.flatMap(msg => this.mapMessage(msg));
+  }
+
+  /**
+   * Convert one of our internal `Message` objects into one or more OpenAI
+   * `ChatCompletionMessageParam` records. Always returns an array so callers
+   * can safely `flatMap` the result without having to deal with `null` or
+   * `undefined` values.
+   */
+  private mapMessage(msg: Message): ChatCompletionMessageParam[] {
+    switch (msg.role) {
+      case 'system':
+        return [
+          {
+            role: 'system',
+            content: MessageTransformer.extractTextContent(msg.content),
+          },
+        ];
+
+      case 'tool': {
+        const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+        return toolResults.map(content => ({
+          role: 'tool',
+          tool_call_id: content.toolCallId,
+          content: content.result,
+        }));
       }
-    > = {};
 
-    for await (const chunk of stream) {
-      if (!chunk.choices || chunk.choices.length === 0) continue;
-      const choice = chunk.choices[0];
-      if (!choice) continue;
+      case 'user':
+        return [
+          {
+            role: 'user',
+            content: this.buildContentParts(msg.content),
+          },
+        ];
 
-      const delta = choice.delta?.content || '';
-      content += delta;
+      case 'assistant': {
+        const assistantMsg: ChatCompletionMessageParam = {
+          role: 'assistant',
+          content: MessageTransformer.extractTextContent(msg.content),
+        };
 
-      this.processToolCalls(choice.delta?.tool_calls, toolCallStates, completedToolCalls);
+        if (msg.toolCalls) {
+          assistantMsg.tool_calls = msg.toolCalls.map(tc => ({
+            id: tc.id,
+            type: 'function',
+            function: {
+              name: tc.name,
+              arguments: JSON.stringify(tc.arguments),
+            },
+          }));
+        }
 
-      const finishReason = choice.finish_reason
-        ? FinishReasonMapper.mapOpenAI(choice.finish_reason)
-        : undefined;
+        return [assistantMsg];
+      }
 
-      const completedCalls = Object.values(completedToolCalls);
-      yield {
-        content,
-        delta,
-        finishReason,
-        toolCalls: completedCalls.length > 0 ? completedCalls : undefined,
-      };
+      default:
+        return [];
     }
   }
 
-  private processToolCalls(
-    deltaToolCalls: OpenAIToolCallDelta[] | undefined,
-    toolCallStates: Record<string, { id: string; name: string; arguments: string }>,
-    completedToolCalls: Record<
-      string,
-      { id: string; name: string; arguments: Record<string, unknown> }
-    >
+  private buildContentParts(content: Message['content']): ChatCompletionContentPart[] {
+    const parts = content
+      .map(c => {
+        if (c.type === 'text') {
+          return { type: 'text' as const, text: c.text };
+        }
+        if (c.type === 'image') {
+          return { type: 'image_url' as const, image_url: { url: c.image } };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    return parts as ChatCompletionContentPart[];
+  }
+}
+
+class OpenAIStreamProcessor {
+  async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
+    let content = '';
+    const toolCallStates: Record<string, ToolCallState> = {};
+    const completedToolCalls: Record<string, ToolCall> = {};
+
+    for await (const line of lineStream) {
+      if (!line.startsWith('data: ')) {
+        continue;
+      }
+
+      const data = line.substring(6);
+      if (data.trim() === '[DONE]') {
+        return;
+      }
+
+      try {
+        const chunk: ChatCompletionChunk = JSON.parse(data);
+        if (!chunk.choices || chunk.choices.length === 0) {
+          // Skip chunks that don't contain any choices
+          continue;
+        }
+
+        const choice = chunk.choices[0];
+        const delta = choice.delta?.content || '';
+        content += delta;
+
+        this.processToolCallDeltas(
+          choice.delta?.tool_calls ?? [],
+          toolCallStates,
+          completedToolCalls
+        );
+
+        const finishReason = choice.finish_reason
+          ? this.mapFinishReason(choice.finish_reason)
+          : undefined;
+
+        const completedCalls = Object.values(completedToolCalls);
+        yield {
+          content,
+          delta,
+          finishReason,
+          toolCalls: completedCalls.length > 0 ? completedCalls : undefined,
+        };
+      } catch (error) {
+        console.error('Error parsing stream chunk:', error);
+      }
+    }
+  }
+
+  private mapFinishReason(reason: string | null): 'stop' | 'length' | 'tool_use' {
+    switch (reason) {
+      case 'stop':
+        return 'stop';
+      case 'length':
+        return 'length';
+      case 'tool_calls':
+        return 'tool_use';
+      default:
+        return 'stop';
+    }
+  }
+
+  private processToolCallDeltas(
+    deltaToolCalls: OpenAIToolCallDelta[],
+    toolCallStates: Record<string, ToolCallState>,
+    completedToolCalls: Record<string, ToolCall>
   ): void {
-    if (!deltaToolCalls || !Array.isArray(deltaToolCalls)) return;
+    if (deltaToolCalls.length === 0) return;
 
     for (const tc of deltaToolCalls) {
       if (typeof tc.index !== 'number') continue;
@@ -229,31 +266,82 @@ export class OpenAIProvider implements AIProvider {
         toolCallStates[key] = { id: tc.id || '', name: '', arguments: '' };
       }
 
-      if (tc.id) toolCallStates[key].id = tc.id;
-      if (tc.function?.name) toolCallStates[key].name += tc.function.name;
-      if (tc.function?.arguments) toolCallStates[key].arguments += tc.function.arguments;
+      const state = toolCallStates[key];
+      if (tc.id) state.id = tc.id;
+      if (tc.function?.name) state.name += tc.function.name;
+      if (tc.function?.arguments) state.arguments += tc.function.arguments;
 
       if (completedToolCalls[key]) continue;
 
-      const currentState = toolCallStates[key];
-      const parsedArgs = this.parseToolArguments(currentState.arguments);
-
-      if (parsedArgs !== null) {
+      try {
+        const parsedArgs = JSON.parse(state.arguments);
         completedToolCalls[key] = {
-          id: currentState.id,
-          name: currentState.name,
+          id: state.id,
+          name: state.name,
           arguments: parsedArgs,
         };
+      } catch (e) {
+        // Arguments are not yet a complete JSON object
       }
     }
   }
-
-  private parseToolArguments(args: string): Record<string, unknown> | null {
-    if (!args) return {} as Record<string, unknown>;
-    try {
-      return JSON.parse(args);
-    } catch (error) {
-      return null;
-    }
-  }
 }
+
+// #region OpenAI Types
+type ToolCallState = {
+  id: string;
+  name: string;
+  arguments: string;
+};
+
+type ChatCompletionMessageParam = {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | ChatCompletionContentPart[] | null;
+  tool_calls?: {
+    id: string;
+    type: 'function';
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }[];
+  tool_call_id?: string;
+};
+
+type ChatCompletionContentPart = {
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string };
+};
+
+type ChatCompletionCreateParamsStreaming = {
+  model: string;
+  messages: ChatCompletionMessageParam[];
+  stream: true;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stop?: string[];
+  tools?: any[];
+  tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
+};
+
+type ChatCompletionChunk = {
+  choices: {
+    delta: {
+      content?: string | null;
+      tool_calls?: OpenAIToolCallDelta[];
+    };
+    finish_reason?: string | null;
+  }[];
+};
+
+interface OpenAIToolCallDelta {
+  index?: number;
+  id?: string;
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
+}
+// #endregion

@@ -84,27 +84,6 @@ describe('ToolFormatter', () => {
     },
   };
 
-  describe('formatForOpenAI', () => {
-    it('should format tools for OpenAI API', () => {
-      const result = ToolFormatter.formatForOpenAI([mockTool]);
-      expect(result).toEqual([
-        {
-          type: 'function',
-          function: {
-            name: 'get_weather',
-            description: 'Get weather information',
-            parameters: {
-              type: 'object',
-              properties: {
-                location: { type: 'string' },
-              },
-            },
-          },
-        },
-      ]);
-    });
-  });
-
   describe('formatForAnthropic', () => {
     it('should format tools for Anthropic API', () => {
       const result = ToolFormatter.formatForAnthropic([mockTool]);
@@ -136,21 +115,6 @@ describe('ToolFormatter', () => {
 });
 
 describe('ToolChoiceHandler', () => {
-  describe('formatForOpenAI', () => {
-    it('should handle string tool choice', () => {
-      expect(ToolChoiceHandler.formatForOpenAI('auto')).toBe('auto');
-      expect(ToolChoiceHandler.formatForOpenAI('none')).toBe('none');
-    });
-
-    it('should handle object tool choice', () => {
-      const result = ToolChoiceHandler.formatForOpenAI({ name: 'get_weather' });
-      expect(result).toEqual({
-        type: 'function',
-        function: { name: 'get_weather' },
-      });
-    });
-  });
-
   describe('formatForAnthropic', () => {
     it('should handle string tool choices', () => {
       expect(ToolChoiceHandler.formatForAnthropic('required')).toEqual({ type: 'any' });
@@ -190,16 +154,6 @@ describe('ToolChoiceHandler', () => {
 });
 
 describe('FinishReasonMapper', () => {
-  describe('mapOpenAI', () => {
-    it('should map OpenAI finish reasons', () => {
-      expect(FinishReasonMapper.mapOpenAI('stop')).toBe('stop');
-      expect(FinishReasonMapper.mapOpenAI('length')).toBe('length');
-      expect(FinishReasonMapper.mapOpenAI('tool_calls')).toBe('tool_use');
-      expect(FinishReasonMapper.mapOpenAI('unknown')).toBe('stop');
-      expect(FinishReasonMapper.mapOpenAI(null)).toBe('stop');
-    });
-  });
-
   describe('mapGoogle', () => {
     it('should map Google finish reasons', () => {
       expect(FinishReasonMapper.mapGoogle('STOP')).toBe('stop');
