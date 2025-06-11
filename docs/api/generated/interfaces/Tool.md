@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / Tool
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:48](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Name of the tool/function
 
-***
+---
 
 ### description
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:50](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Description of what the tool does
 
-***
+---
 
 ### parameters
 

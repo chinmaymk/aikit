@@ -31,10 +31,12 @@ const provider = createProvider('openai', {
 });
 
 // Generate streaming response
-const messages = [{ 
-  role: 'user', 
-  content: [{ type: 'text', text: 'Hello, world!' }] 
-}];
+const messages = [
+  {
+    role: 'user',
+    content: [{ type: 'text', text: 'Hello, world!' }],
+  },
+];
 
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);

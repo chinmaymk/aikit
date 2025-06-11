@@ -4,23 +4,26 @@ This guide covers how to set up the development environment and contribute to AI
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm
 
 ## Setup
 
 1. **Clone the repository**:
+
 ```bash
 git clone https://github.com/chinmaymk/aikit.git
 cd aikit
 ```
 
 2. **Install dependencies**:
+
 ```bash
 npm install
 ```
 
 3. **Set up environment variables** for testing:
+
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
@@ -30,6 +33,7 @@ export GOOGLE_API_KEY="your-google-api-key"
 ## Development Commands
 
 ### Testing
+
 ```bash
 # Run all tests
 npm test
@@ -47,6 +51,7 @@ npm run test:all
 ```
 
 ### Code Quality
+
 ```bash
 # Lint code
 npm run lint
@@ -65,12 +70,14 @@ npm run typecheck
 ```
 
 ### Building
+
 ```bash
 # Build the library
 npm run build
 ```
 
 ### Documentation
+
 ```bash
 # Generate API documentation from source
 npm run docs:generate
@@ -139,11 +146,13 @@ To run tests and examples, you'll need API keys from:
 ## Documentation
 
 The documentation is automatically generated from:
+
 - TypeScript source code (via TypeDoc)
 - Manual documentation in `docs/`
 - JSDoc comments in the source
 
 When you add new features:
+
 1. Add comprehensive JSDoc comments
 2. Update relevant documentation pages
 3. Add examples if applicable
@@ -157,4 +166,4 @@ AIKit uses a unified interface pattern:
 3. **Type System** (`src/types.ts`) - Shared types across all providers
 4. **Examples** (`examples/`) - Working code samples
 
-Each provider translates the unified interface to provider-specific APIs while maintaining consistent behavior. 
+Each provider translates the unified interface to provider-specific APIs while maintaining consistent behavior.

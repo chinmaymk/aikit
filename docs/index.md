@@ -22,10 +22,12 @@ const provider = createAIProvider('openai', {
 });
 
 // Generate streaming response
-const messages = [{ 
-  role: 'user', 
-  content: [{ type: 'text', text: 'Hello, world!' }] 
-}];
+const messages = [
+  {
+    role: 'user',
+    content: [{ type: 'text', text: 'Hello, world!' }],
+  },
+];
 
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
@@ -54,4 +56,4 @@ pnpm add aikit
 
 - [Get Started](./guide/getting-started) - Learn the basics
 - [API Reference](./api/) - Detailed API documentation
-- [Examples](./examples/) - Code examples for each provider 
+- [Examples](./examples/) - Code examples for each provider

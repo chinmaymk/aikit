@@ -5,6 +5,7 @@ This directory contains example scripts demonstrating how to use AIKit with diff
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
@@ -12,16 +13,19 @@ npm install
 2. Set up environment variables for the providers you want to use:
 
 ### OpenAI
+
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
 ```
 
 ### Anthropic
+
 ```bash
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 ```
 
 ### Google
+
 ```bash
 export GOOGLE_API_KEY="your-google-api-key"
 ```
@@ -29,21 +33,25 @@ export GOOGLE_API_KEY="your-google-api-key"
 ## Running Examples
 
 ### OpenAI Example
+
 ```bash
 npx tsx examples/openai.ts
 ```
 
 ### Anthropic Example
+
 ```bash
 npx tsx examples/anthropic.ts
 ```
 
 ### Google Gemini Example
+
 ```bash
 npx tsx examples/google.ts
 ```
 
 ### Tools Example
+
 ```bash
 npx tsx examples/tools-example.ts
 ```
@@ -65,6 +73,7 @@ To get API keys for each provider:
 ## Customization
 
 Feel free to modify the examples:
+
 - Change the models by updating the `model` field in `GenerationOptions`
 - Adjust parameters like `temperature`, `maxTokens`, etc.
 - Modify the conversation messages
@@ -73,6 +82,7 @@ Feel free to modify the examples:
 ## Available Models
 
 ### OpenAI Models
+
 - `gpt-4o`
 - `gpt-4o-mini`
 - `gpt-4-turbo`
@@ -82,6 +92,7 @@ Feel free to modify the examples:
 - `o1-mini`
 
 ### Anthropic Models
+
 - `claude-3-5-sonnet-20241022`
 - `claude-3-5-haiku-20241022`
 - `claude-3-opus-20240229`
@@ -89,7 +100,8 @@ Feel free to modify the examples:
 - `claude-3-haiku-20240307`
 
 ### Google Models
+
 - `gemini-1.5-pro`
 - `gemini-1.5-flash`
 - `gemini-1.0-pro`
-- `gemini-pro` 
+- `gemini-pro`

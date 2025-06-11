@@ -16,20 +16,8 @@
   "excludeExternals": true,
   "categorizeByGroup": false,
   "defaultCategory": "Other",
-  "categoryOrder": [
-    "Factory Functions",
-    "Provider Classes", 
-    "Types",
-    "Interfaces",
-    "*"
-  ],
-  "groupOrder": [
-    "Factory Functions",
-    "Provider Classes",
-    "Types", 
-    "Interfaces",
-    "*"
-  ],
+  "categoryOrder": ["Factory Functions", "Provider Classes", "Types", "Interfaces", "*"],
+  "groupOrder": ["Factory Functions", "Provider Classes", "Types", "Interfaces", "*"],
   "kindSortOrder": [
     "Project",
     "Module",
@@ -47,4 +35,4 @@
     "Method",
     "Reference"
   ]
-} 
+}

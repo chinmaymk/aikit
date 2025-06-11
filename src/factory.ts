@@ -6,17 +6,17 @@ import { GoogleGeminiProvider } from './providers/google';
 
 /**
  * Creates an OpenAI provider instance
- * 
+ *
  * @param config - Configuration options for OpenAI
  * @returns An AIProvider instance configured for OpenAI
- * 
+ *
  * @example
  * ```typescript
  * const provider = createOpenAI({
  *   apiKey: process.env.OPENAI_API_KEY!
  * });
  * ```
- * 
+ *
  * @group Factory Functions
  */
 export function createOpenAI(config: OpenAIConfig): AIProvider {
@@ -25,17 +25,17 @@ export function createOpenAI(config: OpenAIConfig): AIProvider {
 
 /**
  * Creates an Anthropic provider instance
- * 
+ *
  * @param config - Configuration options for Anthropic
  * @returns An AIProvider instance configured for Anthropic
- * 
+ *
  * @example
  * ```typescript
  * const provider = createAnthropic({
  *   apiKey: process.env.ANTHROPIC_API_KEY!
  * });
  * ```
- * 
+ *
  * @group Factory Functions
  */
 export function createAnthropic(config: AnthropicConfig): AIProvider {
@@ -44,17 +44,17 @@ export function createAnthropic(config: AnthropicConfig): AIProvider {
 
 /**
  * Creates a Google Gemini provider instance
- * 
+ *
  * @param config - Configuration options for Google Gemini
  * @returns An AIProvider instance configured for Google Gemini
- * 
+ *
  * @example
  * ```typescript
  * const provider = createGoogle({
  *   apiKey: process.env.GOOGLE_API_KEY!
  * });
  * ```
- * 
+ *
  * @group Factory Functions
  */
 export function createGoogle(config: GoogleConfig): AIProvider {
@@ -63,22 +63,22 @@ export function createGoogle(config: GoogleConfig): AIProvider {
 
 /**
  * Generic provider creation with type safety
- * 
+ *
  * @param type - The provider type ('openai', 'anthropic', or 'google')
  * @param config - Configuration options for the specified provider
  * @returns An AIProvider instance configured for the specified provider
- * 
+ *
  * @example
  * ```typescript
  * const openaiProvider = createProvider('openai', {
  *   apiKey: process.env.OPENAI_API_KEY!
  * });
- * 
+ *
  * const anthropicProvider = createProvider('anthropic', {
  *   apiKey: process.env.ANTHROPIC_API_KEY!
  * });
  * ```
- * 
+ *
  * @group Factory Functions
  */
 export function createProvider<T extends 'openai' | 'anthropic' | 'google'>(

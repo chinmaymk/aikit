@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / OpenAIConfig
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:125](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 OpenAI API key
 
-***
+---
 
 ### baseURL?
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:127](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Custom base URL for API requests
 
-***
+---
 
 ### organization?
 
@@ -40,7 +40,7 @@ Defined in: [types.ts:129](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 OpenAI organization ID
 
-***
+---
 
 ### project?
 
@@ -50,7 +50,7 @@ Defined in: [types.ts:131](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 OpenAI project ID
 
-***
+---
 
 ### timeout?
 
@@ -60,7 +60,7 @@ Defined in: [types.ts:133](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Request timeout in milliseconds
 
-***
+---
 
 ### maxRetries?
 

@@ -11,17 +11,20 @@ The examples in this project demonstrate how to use AIKit with different AI prov
 All examples are available in the `examples/` directory of the repository. To run them:
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/chinmaymk/aikit.git
 cd aikit
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up your API keys:
+
 ```bash
 export OPENAI_API_KEY="your-openai-api-key"
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
@@ -29,10 +32,11 @@ export GOOGLE_API_KEY="your-google-api-key"
 ```
 
 4. Run any example:
+
 ```bash
 npx tsx examples/openai.ts
 npx tsx examples/anthropic.ts
-npx tsx examples/google.ts 
+npx tsx examples/google.ts
 npx tsx examples/tools-example.ts
 ```
 
@@ -64,7 +68,7 @@ const options = {
   temperature: 0.7,
   maxTokens: 1000,
   topP: 0.9,
-  stopSequences: ['END']
+  stopSequences: ['END'],
 };
 
 for await (const chunk of provider.generate(messages, options)) {
@@ -78,14 +82,16 @@ for await (const chunk of provider.generate(messages, options)) {
 const messages = [
   {
     role: 'system' as const,
-    content: [{ 
-      type: 'text' as const, 
-      text: 'You are a helpful assistant that speaks like a pirate.' 
-    }]
+    content: [
+      {
+        type: 'text' as const,
+        text: 'You are a helpful assistant that speaks like a pirate.',
+      },
+    ],
   },
   {
     role: 'user' as const,
-    content: [{ type: 'text' as const, text: 'Hello!' }]
-  }
+    content: [{ type: 'text' as const, text: 'Hello!' }],
+  },
 ];
-``` 
+```

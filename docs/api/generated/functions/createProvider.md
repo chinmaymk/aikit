@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / createProvider
 
@@ -16,7 +16,7 @@ Generic provider creation with type safety
 
 ### T
 
-`T` *extends* `"openai"` \| `"anthropic"` \| `"google"`
+`T` _extends_ `"openai"` \| `"anthropic"` \| `"google"`
 
 ## Parameters
 
@@ -28,7 +28,7 @@ The provider type ('openai', 'anthropic', or 'google')
 
 ### config
 
-`T` *extends* `"openai"` ? [`OpenAIConfig`](../interfaces/OpenAIConfig.md) : `T` *extends* `"anthropic"` ? [`AnthropicConfig`](../interfaces/AnthropicConfig.md) : [`GoogleConfig`](../interfaces/GoogleConfig.md)
+`T` _extends_ `"openai"` ? [`OpenAIConfig`](../interfaces/OpenAIConfig.md) : `T` _extends_ `"anthropic"` ? [`AnthropicConfig`](../interfaces/AnthropicConfig.md) : [`GoogleConfig`](../interfaces/GoogleConfig.md)
 
 Configuration options for the specified provider
 
@@ -42,10 +42,10 @@ An AIProvider instance configured for the specified provider
 
 ```typescript
 const openaiProvider = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 const anthropicProvider = createProvider('anthropic', {
-  apiKey: process.env.ANTHROPIC_API_KEY!
+  apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 ```

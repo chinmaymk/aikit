@@ -6,13 +6,13 @@ function getCurrentWeather(location: string, unit: 'celsius' | 'fahrenheit' = 'c
   // This would normally call a real weather API
   const temperature = unit === 'celsius' ? '22' : '72';
   const unitSymbol = unit === 'celsius' ? '°C' : '°F';
-  
+
   return {
     location,
     temperature: `${temperature}${unitSymbol}`,
     description: 'Partly cloudy',
     humidity: '65%',
-    windSpeed: '10 km/h'
+    windSpeed: '10 km/h',
   };
 }
 
@@ -38,28 +38,30 @@ async function main() {
         properties: {
           location: {
             type: 'string',
-            description: 'The city and state, e.g. San Francisco, CA'
+            description: 'The city and state, e.g. San Francisco, CA',
           },
           unit: {
             type: 'string',
             enum: ['celsius', 'fahrenheit'],
-            description: 'The temperature unit to use'
-          }
+            description: 'The temperature unit to use',
+          },
         },
-        required: ['location']
-      }
-    }
+        required: ['location'],
+      },
+    },
   ];
 
   // Create initial messages
   const messages: Message[] = [
     {
       role: 'system',
-      content: [{ type: 'text', text: 'You are a helpful assistant that can provide weather information.' }],
+      content: [
+        { type: 'text', text: 'You are a helpful assistant that can provide weather information.' },
+      ],
     },
     {
       role: 'user',
-      content: [{ type: 'text', text: 'What\'s the weather like in London?' }],
+      content: [{ type: 'text', text: "What's the weather like in London?" }],
     },
   ];
 
@@ -76,7 +78,7 @@ async function main() {
   console.log('---');
 
   let conversationComplete = false;
-  
+
   while (!conversationComplete) {
     let assistantMessage = '';
     let toolCalls: any[] = [];
@@ -84,14 +86,14 @@ async function main() {
     // Stream the response
     for await (const chunk of provider.generate(messages, options)) {
       assistantMessage += chunk.delta;
-      
+
       if (chunk.toolCalls) {
         toolCalls = chunk.toolCalls;
       }
-      
+
       if (chunk.finishReason) {
         console.log(`\nFinish reason: ${chunk.finishReason}`);
-        
+
         if (chunk.finishReason === 'tool_use' && toolCalls.length > 0) {
           // Add assistant's message with tool calls
           messages.push({
@@ -100,46 +102,48 @@ async function main() {
             toolCalls: toolCalls.map(tc => ({
               id: tc.id,
               name: tc.name,
-              arguments: tc.arguments
-            }))
+              arguments: tc.arguments,
+            })),
           });
 
           // Execute tools and add results
           for (const toolCall of toolCalls) {
             console.log(`\n🔧 Calling tool: ${toolCall.name} with args:`, toolCall.arguments);
-            
+
             if (toolCall.name === 'getCurrentWeather') {
               const result = getCurrentWeather(
                 toolCall.arguments.location,
                 toolCall.arguments.unit
               );
-              
+
               console.log('📊 Tool result:', result);
-              
+
               // Add tool result to messages
               messages.push({
                 role: 'tool',
-                content: [{
-                  type: 'tool_result',
-                  toolCallId: toolCall.id,
-                  result: JSON.stringify(result)
-                }]
+                content: [
+                  {
+                    type: 'tool_result',
+                    toolCallId: toolCall.id,
+                    result: JSON.stringify(result),
+                  },
+                ],
               });
             }
           }
-          
+
           console.log('\n🤖 Assistant response after tool execution:');
         } else {
           conversationComplete = true;
         }
         break;
       }
-      
+
       process.stdout.write(chunk.delta);
     }
   }
-  
+
   console.log('\n---\nConversation complete!');
 }
 
-main().catch(console.error); 
+main().catch(console.error);

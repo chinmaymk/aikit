@@ -17,7 +17,7 @@ async function main() {
   const messages: Message[] = [
     {
       role: 'system',
-      content: [{ type: 'text', text: 'You are Gemini, Google\'s helpful AI assistant.' }],
+      content: [{ type: 'text', text: "You are Gemini, Google's helpful AI assistant." }],
     },
     {
       role: 'user',
@@ -38,11 +38,11 @@ async function main() {
   // Stream the response
   for await (const chunk of provider.generate(messages, options)) {
     process.stdout.write(chunk.delta);
-    
+
     if (chunk.finishReason) {
       console.log(`\n---\nFinish reason: ${chunk.finishReason}`);
     }
   }
 }
 
-main().catch(console.error); 
+main().catch(console.error);

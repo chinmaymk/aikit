@@ -38,11 +38,11 @@ async function main() {
   // Stream the response
   for await (const chunk of provider.generate(messages, options)) {
     process.stdout.write(chunk.delta);
-    
+
     if (chunk.finishReason) {
       console.log(`\n---\nFinish reason: ${chunk.finishReason}`);
     }
   }
 }
 
-main().catch(console.error); 
+main().catch(console.error);

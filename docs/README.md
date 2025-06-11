@@ -12,16 +12,19 @@ This directory contains the documentation website for AIKit, built with VitePres
 ### Setup
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Generate API documentation from source:
+
 ```bash
 npm run docs:generate
 ```
 
 3. Start the development server:
+
 ```bash
 npm run docs:dev
 ```
@@ -75,4 +78,4 @@ The VitePress configuration is in `.vitepress/config.ts`. Key settings:
 - Base URL: `/aikit/` (for GitHub Pages)
 - Theme configuration
 - Navigation and sidebar
-- Search configuration 
+- Search configuration

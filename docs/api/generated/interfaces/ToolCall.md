@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / ToolCall
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:61](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Unique identifier for this tool call
 
-***
+---
 
 ### name
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:63](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Name of the tool being called
 
-***
+---
 
 ### arguments
 

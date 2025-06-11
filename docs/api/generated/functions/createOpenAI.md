@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / createOpenAI
 
@@ -30,6 +30,6 @@ An AIProvider instance configured for OpenAI
 
 ```typescript
 const provider = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY!
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 ```

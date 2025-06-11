@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / StreamChunk
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:87](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Full content received so far
 
-***
+---
 
 ### delta
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:89](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Incremental content for this chunk
 
-***
+---
 
 ### finishReason?
 
@@ -40,7 +40,7 @@ Defined in: [types.ts:91](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Reason why generation finished (if it did)
 
-***
+---
 
 ### toolCalls?
 

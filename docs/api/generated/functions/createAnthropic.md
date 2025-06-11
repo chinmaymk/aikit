@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / createAnthropic
 
@@ -30,6 +30,6 @@ An AIProvider instance configured for Anthropic
 
 ```typescript
 const provider = createAnthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!
+  apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 ```

@@ -168,7 +168,7 @@ export interface GoogleConfig {
 export interface AIProvider {
   /** List of available models for this provider */
   readonly models: string[];
-  
+
   /**
    * Generate streaming response for given messages
    * @param messages - Array of conversation messages

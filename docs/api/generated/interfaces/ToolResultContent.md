@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / ToolResultContent
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Content type identifier
 
-***
+---
 
 ### toolCallId
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:31](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 ID of the tool call this result corresponds to
 
-***
+---
 
 ### result
 
