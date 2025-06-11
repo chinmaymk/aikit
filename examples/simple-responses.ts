@@ -21,18 +21,28 @@ const PROVIDER_CONFIG = {
 
 function createMessages(providerType: keyof typeof PROVIDER_CONFIG): Message[] {
   const prompt = 'Write a haiku about artificial intelligence and the future.';
-  
+
   if (providerType === 'openai') {
     return [
-      { role: 'system', content: [{ type: 'text', text: 'You are a creative poet who writes beautiful haikus.' }] },
+      {
+        role: 'system',
+        content: [{ type: 'text', text: 'You are a creative poet who writes beautiful haikus.' }],
+      },
       { role: 'user', content: [{ type: 'text', text: prompt }] },
     ];
   }
-  
+
   if (providerType === 'anthropic') {
-    return [{ role: 'user', content: [{ type: 'text', text: `${prompt} You are a creative poet who writes beautiful haikus.` }] }];
+    return [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: `${prompt} You are a creative poet who writes beautiful haikus.` },
+        ],
+      },
+    ];
   }
-  
+
   return [{ role: 'user', content: [{ type: 'text', text: prompt }] }];
 }
 
@@ -71,8 +81,10 @@ async function main() {
   } else {
     console.log('Haiku Generation Demo with Multiple Providers');
     console.log('='.repeat(50));
-    
-    for (const providerType of Object.keys(PROVIDER_CONFIG) as Array<keyof typeof PROVIDER_CONFIG>) {
+
+    for (const providerType of Object.keys(PROVIDER_CONFIG) as Array<
+      keyof typeof PROVIDER_CONFIG
+    >) {
       await runExample(providerType);
     }
 
@@ -84,4 +96,4 @@ async function main() {
   }
 }
 
-main().catch(console.error); 
+main().catch(console.error);

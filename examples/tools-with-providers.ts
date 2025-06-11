@@ -27,7 +27,11 @@ const tools: Tool[] = [
       type: 'object',
       properties: {
         location: { type: 'string', description: 'The city and state, e.g. San Francisco, CA' },
-        unit: { type: 'string', enum: ['celsius', 'fahrenheit'], description: 'The temperature unit to use' },
+        unit: {
+          type: 'string',
+          enum: ['celsius', 'fahrenheit'],
+          description: 'The temperature unit to use',
+        },
       },
       required: ['location'],
     },
@@ -38,7 +42,7 @@ function getCurrentWeatherTool(location: string, unit: 'celsius' | 'fahrenheit' 
   const baseTemp = unit === 'celsius' ? 20 : 68;
   const temperature = baseTemp + Math.floor(Math.random() * 10) - 5;
   const conditions = ['Sunny', 'Partly cloudy', 'Overcast', 'Light rain', 'Clear'];
-  
+
   return {
     location,
     temperature: `${temperature}${unit === 'celsius' ? '°C' : '°F'}`,
@@ -50,18 +54,36 @@ function getCurrentWeatherTool(location: string, unit: 'celsius' | 'fahrenheit' 
 
 function createMessages(providerType: keyof typeof PROVIDER_CONFIG): Message[] {
   const prompt = "What's the weather like in San Francisco?";
-  
+
   if (providerType === 'openai') {
     return [
-      { role: 'system', content: [{ type: 'text', text: 'You are a helpful assistant that can provide weather information.' }] },
+      {
+        role: 'system',
+        content: [
+          {
+            type: 'text',
+            text: 'You are a helpful assistant that can provide weather information.',
+          },
+        ],
+      },
       { role: 'user', content: [{ type: 'text', text: prompt }] },
     ];
   }
-  
+
   if (providerType === 'anthropic') {
-    return [{ role: 'user', content: [{ type: 'text', text: `${prompt} You are a helpful assistant that can provide weather information.` }] }];
+    return [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: `${prompt} You are a helpful assistant that can provide weather information.`,
+          },
+        ],
+      },
+    ];
   }
-  
+
   return [{ role: 'user', content: [{ type: 'text', text: prompt }] }];
 }
 
@@ -110,12 +132,17 @@ async function runExample(providerType: keyof typeof PROVIDER_CONFIG) {
             console.log(`\nCalling tool: ${toolCall.name} with args:`, toolCall.arguments);
 
             if (toolCall.name === 'getCurrentWeatherTool') {
-              const result = getCurrentWeatherTool(toolCall.arguments.location, toolCall.arguments.unit);
+              const result = getCurrentWeatherTool(
+                toolCall.arguments.location,
+                toolCall.arguments.unit
+              );
               console.log('Tool result:', result);
 
               messages.push({
                 role: 'tool',
-                content: [{ type: 'tool_result', toolCallId: toolCall.id, result: JSON.stringify(result) }],
+                content: [
+                  { type: 'tool_result', toolCallId: toolCall.id, result: JSON.stringify(result) },
+                ],
               });
             }
           }
@@ -142,8 +169,10 @@ async function main() {
   } else {
     console.log('Tool Calls Demo with Multiple Providers');
     console.log('='.repeat(50));
-    
-    for (const providerType of Object.keys(PROVIDER_CONFIG) as Array<keyof typeof PROVIDER_CONFIG>) {
+
+    for (const providerType of Object.keys(PROVIDER_CONFIG) as Array<
+      keyof typeof PROVIDER_CONFIG
+    >) {
       await runExample(providerType);
     }
 
@@ -155,4 +184,4 @@ async function main() {
   }
 }
 
-main().catch(console.error); 
+main().catch(console.error);
