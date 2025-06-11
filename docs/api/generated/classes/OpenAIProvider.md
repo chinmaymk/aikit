@@ -6,7 +6,7 @@
 
 # Class: OpenAIProvider
 
-Defined in: [providers/openai.ts:15](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L15)
+Defined in: [providers/openai.ts:13](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L13)
 
 Core interface implemented by all AI providers
 
@@ -20,7 +20,7 @@ Core interface implemented by all AI providers
 
 > **new OpenAIProvider**(`config`): `OpenAIProvider`
 
-Defined in: [providers/openai.ts:28](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L28)
+Defined in: [providers/openai.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L29)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [providers/openai.ts:28](https://github.com/chinmaymk/aikit/blob/mai
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/openai.ts:32](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L32)
+Defined in: [providers/openai.ts:55](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L55)
 
 Generate streaming response for given messages
 
@@ -72,7 +72,7 @@ Async iterable of stream chunks
 
 > `readonly` **models**: `string`[]
 
-Defined in: [providers/openai.ts:17](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L17)
+Defined in: [providers/openai.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L18)
 
 List of available models for this provider
 

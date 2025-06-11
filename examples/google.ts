@@ -28,7 +28,7 @@ async function main() {
 
   // Generation options
   const options: GenerationOptions = {
-    model: 'gemini-1.5-pro-latest',
+    model: 'gemini-2.5-pro-exp-06-25',
     maxTokens: 1024,
     temperature: 0,
   };
