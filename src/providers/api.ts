@@ -71,4 +71,19 @@ export class StreamingAPIClient {
       }
     }
   }
+
+  async *processStreamAsRaw(stream: ReadableStream<Uint8Array>): AsyncIterable<string> {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      if (chunk) {
+        yield chunk;
+      }
+    }
+  }
 }

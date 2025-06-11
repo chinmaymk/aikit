@@ -9,6 +9,7 @@ import type {
 } from '../types';
 import { MessageTransformer } from './utils';
 import { StreamingAPIClient } from './api';
+import { extractDataLines } from './sse';
 
 export class OpenAIProvider implements AIProvider {
   private client: StreamingAPIClient;
@@ -199,20 +200,12 @@ class OpenAIStreamProcessor {
     const toolCallStates: Record<string, ToolCallState> = {};
     const completedToolCalls: Record<string, ToolCall> = {};
 
-    for await (const line of lineStream) {
-      if (!line.startsWith('data: ')) {
-        continue;
-      }
-
-      const data = line.substring(6);
-      if (data.trim() === '[DONE]') {
-        return;
-      }
+    for await (const data of extractDataLines(lineStream)) {
+      if (data.trim() === '[DONE]') return;
 
       try {
         const chunk: ChatCompletionChunk = JSON.parse(data);
         if (!chunk.choices || chunk.choices.length === 0) {
-          // Skip chunks that don't contain any choices
           continue;
         }
 
@@ -237,8 +230,9 @@ class OpenAIStreamProcessor {
           finishReason,
           toolCalls: completedCalls.length > 0 ? completedCalls : undefined,
         };
-      } catch (error) {
-        console.error('Error parsing stream chunk:', error);
+      } catch {
+        // Invalid JSON, skip
+        continue;
       }
     }
   }

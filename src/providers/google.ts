@@ -1,15 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import type {
-  Content as GoogleContent,
-  Part,
-  FunctionDeclaration,
-  FunctionDeclarationSchema,
-  FunctionDeclarationsTool,
-  ModelParams,
-  GenerateContentRequest,
-  GenerateContentStreamResult,
-} from '@google/generative-ai';
-
 import type {
   AIProvider,
   Message,
@@ -18,10 +6,63 @@ import type {
   StreamChunk,
   ToolCall,
 } from '../types';
+
 import { MessageTransformer, ToolChoiceHandler, FinishReasonMapper } from './utils';
+import { StreamingAPIClient } from './api';
+import { extractDataLines } from './sse';
+
+// Google Gemini provider implementation
+
+/**
+ * Utility types for request/response payloads (minimal subset)
+ */
+type GooglePart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
+  | { functionCall: { name: string; args: Record<string, unknown> } }
+  | { functionResponse: { name: string; response: Record<string, unknown> } };
+
+interface GoogleContent {
+  role: 'user' | 'model' | 'function';
+  parts: GooglePart[];
+}
+
+interface FunctionDeclaration {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+interface ModelConfig {
+  generationConfig?: {
+    temperature?: number;
+    topP?: number;
+    topK?: number;
+    maxOutputTokens?: number;
+    stopSequences?: string[];
+    candidateCount?: number;
+  };
+  systemInstruction?: string;
+  tools?: Array<{ functionDeclarations: FunctionDeclaration[] }>;
+  toolConfig?: Record<string, unknown>;
+}
+
+interface GenerateContentRequestBody extends ModelConfig {
+  contents: GoogleContent[];
+}
+
+interface StreamGenerateContentChunk {
+  candidates?: Array<{
+    content?: GoogleContent;
+    finishReason?: string;
+  }>;
+}
 
 export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions> {
-  private genai: GoogleGenerativeAI;
+  private readonly client: StreamingAPIClient;
+  private readonly transformer: GoogleMessageTransformer;
+  private readonly streamProcessor: GoogleStreamProcessor;
+
   readonly models = [
     // Gemini 2.5
     'gemini-2.5-pro-preview-06-05',
@@ -51,22 +92,56 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   ];
 
   constructor(config: GoogleConfig) {
-    this.genai = new GoogleGenerativeAI(config.apiKey);
+    const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    const headers = { 'Content-Type': 'application/json' };
+
+    this.client = new StreamingAPIClient(baseUrl, headers);
+    this.transformer = new GoogleMessageTransformer(config.apiKey);
+    this.streamProcessor = new GoogleStreamProcessor();
   }
 
   async *generate(
     messages: Message[],
     options: GoogleGenerationOptions
   ): AsyncIterable<StreamChunk> {
+    const { endpoint, payload } = this.transformer.buildRequest(messages, options);
+
+    const stream = await this.client.stream(endpoint, payload);
+    const lineStream = this.client.processStreamAsLines(stream);
+
+    yield* this.streamProcessor.processStream(lineStream);
+  }
+}
+
+// Converts generic messages to Google request format
+
+class GoogleMessageTransformer {
+  private readonly apiKey: string;
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  buildRequest(
+    messages: Message[],
+    options: GoogleGenerationOptions
+  ): { endpoint: string; payload: GenerateContentRequestBody } {
     const { systemInstruction, googleMessages } = this.transformMessages(messages);
     const modelConfig = this.buildModelConfig(systemInstruction, options);
 
-    const model = this.genai.getGenerativeModel(modelConfig);
-    const request: GenerateContentRequest = { contents: googleMessages };
-    const stream = await model.generateContentStream(request);
+    const payload: GenerateContentRequestBody = {
+      ...modelConfig,
+      contents: googleMessages,
+    };
 
-    yield* this.processStream(stream);
+    const endpoint = `/models/${options.model}:streamGenerateContent?key=${encodeURIComponent(
+      this.apiKey
+    )}&alt=sse`;
+
+    return { endpoint, payload };
   }
+
+  // ---------- Message Conversion ----------
 
   private transformMessages(messages: Message[]): {
     systemInstruction: string;
@@ -81,90 +156,76 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
         continue;
       }
 
-      const transformed = this.transformMessage(msg);
-      if (transformed) {
-        if (Array.isArray(transformed)) {
-          googleMessages.push(...transformed);
-        } else {
-          googleMessages.push(transformed);
-        }
+      const mapped = this.mapMessage(msg);
+      if (mapped) {
+        if (Array.isArray(mapped)) googleMessages.push(...mapped);
+        else googleMessages.push(mapped);
       }
     }
 
     return { systemInstruction, googleMessages };
   }
 
-  private transformMessage(msg: Message): GoogleContent | GoogleContent[] | null {
+  private mapMessage(msg: Message): GoogleContent | GoogleContent[] | null {
     switch (msg.role) {
       case 'tool':
-        return this.transformToolMessage(msg);
-      case 'user':
+        return this.toolResultToContent(msg);
       case 'assistant':
-        return this.transformUserOrAssistantMessage(msg);
+      case 'user':
+        return this.standardMessageToContent(msg);
       default:
         return null;
     }
   }
 
-  private transformToolMessage(msg: Message): GoogleContent[] {
+  private toolResultToContent(msg: Message): GoogleContent[] {
     const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-    return toolResults.map<GoogleContent>(content => ({
+    return toolResults.map(tr => ({
       role: 'function',
       parts: [
         {
           functionResponse: {
-            name: content.toolCallId.split('_')[0],
-            response: { result: content.result },
+            name: tr.toolCallId.split('_')[0],
+            response: { result: tr.result },
           },
         },
       ],
     }));
   }
 
-  private transformUserOrAssistantMessage(msg: Message): GoogleContent {
-    const parts = this.buildMessageParts(msg);
-    return {
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts,
-    };
-  }
+  private standardMessageToContent(msg: Message): GoogleContent {
+    const parts: GooglePart[] = [];
 
-  private buildMessageParts(msg: Message): Part[] {
-    const parts: Part[] = [];
-
-    for (const content of msg.content) {
-      if (content.type === 'text') {
-        parts.push({ text: content.text });
-      } else if (content.type === 'image') {
+    // Regular text / image parts
+    for (const c of msg.content) {
+      if (c.type === 'text') parts.push({ text: c.text });
+      else if (c.type === 'image') {
         parts.push({
           inlineData: {
             mimeType: 'image/jpeg',
-            data: MessageTransformer.extractBase64Data(content.image),
+            data: MessageTransformer.extractBase64Data(c.image),
           },
         });
       }
     }
 
+    // Tool calls (assistant messages)
     if (msg.toolCalls) {
       for (const tc of msg.toolCalls) {
-        parts.push({
-          functionCall: {
-            name: tc.name,
-            args: tc.arguments,
-          },
-        });
+        parts.push({ functionCall: { name: tc.name, args: tc.arguments } });
       }
     }
 
-    return parts;
+    return { role: msg.role === 'assistant' ? 'model' : 'user', parts };
   }
+
+  // ---------- Model Config ----------
 
   private buildModelConfig(
     systemInstruction: string,
     options: GoogleGenerationOptions
-  ): ModelParams {
-    const params: ModelParams = {
-      model: options.model,
+  ): ModelConfig {
+    const config: ModelConfig = {
       generationConfig: {
         temperature: options.temperature,
         topP: options.topP,
@@ -175,66 +236,89 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
       },
     };
 
-    if (systemInstruction) {
-      params.systemInstruction = systemInstruction;
-    }
+    if (systemInstruction) config.systemInstruction = systemInstruction;
 
     if (options.tools) {
-      const functionDeclarations: FunctionDeclaration[] = options.tools.map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters as unknown as FunctionDeclarationSchema,
-      }));
-
-      const googleTool: FunctionDeclarationsTool = { functionDeclarations };
-      params.tools = [googleTool];
+      config.tools = [
+        {
+          functionDeclarations: options.tools.map(t => ({
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          })),
+        },
+      ];
 
       if (options.toolChoice) {
-        params.toolConfig = ToolChoiceHandler.formatForGoogle(options.toolChoice);
+        config.toolConfig = ToolChoiceHandler.formatForGoogle(options.toolChoice);
       }
     }
 
-    return params;
+    return config;
   }
+}
 
-  private async *processStream(stream: GenerateContentStreamResult): AsyncIterable<StreamChunk> {
+// Parses SSE chunks from the Gemini API response
+
+class GoogleStreamProcessor {
+  async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let content = '';
     const toolCalls: ToolCall[] = [];
 
-    for await (const response of stream.stream) {
-      const candidate = response.candidates?.[0];
-      if (!candidate?.content?.parts) continue;
+    for await (const data of extractDataLines(lineStream)) {
+      try {
+        const chunk = JSON.parse(data) as StreamGenerateContentChunk;
+        const streamChunk = this.processChunk(chunk, content, toolCalls);
+        if (streamChunk) {
+          content = streamChunk.content;
+          yield streamChunk;
+          if (streamChunk.finishReason) return;
+        }
+      } catch {
+        continue; // skip invalid JSON
+      }
+    }
+  }
 
-      let delta = '';
+  private processChunk(
+    chunk: StreamGenerateContentChunk,
+    currentContent: string,
+    toolCalls: ToolCall[]
+  ): StreamChunk | null {
+    const candidate = chunk.candidates?.[0];
+    if (!candidate?.content?.parts) return null;
 
-      for (const part of candidate.content.parts) {
-        if ('text' in part && part.text) {
-          delta += part.text;
-          content += part.text;
-        } else if ('functionCall' in part && part.functionCall) {
-          const fc = part.functionCall;
-          const existingCall = toolCalls.find(tc => tc.name === fc.name);
-          if (!existingCall) {
-            const args: Record<string, unknown> = (fc.args as Record<string, unknown>) || {};
-            toolCalls.push({
-              id: `${fc.name}_${toolCalls.length}`,
-              name: fc.name,
-              arguments: args,
-            });
-          }
+    let delta = '';
+
+    for (const part of candidate.content.parts as GooglePart[]) {
+      if ('text' in part && part.text) {
+        delta += part.text;
+        currentContent += part.text;
+      } else if ('functionCall' in part && part.functionCall) {
+        const { name, args } = part.functionCall;
+        if (!toolCalls.find(tc => tc.name === name)) {
+          toolCalls.push({
+            id: `${name}_${Date.now()}_${toolCalls.length}`,
+            name,
+            arguments: args,
+          });
         }
       }
-
-      const finishReason = candidate?.finishReason
-        ? FinishReasonMapper.mapGoogle(candidate.finishReason)
-        : undefined;
-
-      yield {
-        content,
-        delta,
-        finishReason,
-        toolCalls: toolCalls.length ? toolCalls : undefined,
-      };
     }
+
+    if (!delta.trim() && !candidate.finishReason && toolCalls.length === 0) {
+      return null;
+    }
+
+    const finishReason = candidate.finishReason
+      ? FinishReasonMapper.mapGoogle(candidate.finishReason)
+      : undefined;
+
+    return {
+      content: currentContent,
+      delta,
+      finishReason,
+      toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined,
+    };
   }
 }

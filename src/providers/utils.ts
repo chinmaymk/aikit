@@ -7,7 +7,9 @@ import type {
   ToolResultContent,
 } from '../types';
 import type { Anthropic } from '@anthropic-ai/sdk';
-import type { FunctionCallingMode } from '@google/generative-ai';
+
+// Local replacement for the Google SDK `FunctionCallingMode` enum
+type GoogleFunctionCallingMode = 'AUTO' | 'NONE' | 'ANY';
 
 export interface GroupedContent {
   text: TextContent[];
@@ -70,26 +72,26 @@ export class ToolChoiceHandler {
   }
 
   static formatForGoogle(toolChoice: BaseGenerationOptions['toolChoice'] | undefined) {
-    const build = (mode: FunctionCallingMode) => ({
+    const build = (mode: GoogleFunctionCallingMode) => ({
       functionCallingConfig: { mode },
     });
 
-    if (!toolChoice) return build('AUTO' as FunctionCallingMode);
+    if (!toolChoice) return build('AUTO' as GoogleFunctionCallingMode);
 
-    if (toolChoice === 'auto') return build('AUTO' as FunctionCallingMode);
-    if (toolChoice === 'none') return build('NONE' as FunctionCallingMode);
-    if (toolChoice === 'required') return build('ANY' as FunctionCallingMode);
+    if (toolChoice === 'auto') return build('AUTO' as GoogleFunctionCallingMode);
+    if (toolChoice === 'none') return build('NONE' as GoogleFunctionCallingMode);
+    if (toolChoice === 'required') return build('ANY' as GoogleFunctionCallingMode);
 
     if (typeof toolChoice === 'object' && toolChoice.name) {
       return {
         functionCallingConfig: {
-          mode: 'ANY' as FunctionCallingMode,
+          mode: 'ANY' as GoogleFunctionCallingMode,
           allowedFunctionNames: [toolChoice.name],
         },
       };
     }
 
-    return build('AUTO' as FunctionCallingMode);
+    return build('AUTO' as GoogleFunctionCallingMode);
   }
 }
 

@@ -28,10 +28,7 @@ async function main() {
 
   // Generation options
   const options: GoogleGenerationOptions = {
-    model: 'gemini-2.5-pro-preview-06-05',
-    maxTokens: 1024,
-    temperature: 0,
-    candidateCount: 1,
+    model: 'gemini-2.0-flash',
   };
 
   console.log('💎 Google Gemini Response:');

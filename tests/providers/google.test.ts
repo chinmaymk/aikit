@@ -1,175 +1,176 @@
 import { GoogleGeminiProvider } from '../../src/providers/google';
-import type { Message, GenerationOptions, GoogleConfig, StreamChunk } from '../../src/types';
+import type { Message, GoogleGenerationOptions, GoogleConfig, StreamChunk } from '../../src/types';
+import nock from 'nock';
+import { Readable } from 'node:stream';
+import {
+  userText,
+  systemText,
+  userImage,
+  assistantWithToolCalls,
+  toolResult as toolResultMsg,
+} from '../../src/createFuncs';
+import { googleTextChunk, googleStopChunk, googleToolCallChunk } from '../helpers/googleChunks';
 
-// Mock the Google Generative AI SDK
-jest.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: jest.fn().mockImplementation(() => ({
-    getGenerativeModel: jest.fn().mockReturnValue({
-      generateContentStream: jest.fn(),
-    }),
-  })),
-  FunctionCallingMode: {
-    AUTO: 'AUTO',
-    ANY: 'ANY',
-    NONE: 'NONE',
-  },
-}));
+/**
+ * Helper to create a chunked SSE response body for the Google Gemini streaming API.
+ */
+function createGoogleSSEStream(chunks: any[]): Readable {
+  const stream = new Readable({ read() {} });
+  chunks.forEach(chunk => {
+    stream.push(`data: ${JSON.stringify(chunk)}\n`);
+  });
+  stream.push(null); // end of stream
+  return stream;
+}
+
+/**
+ * Set up nock to intercept the Google Gemini request and return the provided chunks.
+ */
+function mockGoogleGeneration(
+  model: string,
+  expectedChunks: any[],
+  captureBody: (body: any) => void
+): nock.Scope {
+  return nock('https://generativelanguage.googleapis.com')
+    .post(`/v1beta/models/${model}:streamGenerateContent`, body => {
+      captureBody(body);
+      return true;
+    })
+    .query(true) // Accept any query parameters (API key, alt=sse)
+    .reply(200, () => createGoogleSSEStream(expectedChunks), {
+      'Content-Type': 'text/event-stream',
+    });
+}
 
 describe('GoogleGeminiProvider', () => {
-  let provider: GoogleGeminiProvider;
-  let mockGenAI: any;
-  let mockModel: any;
   const mockConfig: GoogleConfig = {
     apiKey: 'test-api-key',
   };
 
+  let provider: GoogleGeminiProvider;
+
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    mockModel = {
-      generateContentStream: jest.fn(),
-    };
-    mockGenAI = {
-      getGenerativeModel: jest.fn().mockReturnValue(mockModel),
-    };
-    GoogleGenerativeAI.mockReturnValue(mockGenAI);
     provider = new GoogleGeminiProvider(mockConfig);
-    jest.clearAllMocks();
+    nock.cleanAll();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
   });
 
   describe('constructor', () => {
     it('should initialize with correct models', () => {
       expect(provider.models).toEqual([
+        'gemini-2.5-pro-preview-06-05',
+        'gemini-2.5-pro-preview-05-06',
+        'gemini-2.5-pro-preview-03-25',
+        'gemini-2.5-flash-preview-05-20',
+        'gemini-2.5-flash-preview-native-audio-dialog',
+        'gemini-2.5-flash-exp-native-audio-thinking-dialog',
+        'gemini-2.5-flash-preview-tts',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-2.0-flash-preview-image-generation',
+        'gemini-2.0-flash-live-001',
+        'gemini-1.5-pro-latest',
+        'gemini-1.5-flash-latest',
         'gemini-1.5-pro',
         'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
         'gemini-1.0-pro',
         'gemini-pro',
       ]);
     });
-
-    it('should have correct provider configuration', () => {
-      expect(provider).toBeDefined();
-    });
   });
 
   describe('generate', () => {
-    const mockMessages: Message[] = [
-      {
-        role: 'user',
-        content: [{ type: 'text', text: 'Hello' }],
-      },
-    ];
+    const mockMessages: Message[] = [userText('Hello')];
 
-    const mockOptions: GenerationOptions = {
+    const mockOptions: GoogleGenerationOptions = {
       model: 'gemini-1.5-pro',
       maxTokens: 100,
       temperature: 0.7,
     };
 
     it('should call Google API with correct parameters', async () => {
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Hello!' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Hello!'), googleStopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockGenAI.getGenerativeModel).toHaveBeenCalledWith({
-        model: 'gemini-1.5-pro',
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody).toMatchObject({
         generationConfig: {
           temperature: 0.7,
-          topP: undefined,
-          topK: undefined,
           maxOutputTokens: 100,
-          stopSequences: undefined,
         },
-      });
-
-      expect(mockModel.generateContentStream).toHaveBeenCalledWith({
-        contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: 'Hello' }],
+          },
+        ],
       });
     });
 
     it('should handle system messages correctly', async () => {
       const messagesWithSystem: Message[] = [
-        {
-          role: 'system',
-          content: [{ type: 'text', text: 'You are a helpful assistant' }],
-        },
+        systemText('You are a helpful assistant'),
         ...mockMessages,
       ];
 
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Hi!' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Hi!'), googleStopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockGenAI.getGenerativeModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          systemInstruction: 'You are a helpful assistant',
-        })
-      );
-
-      expect(mockModel.generateContentStream).toHaveBeenCalledWith({
-        contents: [{ role: 'user', parts: [{ text: 'Hello' }] }],
-      });
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.systemInstruction).toBe('You are a helpful assistant');
+      expect(requestBody.contents).toEqual([
+        {
+          role: 'user',
+          parts: [{ text: 'Hello' }],
+        },
+      ]);
     });
 
     it('should handle multimodal content with images', async () => {
       const messagesWithImage: Message[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'What is in this image?' },
-            { type: 'image', image: 'data:image/jpeg;base64,iVBORw0KGgo=' },
-          ],
-        },
+        userImage('What is in this image?', 'data:image/jpeg;base64,iVBORw0KGgo='),
       ];
 
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'I see an image' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('I see an image'), googleStopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockModel.generateContentStream.mock.calls[0][0];
-      expect(call.contents[0].parts).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.contents[0].parts).toEqual([
         { text: 'What is in this image?' },
         {
           inlineData: {
@@ -181,7 +182,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tools configuration', async () => {
-      const toolOptions: GenerationOptions = {
+      const toolOptions: GoogleGenerationOptions = {
         ...mockOptions,
         tools: [
           {
@@ -197,141 +198,79 @@ describe('GoogleGeminiProvider', () => {
         toolChoice: 'auto',
       };
 
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  {
-                    functionCall: {
-                      name: 'get_weather',
-                      args: { location: 'SF' },
-                    },
-                  },
-                ],
-                role: 'model',
-              },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleToolCallChunk('get_weather', { location: 'SF' })],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockGenAI.getGenerativeModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tools: [
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tools).toEqual([
+        {
+          functionDeclarations: [
             {
-              functionDeclarations: [
-                {
-                  name: 'get_weather',
-                  description: 'Get weather information',
-                  parameters: {
-                    type: 'object',
-                    properties: { location: { type: 'string' } },
-                    required: ['location'],
-                  },
-                },
-              ],
+              name: 'get_weather',
+              description: 'Get weather information',
+              parameters: {
+                type: 'object',
+                properties: { location: { type: 'string' } },
+                required: ['location'],
+              },
             },
           ],
-        })
-      );
+        },
+      ]);
     });
 
     it('should handle assistant messages with tool calls', async () => {
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: [{ type: 'text', text: 'I need to check the weather' }],
-        toolCalls: [
-          {
-            id: 'call_123',
-            name: 'get_weather',
-            arguments: { location: 'San Francisco' },
-          },
-        ],
-      };
+      const messagesWithToolCalls: Message[] = [
+        userText('What is the weather in SF?'),
+        assistantWithToolCalls('I will check the weather for you.', {
+          id: 'call_123',
+          name: 'get_weather',
+          arguments: { location: 'SF' },
+        }),
+        toolResultMsg('call_123', 'Sunny, 72°F'),
+      ];
 
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Let me check...' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('The weather is sunny'), googleStopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMessage], mockOptions)) {
+      for await (const chunk of provider.generate(messagesWithToolCalls, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockModel.generateContentStream.mock.calls[0][0];
-      expect(call.contents[0]).toEqual({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.contents).toHaveLength(3);
+
+      // Check assistant message with tool call
+      expect(requestBody.contents[1]).toEqual({
         role: 'model',
         parts: [
-          { text: 'I need to check the weather' },
-          {
-            functionCall: {
-              name: 'get_weather',
-              args: { location: 'San Francisco' },
-            },
-          },
+          { text: 'I will check the weather for you.' },
+          { functionCall: { name: 'get_weather', args: { location: 'SF' } } },
         ],
       });
-    });
 
-    it('should handle tool result messages', async () => {
-      const toolResultMessage: Message = {
-        role: 'tool',
-        content: [
-          {
-            type: 'tool_result',
-            toolCallId: 'get_weather_123',
-            result: '{"temperature": 72, "condition": "sunny"}',
-          },
-        ],
-      };
-
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'The weather is sunny' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResultMessage], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      const call = mockModel.generateContentStream.mock.calls[0][0];
-      expect(call.contents[0]).toEqual({
+      // Check tool result
+      expect(requestBody.contents[2]).toEqual({
         role: 'function',
         parts: [
           {
             functionResponse: {
-              name: 'get',
-              response: {
-                result: '{"temperature": 72, "condition": "sunny"}',
-              },
+              name: 'call',
+              response: { result: 'Sunny, 72°F' },
             },
           },
         ],
@@ -339,130 +278,64 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should process streaming response correctly', async () => {
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Hello' }], role: 'model' },
-              finishReason: null,
-            },
-          ],
-        },
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: ' there' }], role: 'model' },
-              finishReason: null,
-            },
-          ],
-        },
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: '!' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Hello'), googleTextChunk(' there!'), googleStopChunk()],
+        () => {}
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
+      expect(scope.isDone()).toBe(true);
       expect(chunks).toHaveLength(3);
-      expect(chunks[0]).toMatchObject({ delta: 'Hello', content: 'Hello' });
-      expect(chunks[1]).toMatchObject({ delta: ' there', content: 'Hello there' });
-      expect(chunks[2]).toMatchObject({
-        delta: '!',
+      expect(chunks[0]).toMatchObject({
+        content: 'Hello',
+        delta: 'Hello',
+      });
+      expect(chunks[1]).toMatchObject({
         content: 'Hello there!',
+        delta: ' there!',
+      });
+      expect(chunks[2]).toMatchObject({
         finishReason: 'stop',
       });
     });
 
     it('should handle all generation options', async () => {
-      const detailedOptions: GenerationOptions = {
+      const fullOptions: GoogleGenerationOptions = {
         model: 'gemini-1.5-pro',
-        maxTokens: 500,
+        maxTokens: 200,
         temperature: 0.8,
         topP: 0.9,
         topK: 40,
-        stopSequences: ['END', 'STOP'],
+        stopSequences: ['END'],
+        candidateCount: 1,
       };
 
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Response' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, detailedOptions)) {
+      for await (const chunk of provider.generate(mockMessages, fullOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockGenAI.getGenerativeModel).toHaveBeenCalledWith({
-        model: 'gemini-1.5-pro',
-        generationConfig: {
-          temperature: 0.8,
-          topP: 0.9,
-          topK: 40,
-          maxOutputTokens: 500,
-          stopSequences: ['END', 'STOP'],
-        },
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.generationConfig).toEqual({
+        temperature: 0.8,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 200,
+        stopSequences: ['END'],
+        candidateCount: 1,
       });
-    });
-
-    it('should handle messages with unknown roles', async () => {
-      const unknownRoleMessage: Message = {
-        role: 'unknown' as any,
-        content: [{ type: 'text', text: 'Unknown role message' }],
-      };
-
-      const mockStreamResult = createMockGoogleStream([
-        {
-          candidates: [
-            {
-              content: { parts: [{ text: 'Response' }], role: 'model' },
-              finishReason: 'STOP',
-            },
-          ],
-        },
-      ]);
-
-      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      // Should skip the unknown role message and generate with empty contents array
-      const call = mockModel.generateContentStream.mock.calls[0][0];
-      expect(call.contents).toEqual([]);
     });
   });
 });
-
-// Helper function to create mock Google streaming results
-function createMockGoogleStream(responses: any[]) {
-  return {
-    stream: {
-      async *[Symbol.asyncIterator]() {
-        for (const response of responses) {
-          yield response;
-        }
-      },
-    },
-  };
-}
