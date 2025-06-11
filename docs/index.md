@@ -1,33 +1,34 @@
 # AIKit Documentation
 
-A unified TypeScript abstraction over OpenAI, Anthropic, and Google Gemini APIs.
+**Lightweight generation abstraction for OpenAI, Anthropic, and Google Gemini.**
+
+Minimal wrapper that preserves native generation capabilities while providing a unified interface.
+
+## Scope
+
+**Use AIKit for**: Generation, streaming, tool calling (text and image inputs)  
+**Use official SDKs for**: Fine-tuning, embeddings, moderation, file management, assistants
 
 ## Features
 
-- 🔄 **Unified Interface**: Single API for OpenAI, Anthropic, and Google Gemini
-- 📡 **Streaming Support**: Real-time response streaming for all providers
-- 🖼️ **Multimodal**: Support for text and image inputs
-- 🛠️ **Tool Use**: Function calling capabilities across providers
-- 📝 **TypeScript**: Full type safety and IntelliSense support
-- 🧪 **Well Tested**: Comprehensive test suite with 100% coverage
+- 🪶 **Minimal**: Lightweight wrapper preserving native capabilities
+- ⚙️ **Complete**: Full access to provider-specific generation options
+- 🔄 **Unified**: Consistent API across providers
+- 📡 **Streaming**: Native streaming support
+- 🖼️ **Multimodal**: Text and image inputs
+- 🛠️ **Tools**: Function calling support
+- 📝 **TypeScript**: Full type safety
 
 ## Quick Start
 
 ```typescript
 import { createAIProvider } from 'aikit';
 
-// Create a provider
 const provider = createAIProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Generate streaming response
-const messages = [
-  {
-    role: 'user',
-    content: [{ type: 'text', text: 'Hello, world!' }],
-  },
-];
+const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hello!' }] }];
 
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);

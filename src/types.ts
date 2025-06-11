@@ -1,4 +1,15 @@
 /**
+ * AIKit - Lightweight generation abstraction for major AI providers
+ *
+ * Minimal wrapper that preserves native generation capabilities while providing a unified interface.
+ *
+ * Scope: Generation, streaming, tool calling (text and image inputs).
+ * For other features, use official SDKs.
+ *
+ * @packageDocumentation
+ */
+
+/**
  * Text content for messages
  * @group Types
  */

@@ -1,10 +1,10 @@
 # Factory Functions
 
-AIKit provides several factory functions to create AI provider instances. These functions ensure type safety and provide a consistent interface across all providers.
+Create AI provider instances with full type safety.
 
 ## createProvider()
 
-The recommended generic factory function that supports all providers with full type safety.
+Generic factory function supporting all providers.
 
 ```typescript
 function createProvider<T extends 'openai' | 'anthropic' | 'google'>(
@@ -13,21 +13,20 @@ function createProvider<T extends 'openai' | 'anthropic' | 'google'>(
 ): AIProvider;
 ```
 
-### Example
+### Usage
 
 ```typescript
 import { createProvider } from 'aikit';
 
-// TypeScript will infer the correct config type
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
-  organization: 'org-123', // OpenAI-specific option
+  organization: 'org-123',
   maxRetries: 3,
 });
 
 const anthropic = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  beta: ['tools-2024-04-04'], // Anthropic-specific option
+  beta: ['tools-2024-04-04'],
 });
 
 const google = createProvider('google', {
@@ -37,22 +36,20 @@ const google = createProvider('google', {
 
 ## Provider-Specific Functions
 
-For when you know exactly which provider you're using, these functions provide a more direct approach.
-
 ### createOpenAI()
 
 ```typescript
 function createOpenAI(config: OpenAIConfig): AIProvider;
 ```
 
-**Config Options:**
+**Options:**
 
-- `apiKey` (required) - Your OpenAI API key
-- `baseURL` (optional) - Custom API endpoint
-- `organization` (optional) - OpenAI organization ID
-- `project` (optional) - OpenAI project ID
-- `timeout` (optional) - Request timeout in milliseconds
-- `maxRetries` (optional) - Maximum retry attempts
+- `apiKey` (required) - OpenAI API key
+- `baseURL` - Custom API endpoint
+- `organization` - Organization ID
+- `project` - Project ID
+- `timeout` - Request timeout in ms
+- `maxRetries` - Maximum retry attempts
 
 ```typescript
 import { createOpenAI } from 'aikit';
@@ -61,7 +58,6 @@ const provider = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
   organization: 'org-123',
   timeout: 30000,
-  maxRetries: 3,
 });
 ```
 
@@ -71,13 +67,13 @@ const provider = createOpenAI({
 function createAnthropic(config: AnthropicConfig): AIProvider;
 ```
 
-**Config Options:**
+**Options:**
 
-- `apiKey` (required) - Your Anthropic API key
-- `baseURL` (optional) - Custom API endpoint
-- `timeout` (optional) - Request timeout in milliseconds
-- `maxRetries` (optional) - Maximum retry attempts
-- `beta` (optional) - Array of beta features to enable
+- `apiKey` (required) - Anthropic API key
+- `baseURL` - Custom API endpoint
+- `timeout` - Request timeout in ms
+- `maxRetries` - Maximum retry attempts
+- `beta` - Beta features to enable
 
 ```typescript
 import { createAnthropic } from 'aikit';
@@ -85,7 +81,6 @@ import { createAnthropic } from 'aikit';
 const provider = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
   beta: ['tools-2024-04-04'],
-  timeout: 60000,
 });
 ```
 
@@ -95,9 +90,9 @@ const provider = createAnthropic({
 function createGoogle(config: GoogleConfig): AIProvider;
 ```
 
-**Config Options:**
+**Options:**
 
-- `apiKey` (required) - Your Google AI API key
+- `apiKey` (required) - Google AI API key
 
 ```typescript
 import { createGoogle } from 'aikit';
@@ -109,11 +104,7 @@ const provider = createGoogle({
 
 ## Error Handling
 
-All factory functions will throw an error if:
-
-- Required configuration is missing
-- API key is invalid format
-- Provider-specific validation fails
+Factory functions throw errors for invalid configuration:
 
 ```typescript
 try {
@@ -127,18 +118,18 @@ try {
 
 ## Type Safety
 
-The factory functions provide full TypeScript support:
+Full TypeScript support with provider-specific configuration:
 
 ```typescript
-// ✅ Correct - TypeScript knows this needs OpenAIConfig
+// ✅ Correct
 const openai = createProvider('openai', {
   apiKey: 'sk-...',
   organization: 'org-123', // OpenAI-specific
 });
 
-// ❌ Error - TypeScript will catch this
+// ❌ Error - TypeScript catches this
 const anthropic = createProvider('anthropic', {
   apiKey: 'sk-...',
-  organization: 'org-123', // Error: not valid for Anthropic
+  organization: 'org-123', // Invalid for Anthropic
 });
 ```

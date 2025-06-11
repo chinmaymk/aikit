@@ -3,16 +3,24 @@
 [![CI](https://github.com/chinmaymk/aikit/workflows/CI/badge.svg)](https://github.com/chinmaymk/aikit/actions)
 [![codecov](https://codecov.io/gh/chinmaymk/aikit/branch/main/graph/badge.svg)](https://codecov.io/gh/chinmaymk/aikit)
 
-A unified TypeScript abstraction over OpenAI, Anthropic, and Google Gemini APIs. Provides consistent interfaces for text generation, streaming, multimodal content, and tool use across all three providers.
+**Lightweight generation abstraction for OpenAI, Anthropic, and Google Gemini.**
+
+Minimal wrapper that preserves native generation capabilities while providing a unified interface.
+
+## Scope
+
+**Use AIKit for**: Generation, streaming, tool calling (text and image inputs)  
+**Use official SDKs for**: Fine-tuning, embeddings, moderation, file management, assistants
 
 ## Features
 
-- 🔄 **Unified Interface**: Single API for OpenAI, Anthropic, and Google Gemini
-- 📡 **Streaming Support**: Real-time response streaming for all providers
-- 🖼️ **Multimodal**: Support for text and image inputs
-- 🛠️ **Tool Use**: Function calling capabilities across providers
-- 📝 **TypeScript**: Full type safety and IntelliSense support
-- 🧪 **Well Tested**: Comprehensive test suite with 100% coverage
+- 🪶 **Minimal**: Lightweight wrapper preserving native capabilities
+- ⚙️ **Complete**: Full access to provider-specific generation options
+- 🔄 **Unified**: Consistent API across providers
+- 📡 **Streaming**: Native streaming support
+- 🖼️ **Multimodal**: Text and image inputs
+- 🛠️ **Tools**: Function calling support
+- 📝 **TypeScript**: Full type safety
 
 ## Installation
 
@@ -25,18 +33,11 @@ npm install aikit
 ```typescript
 import { createProvider } from 'aikit';
 
-// Create a provider
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Generate streaming response
-const messages = [
-  {
-    role: 'user',
-    content: [{ type: 'text', text: 'Hello, world!' }],
-  },
-];
+const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hello!' }] }];
 
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
@@ -45,11 +46,7 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
 
 ## Documentation
 
-📚 **[View Full Documentation](https://chinmaymk.github.io/aikit/)**
-
-## Development
-
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for development setup and contribution guidelines.
+📚 **[Full Documentation](https://chinmaymk.github.io/aikit/)**
 
 ## License
 
