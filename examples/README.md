@@ -32,35 +32,46 @@ export GOOGLE_API_KEY="your-google-api-key"
 
 ## Running Examples
 
-### OpenAI Example
+### Simple Responses (All Providers)
 
 ```bash
-npx tsx examples/openai.ts
+# Run with all providers (if API keys are set)
+npx tsx examples/simple-responses.ts
+
+# Run with specific provider
+npx tsx examples/simple-responses.ts openai
+npx tsx examples/simple-responses.ts anthropic
+npx tsx examples/simple-responses.ts google
 ```
 
-### Anthropic Example
+### Tool Calls with All Providers
 
 ```bash
+# Run with all providers (if API keys are set)
+npx tsx examples/tools-with-providers.ts
+
+# Run with specific provider
+npx tsx examples/tools-with-providers.ts openai
+npx tsx examples/tools-with-providers.ts anthropic
+npx tsx examples/tools-with-providers.ts google
+```
+
+### Individual Provider Examples
+
+```bash
+# Anthropic-specific example
 npx tsx examples/anthropic.ts
-```
 
-### Google Gemini Example
-
-```bash
-npx tsx examples/google.ts
-```
-
-### Tools Example
-
-```bash
+# Advanced OpenAI tools example
 npx tsx examples/tools-example.ts
 ```
 
 ## What Each Example Does
 
-- **OpenAI**: Demonstrates streaming chat completion using GPT-4o model
-- **Anthropic**: Shows Claude 3.5 Sonnet responding to a question about quantum computing
-- **Google**: Uses Gemini 1.5 Pro to explain renewable energy benefits
+- **Simple Responses**: Demonstrates basic text generation (haiku writing) across all three providers using the unified `createProvider` interface
+- **Tools with All Providers**: Shows tool calls (weather function) working with OpenAI, Anthropic, and Google Gemini providers
+- **Anthropic**: Claude 3.5 Sonnet responding to a question about quantum computing
+- **Advanced Tools**: Comprehensive OpenAI-specific tool usage example with detailed conversation flow
 
 ## API Keys
 
@@ -74,10 +85,11 @@ To get API keys for each provider:
 
 Feel free to modify the examples:
 
-- Change the models by updating the `model` field in `GenerationOptions`
+- Change the models by updating the `model` field in generation options
 - Adjust parameters like `temperature`, `maxTokens`, etc.
 - Modify the conversation messages
-- Add tool usage examples (see provider documentation for tool schemas)
+- Add more tools to the tool examples
+- Switch between providers using the `createProvider` factory function
 
 ## Available Models
 
@@ -101,7 +113,16 @@ Feel free to modify the examples:
 
 ### Google Models
 
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-pro-preview-05-06`
+- `gemini-2.5-pro-preview-03-25`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-lite`
+- `gemini-1.5-pro-latest`
+- `gemini-1.5-flash-latest`
 - `gemini-1.5-pro`
 - `gemini-1.5-flash`
+- `gemini-1.5-flash-8b`
 - `gemini-1.0-pro`
 - `gemini-pro`
