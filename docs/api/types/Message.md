@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / Message
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:85](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Role of the message sender
 
-***
+---
 
 ### content
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:87](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Content of the message
 
-***
+---
 
 ### toolCalls?
 

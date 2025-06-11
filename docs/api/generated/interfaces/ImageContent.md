@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / ImageContent
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Content type identifier
 
-***
+---
 
 ### image
 

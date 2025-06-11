@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / GoogleGeminiProvider
 

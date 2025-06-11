@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / GenerationOptions
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:113](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Model to use for generation
 
-***
+---
 
 ### maxTokens?
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:115](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Maximum number of tokens to generate
 
-***
+---
 
 ### temperature?
 
@@ -40,7 +40,7 @@ Defined in: [types.ts:117](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Sampling temperature (0-2)
 
-***
+---
 
 ### topP?
 
@@ -50,7 +50,7 @@ Defined in: [types.ts:119](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Top-p sampling parameter
 
-***
+---
 
 ### topK?
 
@@ -60,7 +60,7 @@ Defined in: [types.ts:121](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Top-k sampling parameter (Google only)
 
-***
+---
 
 ### stopSequences?
 
@@ -70,7 +70,7 @@ Defined in: [types.ts:123](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Sequences that will stop generation
 
-***
+---
 
 ### tools?
 
@@ -80,7 +80,7 @@ Defined in: [types.ts:125](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Available tools for function calling
 
-***
+---
 
 ### toolChoice?
 

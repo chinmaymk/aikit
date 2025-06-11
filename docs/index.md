@@ -2,8 +2,8 @@
 layout: home
 
 hero:
-  name: "AIKit"
-  text: "One API for all LLMs."
+  name: 'AIKit'
+  text: 'One API for all LLMs.'
   tagline: Your sassy, lightweight sidekick for wrangling OpenAI, Anthropic, and Google Gemini. It's like a universal remote, but for AI. And probably less likely to get lost in the couch cushions.
   actions:
     - theme: brand
@@ -26,4 +26,4 @@ features:
     details: Handles text and images. It's not just a chatterbox, it's a chatter-and-looker-box.
   - title: 🛠️ Tools
     details: Function calling support so your AI can actually *do* things. Like ordering a pizza. Or not. Your call.
---- 
+---

@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / TextContent
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/types
 
 Content type identifier
 
-***
+---
 
 ### text
 

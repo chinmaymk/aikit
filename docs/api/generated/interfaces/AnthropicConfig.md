@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / AnthropicConfig
 
@@ -20,7 +20,7 @@ Defined in: [types.ts:155](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Anthropic API key
 
-***
+---
 
 ### baseURL?
 
@@ -30,7 +30,7 @@ Defined in: [types.ts:157](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Custom base URL for API requests
 
-***
+---
 
 ### timeout?
 
@@ -40,7 +40,7 @@ Defined in: [types.ts:159](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Request timeout in milliseconds
 
-***
+---
 
 ### maxRetries?
 
@@ -50,7 +50,7 @@ Defined in: [types.ts:161](https://github.com/chinmaymk/aikit/blob/main/src/type
 
 Maximum number of retries
 
-***
+---
 
 ### beta?
 

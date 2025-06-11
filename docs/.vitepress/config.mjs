@@ -10,16 +10,14 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'API', link: '/api/generated/README' },
-      { text: 'Examples', link: '/examples/README' }
+      { text: 'Examples', link: '/examples/README' },
     ],
     sidebar: {
       '/guide/': [
         {
           text: 'Guide',
-          items: [
-            { text: 'Getting Started', link: '/guide/getting-started' },
-          ]
-        }
+          items: [{ text: 'Getting Started', link: '/guide/getting-started' }],
+        },
       ],
       '/api/': [
         {
@@ -31,9 +29,12 @@ export default defineConfig({
               collapsed: false,
               items: [
                 { text: 'AnthropicProvider', link: '/api/generated/classes/AnthropicProvider' },
-                { text: 'GoogleGeminiProvider', link: '/api/generated/classes/GoogleGeminiProvider' },
+                {
+                  text: 'GoogleGeminiProvider',
+                  link: '/api/generated/classes/GoogleGeminiProvider',
+                },
                 { text: 'OpenAIProvider', link: '/api/generated/classes/OpenAIProvider' },
-              ]
+              ],
             },
             {
               text: 'Functions',
@@ -43,7 +44,7 @@ export default defineConfig({
                 { text: 'createGoogle', link: '/api/generated/functions/createGoogle' },
                 { text: 'createOpenAI', link: '/api/generated/functions/createOpenAI' },
                 { text: 'createProvider', link: '/api/generated/functions/createProvider' },
-              ]
+              ],
             },
             {
               text: 'Interfaces',
@@ -61,26 +62,22 @@ export default defineConfig({
                 { text: 'Tool', link: '/api/generated/interfaces/Tool' },
                 { text: 'ToolCall', link: '/api/generated/interfaces/ToolCall' },
                 { text: 'ToolResultContent', link: '/api/generated/interfaces/ToolResultContent' },
-              ]
+              ],
             },
             {
               text: 'Type Aliases',
               collapsed: false,
-              items: [
-                { text: 'Content', link: '/api/generated/type-aliases/Content' },
-              ]
-            }
-          ]
-        }
+              items: [{ text: 'Content', link: '/api/generated/type-aliases/Content' }],
+            },
+          ],
+        },
       ],
       '/examples/': [
         {
           text: 'Examples',
-          items: [
-            { text: 'Usage', link: '/examples/README' },
-          ]
-        }
-      ]
+          items: [{ text: 'Usage', link: '/examples/README' }],
+        },
+      ],
     },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/chinmaymk/aikit' },
@@ -88,7 +85,7 @@ export default defineConfig({
     ],
     editLink: {
       pattern: 'https://github.com/chinmaymk/aikit/edit/main/docs/:path',
-      text: 'Edit this page on GitHub'
+      text: 'Edit this page on GitHub',
     },
     footer: {
       message: 'Released under the MIT License.',

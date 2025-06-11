@@ -1,6 +1,6 @@
 [**aikit v0.5.0**](../README.md)
 
-***
+---
 
 [aikit](../README.md) / createGoogle
 
@@ -30,6 +30,6 @@ An AIProvider instance configured for Google Gemini
 
 ```typescript
 const provider = createGoogle({
-  apiKey: process.env.GOOGLE_API_KEY!
+  apiKey: process.env.GOOGLE_API_KEY!,
 });
 ```

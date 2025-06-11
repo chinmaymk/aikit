@@ -68,7 +68,9 @@ const provider = createAIProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const messages = [{ role: 'user', content: [{ type: 'text', text: 'Tell me a very short story.' }] }];
+const messages = [
+  { role: 'user', content: [{ type: 'text', text: 'Tell me a very short story.' }] },
+];
 
 // Stream the response as it comes in
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
