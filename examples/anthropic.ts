@@ -21,15 +21,20 @@ async function main() {
     },
     {
       role: 'user',
-      content: [{ type: 'text', text: 'Explain quantum computing in simple terms.' }],
+      content: [
+        {
+          type: 'text',
+          text: 'What is the "Ship of Theseus" paradox?',
+        },
+      ],
     },
   ];
 
   // Generation options
   const options: GenerationOptions = {
-    model: 'claude-3-5-sonnet-20241022',
-    maxTokens: 200,
-    temperature: 0.7,
+    model: 'claude-3-5-sonnet-20240620',
+    maxTokens: 1024,
+    temperature: 0,
   };
 
   console.log('🧠 Anthropic Claude Response:');

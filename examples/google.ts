@@ -16,20 +16,21 @@ async function main() {
   // Create messages
   const messages: Message[] = [
     {
-      role: 'system',
-      content: [{ type: 'text', text: "You are Gemini, Google's helpful AI assistant." }],
-    },
-    {
       role: 'user',
-      content: [{ type: 'text', text: 'What are the main benefits of renewable energy?' }],
+      content: [
+        {
+          type: 'text',
+          text: 'Write a haiku about a rusty robot.',
+        },
+      ],
     },
   ];
 
   // Generation options
   const options: GenerationOptions = {
-    model: 'gemini-1.5-pro',
-    maxTokens: 150,
-    temperature: 0.8,
+    model: 'gemini-1.5-pro-latest',
+    maxTokens: 1024,
+    temperature: 0,
   };
 
   console.log('💎 Google Gemini Response:');
