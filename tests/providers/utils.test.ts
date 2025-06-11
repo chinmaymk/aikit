@@ -84,24 +84,6 @@ describe('ToolFormatter', () => {
     },
   };
 
-  describe('formatForAnthropic', () => {
-    it('should format tools for Anthropic API', () => {
-      const result = ToolFormatter.formatForAnthropic([mockTool]);
-      expect(result).toEqual([
-        {
-          name: 'get_weather',
-          description: 'Get weather information',
-          input_schema: {
-            type: 'object',
-            properties: {
-              location: { type: 'string' },
-            },
-          },
-        },
-      ]);
-    });
-  });
-
   describe('formatForGoogle', () => {
     it('should format tools for Google API', () => {
       const result = ToolFormatter.formatForGoogle([mockTool]);
@@ -115,22 +97,6 @@ describe('ToolFormatter', () => {
 });
 
 describe('ToolChoiceHandler', () => {
-  describe('formatForAnthropic', () => {
-    it('should handle string tool choices', () => {
-      expect(ToolChoiceHandler.formatForAnthropic('required')).toEqual({ type: 'any' });
-      expect(ToolChoiceHandler.formatForAnthropic('auto')).toEqual({ type: 'auto' });
-      expect(ToolChoiceHandler.formatForAnthropic('none')).toEqual({ type: 'auto' });
-    });
-
-    it('should handle object tool choice', () => {
-      const result = ToolChoiceHandler.formatForAnthropic({ name: 'get_weather' });
-      expect(result).toEqual({
-        type: 'tool',
-        name: 'get_weather',
-      });
-    });
-  });
-
   describe('formatForGoogle', () => {
     it('should handle string tool choices', () => {
       expect(ToolChoiceHandler.formatForGoogle('required')).toEqual({

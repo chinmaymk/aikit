@@ -1,12 +1,11 @@
 import type {
   Content,
   Tool,
-  BaseGenerationOptions,
+  GenerationOptions,
   TextContent,
   ImageContent,
   ToolResultContent,
 } from '../types';
-import type { Anthropic } from '@anthropic-ai/sdk';
 
 // Local replacement for the Google SDK `FunctionCallingMode` enum
 type GoogleFunctionCallingMode = 'AUTO' | 'NONE' | 'ANY';
@@ -39,14 +38,6 @@ export class MessageTransformer {
 }
 
 export class ToolFormatter {
-  static formatForAnthropic(tools: Tool[]): Anthropic.Tool[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      input_schema: tool.parameters as Anthropic.Tool.InputSchema,
-    }));
-  }
-
   /**
    * Convert tools to the structure expected by Google Gemini.
    * They are supplied as an array with a single FunctionDeclarationsTool object
@@ -62,16 +53,7 @@ export class ToolFormatter {
 }
 
 export class ToolChoiceHandler {
-  static formatForAnthropic(toolChoice: BaseGenerationOptions['toolChoice']): Anthropic.ToolChoice {
-    if (toolChoice === 'required') return { type: 'any' };
-    if (toolChoice === 'auto') return { type: 'auto' };
-    if (typeof toolChoice === 'object') {
-      return { type: 'tool', name: toolChoice.name };
-    }
-    return { type: 'auto' };
-  }
-
-  static formatForGoogle(toolChoice: BaseGenerationOptions['toolChoice'] | undefined) {
+  static formatForGoogle(toolChoice: GenerationOptions['toolChoice'] | undefined) {
     const build = (mode: GoogleFunctionCallingMode) => ({
       functionCallingConfig: { mode },
     });

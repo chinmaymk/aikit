@@ -107,7 +107,7 @@ export interface StreamChunk {
 /**
  * Common generation options shared by all providers.
  */
-export interface BaseGenerationOptions {
+export interface GenerationOptions {
   /** Model to use for generation */
   model: string;
   /** Maximum number of tokens to generate */
@@ -127,7 +127,7 @@ export interface BaseGenerationOptions {
 }
 
 /** OpenAI-specific generation options */
-export interface OpenAIGenerationOptions extends BaseGenerationOptions {
+export interface OpenAIGenerationOptions extends GenerationOptions {
   /** Presence penalty for sampling */
   presencePenalty?: number;
   /** Frequency penalty for sampling */
@@ -135,7 +135,7 @@ export interface OpenAIGenerationOptions extends BaseGenerationOptions {
 }
 
 /** Google Gemini-specific generation options */
-export interface GoogleGenerationOptions extends BaseGenerationOptions {
+export interface GoogleGenerationOptions extends GenerationOptions {
   /** Top-k sampling parameter */
   topK?: number;
   /** Number of candidates to generate */
@@ -143,7 +143,7 @@ export interface GoogleGenerationOptions extends BaseGenerationOptions {
 }
 
 /** Anthropic-specific generation options */
-export interface AnthropicGenerationOptions extends BaseGenerationOptions {
+export interface AnthropicGenerationOptions extends GenerationOptions {
   /** Top-k sampling parameter */
   topK?: number;
 }
@@ -197,7 +197,7 @@ export interface GoogleConfig {
  * Core interface implemented by all AI providers
  * @group Interfaces
  */
-export interface AIProvider<O extends BaseGenerationOptions = BaseGenerationOptions> {
+export interface AIProvider<O extends GenerationOptions = GenerationOptions> {
   /** List of available models for this provider */
   readonly models: string[];
 
@@ -209,8 +209,3 @@ export interface AIProvider<O extends BaseGenerationOptions = BaseGenerationOpti
    */
   generate(messages: Message[], options: O): AsyncIterable<StreamChunk>;
 }
-
-/**
- * @deprecated Use provider-specific generation option types instead.
- */
-export type GenerationOptions = BaseGenerationOptions;

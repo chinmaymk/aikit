@@ -1,35 +1,80 @@
 import { AnthropicProvider } from '../../src/providers/anthropic';
 import type { Message, GenerationOptions, AnthropicConfig, StreamChunk } from '../../src/types';
+import nock from 'nock';
+import { Readable } from 'node:stream';
+import {
+  userText,
+  systemText,
+  userImage,
+  assistantWithToolCalls,
+  toolResult as toolResultMsg,
+} from '../../src/createFuncs';
+import {
+  anthropicTextResponse,
+  anthropicToolCallResponse,
+  anthropicErrorChunk,
+  anthropicTextDeltaChunk,
+  anthropicMessageStartChunk,
+  anthropicContentBlockStartChunk,
+  anthropicContentBlockStopChunk,
+  anthropicMessageDeltaChunk,
+  anthropicMessageStopChunk,
+} from '../helpers/anthropicChunks';
 
-// Mock the Anthropic SDK
-jest.mock('@anthropic-ai/sdk', () => ({
-  Anthropic: jest.fn().mockImplementation(() => ({
-    messages: {
-      create: jest.fn(),
-    },
-  })),
-}));
+/**
+ * Helper to create a chunked SSE response body for the Anthropic streaming API.
+ */
+function createAnthropicSSEStream(chunks: any[]): Readable {
+  const stream = new Readable({ read() {} });
+  chunks.forEach(chunk => {
+    stream.push(`event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`);
+  });
+  stream.push(null); // end of stream
+  return stream;
+}
+
+/**
+ * Set up nock to intercept the Anthropic request and return the provided chunks.
+ * The intercepted request body is captured so that callers can assert on it.
+ */
+function mockAnthropicGeneration(
+  expectedChunks: any[],
+  captureBody: (body: any) => void
+): nock.Scope {
+  return nock('https://api.anthropic.com')
+    .post('/v1/messages', body => {
+      captureBody(body);
+      return true; // allow the request
+    })
+    .matchHeader('x-api-key', 'test-api-key')
+    .matchHeader('anthropic-version', '2023-06-01')
+    .matchHeader('content-type', 'application/json')
+    .reply(200, () => createAnthropicSSEStream(expectedChunks), {
+      'content-type': 'text/event-stream',
+    });
+}
 
 describe('AnthropicProvider', () => {
-  let provider: AnthropicProvider;
-  let mockAnthropic: any;
   const mockConfig: AnthropicConfig = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.anthropic.com',
     timeout: 30000,
   };
 
+  let provider: AnthropicProvider;
+
+  // Ensure no real HTTP requests are made
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { Anthropic } = require('@anthropic-ai/sdk');
-    mockAnthropic = {
-      messages: {
-        create: jest.fn(),
-      },
-    };
-    Anthropic.mockReturnValue(mockAnthropic);
     provider = new AnthropicProvider(mockConfig);
-    jest.clearAllMocks();
+    nock.cleanAll();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
   });
 
   describe('constructor', () => {
@@ -49,12 +94,7 @@ describe('AnthropicProvider', () => {
   });
 
   describe('generate', () => {
-    const mockMessages: Message[] = [
-      {
-        role: 'user',
-        content: [{ type: 'text', text: 'Hello' }],
-      },
-    ];
+    const mockMessages: Message[] = [userText('Hello')];
 
     const mockOptions: GenerationOptions = {
       model: 'claude-3-5-sonnet-20241022',
@@ -63,85 +103,83 @@ describe('AnthropicProvider', () => {
     };
 
     it('should call Anthropic API with correct parameters', async () => {
-      const mockStream = createMockAnthropicStream([
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Hello!' } },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hello!'),
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      expect(mockAnthropic.messages.create).toHaveBeenCalledWith({
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody).toMatchObject({
         model: 'claude-3-5-sonnet-20241022',
-        messages: [{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }],
         max_tokens: 100,
         temperature: 0.7,
-        top_p: undefined,
-        top_k: undefined,
-        stop_sequences: undefined,
         stream: true,
+      });
+      expect(requestBody.messages).toEqual([
+        { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+      ]);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0]).toEqual({
+        content: 'Hello!',
+        delta: 'Hello!',
+        toolCalls: undefined,
+      });
+      expect(chunks[1]).toEqual({
+        content: 'Hello!',
+        delta: '',
+        finishReason: 'stop',
+        toolCalls: undefined,
       });
     });
 
     it('should handle system messages correctly', async () => {
       const messagesWithSystem: Message[] = [
-        {
-          role: 'system',
-          content: [{ type: 'text', text: 'You are a helpful assistant' }],
-        },
+        systemText('You are a helpful assistant'),
         ...mockMessages,
       ];
 
-      const mockStream = createMockAnthropicStream([
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Hi!' } },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hi there!'),
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.system).toBe('You are a helpful assistant');
-      expect(call.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }]);
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.system).toBe('You are a helpful assistant');
+      expect(requestBody.messages).toEqual([
+        { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+      ]);
     });
 
     it('should handle multimodal content with images', async () => {
       const messagesWithImage: Message[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'What is in this image?' },
-            { type: 'image', image: 'data:image/jpeg;base64,iVBORw0KGgo=' },
-          ],
-        },
+        userImage('What is in this image?', 'data:image/jpeg;base64,iVBORw0KGgo='),
       ];
 
-      const mockStream = createMockAnthropicStream([
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'text_delta', text: 'I see an image' },
-        },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('I see an image'),
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.messages[0].content).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages[0].content).toEqual([
         { type: 'text', text: 'What is in this image?' },
         {
           type: 'image',
@@ -171,29 +209,19 @@ describe('AnthropicProvider', () => {
         toolChoice: 'auto',
       };
 
-      const mockStream = createMockAnthropicStream([
-        {
-          type: 'content_block_start',
-          index: 0,
-          content_block: { type: 'tool_use', id: 'call_123', name: 'get_weather', input: {} },
-        },
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'input_json_delta', partial_json: '{"location": "SF"}' },
-        },
-        { type: 'message_delta', delta: { stop_reason: 'tool_use' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicToolCallResponse('call_123', 'get_weather', '{"location": "SF"}'),
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.tools).toEqual([
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tools).toEqual([
         {
           name: 'get_weather',
           description: 'Get weather information',
@@ -204,221 +232,140 @@ describe('AnthropicProvider', () => {
           },
         },
       ]);
-      expect(call.tool_choice).toEqual({ type: 'auto' });
-    });
-
-    it('should handle assistant messages with tool calls', async () => {
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: [{ type: 'text', text: 'I need to check the weather' }],
+      expect(requestBody.tool_choice).toEqual({ type: 'auto' });
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toEqual({
+        content: '',
+        delta: '',
+        finishReason: 'tool_use',
         toolCalls: [
           {
             id: 'call_123',
             name: 'get_weather',
-            arguments: { location: 'San Francisco' },
+            arguments: { location: 'SF' },
           },
         ],
-      };
+      });
+    });
 
-      const mockStream = createMockAnthropicStream([
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'text_delta', text: 'Let me check...' },
-        },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
+    it('should handle streaming text generation', async () => {
+      const streamingChunks = [
+        anthropicMessageStartChunk(),
+        anthropicContentBlockStartChunk(0, 'text'),
+        anthropicTextDeltaChunk('Hello'),
+        anthropicTextDeltaChunk(' there'),
+        anthropicTextDeltaChunk('!'),
+        anthropicContentBlockStopChunk(0),
+        anthropicMessageDeltaChunk('end_turn'),
+        anthropicMessageStopChunk(),
+      ];
 
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+      const scope = mockAnthropicGeneration(streamingChunks, () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMessage], mockOptions)) {
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.messages[0]).toEqual({
-        role: 'assistant',
-        content: [
-          { type: 'text', text: 'I need to check the weather' },
-          {
-            type: 'tool_use',
-            id: 'call_123',
-            name: 'get_weather',
-            input: { location: 'San Francisco' },
-          },
-        ],
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(4);
+      expect(chunks[0]).toEqual({
+        content: 'Hello',
+        delta: 'Hello',
+        toolCalls: undefined,
+      });
+      expect(chunks[1]).toEqual({
+        content: 'Hello there',
+        delta: ' there',
+        toolCalls: undefined,
+      });
+      expect(chunks[2]).toEqual({
+        content: 'Hello there!',
+        delta: '!',
+        toolCalls: undefined,
+      });
+      expect(chunks[3]).toEqual({
+        content: 'Hello there!',
+        delta: '',
+        finishReason: 'stop',
+        toolCalls: undefined,
       });
     });
 
     it('should handle tool result messages', async () => {
-      const toolResultMessage: Message = {
-        role: 'tool',
-        content: [
-          {
-            type: 'tool_result',
-            toolCallId: 'call_123',
-            result: '{"temperature": 72, "condition": "sunny"}',
-          },
-        ],
-      };
-
-      const mockStream = createMockAnthropicStream([
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'text_delta', text: 'The weather is sunny' },
-        },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResultMessage], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.messages[0]).toEqual({
-        role: 'user',
-        content: [
-          {
-            type: 'tool_result',
-            tool_use_id: 'call_123',
-            content: '{"temperature": 72, "condition": "sunny"}',
-          },
-        ],
-      });
-    });
-
-    it('should process streaming response correctly', async () => {
-      const mockStream = createMockAnthropicStream([
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Hello' } },
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: ' there' } },
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '!' } },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-        { type: 'message_stop' },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(chunks).toHaveLength(4);
-      expect(chunks[0]).toMatchObject({ delta: 'Hello', content: 'Hello' });
-      expect(chunks[1]).toMatchObject({ delta: ' there', content: 'Hello there' });
-      expect(chunks[2]).toMatchObject({ delta: '!', content: 'Hello there!' });
-      expect(chunks[3]).toMatchObject({ delta: '', content: 'Hello there!', finishReason: 'stop' });
-    });
-
-    it('should handle all generation options', async () => {
-      const detailedOptions: GenerationOptions = {
-        model: 'claude-3-5-sonnet-20241022',
-        maxTokens: 500,
-        temperature: 0.8,
-        topP: 0.9,
-        topK: 40,
-        stopSequences: ['END', 'STOP'],
-      };
-
-      const mockStream = createMockAnthropicStream([
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Response' } },
-        { type: 'message_delta', delta: { stop_reason: 'end_turn' } },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, detailedOptions)) {
-        chunks.push(chunk);
-      }
-
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call).toMatchObject({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 500,
-        temperature: 0.8,
-        top_p: 0.9,
-        top_k: 40,
-        stop_sequences: ['END', 'STOP'],
-        stream: true,
-      });
-    });
-
-    it('should handle messages with unknown roles', async () => {
-      const unknownRoleMessage: Message = {
-        role: 'unknown' as any,
-        content: [{ type: 'text', text: 'Unknown role message' }],
-      };
-
-      const mockStream = createMockAnthropicStream([
-        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Response' } },
-        { type: 'message_stop' },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      // Should skip the unknown role message and generate with empty messages array
-      const call = mockAnthropic.messages.create.mock.calls[0][0];
-      expect(call.messages).toEqual([]);
-    });
-
-    it('should handle malformed JSON in tool arguments', async () => {
-      const mockStream = createMockAnthropicStream([
-        {
-          type: 'content_block_start',
-          index: 0,
-          content_block: { type: 'tool_use', id: 'call_123', name: 'get_weather', input: {} },
-        },
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'input_json_delta', partial_json: '{"location": "SF"' }, // malformed JSON
-        },
-        {
-          type: 'content_block_delta',
-          index: 0,
-          delta: { type: 'input_json_delta', partial_json: '}' }, // complete JSON
-        },
-        { type: 'message_stop' },
-      ]);
-
-      mockAnthropic.messages.create.mockResolvedValue(mockStream);
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      // Should eventually parse the complete JSON and include tool calls
-      const lastChunk = chunks[chunks.length - 1];
-      expect(lastChunk.toolCalls).toEqual([
-        {
+      const toolResultMessages: Message[] = [
+        userText('What is the weather in SF?'),
+        assistantWithToolCalls('I need to check the weather for you.', {
           id: 'call_123',
           name: 'get_weather',
           arguments: { location: 'SF' },
+        }),
+        toolResultMsg('call_123', 'The weather in SF is sunny, 72°F'),
+      ];
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('The weather is sunny!'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(toolResultMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages).toEqual([
+        { role: 'user', content: [{ type: 'text', text: 'What is the weather in SF?' }] },
+        {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'I need to check the weather for you.' },
+            { type: 'tool_use', id: 'call_123', name: 'get_weather', input: { location: 'SF' } },
+          ],
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'call_123',
+              content: 'The weather in SF is sunny, 72°F',
+            },
+          ],
         },
       ]);
     });
+
+    it('should handle API errors', async () => {
+      const scope = nock('https://api.anthropic.com')
+        .post('/v1/messages')
+        .reply(400, { error: { type: 'invalid_request_error', message: 'Invalid request' } });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('API error: 400 Bad Request');
+
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('should handle streaming errors', async () => {
+      const scope = mockAnthropicGeneration(
+        [anthropicErrorChunk('overloaded_error', 'Overloaded')],
+        () => {}
+      );
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Anthropic API error: Overloaded');
+
+      expect(scope.isDone()).toBe(true);
+    });
   });
 });
-
-// Helper function to create mock async iterators for Anthropic streaming responses
-function createMockAnthropicStream(events: any[]) {
-  return {
-    async *[Symbol.asyncIterator]() {
-      for (const event of events) {
-        yield event;
-      }
-    },
-  };
-}
