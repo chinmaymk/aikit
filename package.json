@@ -1,0 +1,37 @@
+{
+  "name": "aikit",
+  "version": "1.0.0",
+  "description": "A common typescript abstraction over openai, anthropic and google gemini",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "ts-node test.ts",
+    "test:basic": "ts-node tests/basic.ts",
+    "test:compatibility": "ts-node tests/compatibility.ts",
+    "test:all": "npm run test:basic && npm run test:compatibility",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "keywords": [
+    "openai",
+    "anthropic",
+    "google",
+    "gemini",
+    "ai",
+    "llm"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.5.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@google/generative-ai": "^0.21.0",
+    "openai": "^5.0.0"
+  }
+}

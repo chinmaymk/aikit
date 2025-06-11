@@ -1,0 +1,21 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# How to write code
+- DO write simple concise code, do not overcomplicate
+- DO write as little code as possible to achieve the task
+- DO review the code after writing it, clean up for readability, conciseness, and efficiency
+- DO follow DRY, do not repeat same blocks of code
+- DO follow structured logging
+- DO NOT leave commented code in file
+- DO use short names for variables
+- DO create utility function and extract common logic
+- DO import node modules with explicit indication "node:path"
+- DO organize imports after editing a file
+- DO enfore typesafety, avoid using any
+- DO NOT add import first, auto reorganize will remove it if its not used, DO add code block using the import first and then add the import
+
+## Project Overview
+AIKit is a TypeScript library that provides a unified interface for OpenAI, Anthropic, and Google Gemini APIs. It supports streaming, multi-modal content, and tool use.
