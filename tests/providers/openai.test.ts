@@ -335,6 +335,101 @@ describe('OpenAIProvider', () => {
         stream: true,
       });
     });
+
+    it('should handle messages with unknown roles', async () => {
+      const unknownRoleMessage: Message = {
+        role: 'unknown' as any,
+        content: [{ type: 'text', text: 'Unknown role message' }],
+      };
+
+      const mockStream = createMockStream([
+        { choices: [{ delta: { content: 'Response' }, finish_reason: 'stop' }] },
+      ]);
+
+      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should skip the unknown role message and generate with empty messages array
+      const call = mockOpenAI.chat.completions.create.mock.calls[0][0];
+      expect(call.messages).toEqual([]);
+    });
+
+    it('should handle malformed JSON in tool arguments', async () => {
+      const mockStream = createMockStream([
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_123',
+                    type: 'function',
+                    function: { name: 'get_weather', arguments: '{"location": "SF"' }, // malformed JSON
+                  },
+                ],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { arguments: '}' }, // complete JSON
+                  },
+                ],
+              },
+              finish_reason: 'tool_calls',
+            },
+          ],
+        },
+      ]);
+
+      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should eventually parse the complete JSON and include tool calls
+      const lastChunk = chunks[chunks.length - 1];
+      expect(lastChunk.toolCalls).toEqual([
+        {
+          id: 'call_123',
+          name: 'get_weather',
+          arguments: { location: 'SF' },
+        },
+      ]);
+    });
+
+    it('should handle empty chunks without choices', async () => {
+      const mockStream = createMockStream([
+        {}, // chunk without choices
+        { choices: [] }, // chunk with empty choices
+        { choices: [{ delta: { content: 'Hello' }, finish_reason: 'stop' }] },
+      ]);
+
+      mockOpenAI.chat.completions.create.mockResolvedValue(mockStream);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should only process the valid chunk
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toMatchObject({ delta: 'Hello', content: 'Hello' });
+    });
   });
 });
 

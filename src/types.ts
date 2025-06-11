@@ -82,15 +82,3 @@ export interface AIProvider {
   readonly models: string[];
   generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk>;
 }
-
-// Base class for providers with strongly typed config
-export abstract class BaseAIProvider<TConfig> implements AIProvider {
-  protected config: TConfig;
-  abstract readonly models: string[];
-
-  constructor(config: TConfig) {
-    this.config = config;
-  }
-
-  abstract generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk>;
-}

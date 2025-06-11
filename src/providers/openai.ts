@@ -171,6 +171,7 @@ export class OpenAIProvider implements AIProvider {
     const completedToolCalls: Record<string, { id: string; name: string; arguments: object }> = {};
 
     for await (const chunk of stream) {
+      if (!chunk.choices || chunk.choices.length === 0) continue;
       const choice = chunk.choices[0];
       if (!choice) continue;
 

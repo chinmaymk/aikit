@@ -348,6 +348,67 @@ describe('AnthropicProvider', () => {
         stream: true,
       });
     });
+
+    it('should handle messages with unknown roles', async () => {
+      const unknownRoleMessage: Message = {
+        role: 'unknown' as any,
+        content: [{ type: 'text', text: 'Unknown role message' }],
+      };
+
+      const mockStream = createMockAnthropicStream([
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Response' } },
+        { type: 'message_stop' },
+      ]);
+
+      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should skip the unknown role message and generate with empty messages array
+      const call = mockAnthropic.messages.create.mock.calls[0][0];
+      expect(call.messages).toEqual([]);
+    });
+
+    it('should handle malformed JSON in tool arguments', async () => {
+      const mockStream = createMockAnthropicStream([
+        {
+          type: 'content_block_start',
+          index: 0,
+          content_block: { type: 'tool_use', id: 'call_123', name: 'get_weather', input: {} },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '{"location": "SF"' }, // malformed JSON
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '}' }, // complete JSON
+        },
+        { type: 'message_stop' },
+      ]);
+
+      mockAnthropic.messages.create.mockResolvedValue(mockStream);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should eventually parse the complete JSON and include tool calls
+      const lastChunk = chunks[chunks.length - 1];
+      expect(lastChunk.toolCalls).toEqual([
+        {
+          id: 'call_123',
+          name: 'get_weather',
+          arguments: { location: 'SF' },
+        },
+      ]);
+    });
   });
 });
 

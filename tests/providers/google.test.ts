@@ -422,6 +422,35 @@ describe('GoogleGeminiProvider', () => {
         },
       });
     });
+
+    it('should handle messages with unknown roles', async () => {
+      const unknownRoleMessage: Message = {
+        role: 'unknown' as any,
+        content: [{ type: 'text', text: 'Unknown role message' }],
+      };
+
+      const mockStreamResult = createMockGoogleStream([
+        {
+          candidates: [
+            {
+              content: { parts: [{ text: 'Response' }], role: 'model' },
+              finishReason: 'STOP',
+            },
+          ],
+        },
+      ]);
+
+      mockModel.generateContentStream.mockResolvedValue(mockStreamResult);
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate([unknownRoleMessage], mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      // Should skip the unknown role message and generate with empty contents array
+      const call = mockModel.generateContentStream.mock.calls[0][0];
+      expect(call.contents).toEqual([]);
+    });
   });
 });
 
