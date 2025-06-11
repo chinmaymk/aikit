@@ -1,8 +1,8 @@
 # Getting Started
 
-So, you've decided to wrangle some AI models. Excellent choice. AIKit is here to make your life easier. Think of it as a universal translator for OpenAI, Anthropic, and Google Gemini. You speak once, they all understand. Mostly.
+So you want to pilot some LLMs? Good call. AIKit gets you from zero to **"Hello, LLM"** in one import. One interface for OpenAI, Anthropic, and Gemini. Zero runtime dependencies, fully typed, and small enough to tweet about.
 
-## 1. Installation
+## Installation
 
 First things first, let's get this thing installed. Open your terminal and chant the sacred words:
 
@@ -22,7 +22,7 @@ pnpm add aikit
 
 :::
 
-## 2. API Keys
+## API keys
 
 AIKit is great, but it's not magic. You still need API keys from the providers you want to use.
 
@@ -38,7 +38,7 @@ Don't have them yet? No problem. Here are the secret passages:
 - **Anthropic**: [console.anthropic.com/dashboard](https://console.anthropic.com/dashboard)
 - **Google**: [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey)
 
-## 3. Basic Generation
+## Basic generation
 
 Alright, let's make the magic happen. Here's how to get a simple response from a model.
 
@@ -57,7 +57,7 @@ const { value } = await provider.generate(messages, { model: 'gpt-4o' }).next();
 console.log(value?.content);
 ```
 
-## 4. Streaming
+## Streaming
 
 Who has time to wait for a full response? Let's stream it like it's hot.
 
@@ -77,6 +77,20 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
 ```
+
+## Unit testing
+
+Need to fake an LLM call in CI? Providers in AIKit are plain async generators, so you can stub them with just a function:
+
+```typescript
+const mockProvider = {
+  async *generate() {
+    yield { delta: 'Hello test!' };
+  },
+};
+```
+
+Swap it in wherever you expect a real provider and carry on—no special helpers required.
 
 ## Next Steps
 

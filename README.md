@@ -8,7 +8,6 @@
 Minimal wrapper that preserves native generation capabilities while providing a unified interface.
 ![image](https://github.com/user-attachments/assets/b496b6ef-9301-4aa1-8ec4-bb6c7d65962a)
 
-
 ## Scope
 
 **Use AIKit for**: Generation, streaming, tool calling (text and image inputs)  

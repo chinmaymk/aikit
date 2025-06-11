@@ -21,14 +21,21 @@
 - [ToolCall](interfaces/ToolCall.md)
 - [Message](interfaces/Message.md)
 - [StreamChunk](interfaces/StreamChunk.md)
-- [GenerationOptions](interfaces/GenerationOptions.md)
 
 ## Interfaces
 
 - [AnthropicProvider](classes/AnthropicProvider.md)
 - [GoogleGeminiProvider](classes/GoogleGeminiProvider.md)
 - [OpenAIProvider](classes/OpenAIProvider.md)
+- [BaseGenerationOptions](interfaces/BaseGenerationOptions.md)
+- [OpenAIGenerationOptions](interfaces/OpenAIGenerationOptions.md)
+- [GoogleGenerationOptions](interfaces/GoogleGenerationOptions.md)
+- [AnthropicGenerationOptions](interfaces/AnthropicGenerationOptions.md)
 - [OpenAIConfig](interfaces/OpenAIConfig.md)
 - [AnthropicConfig](interfaces/AnthropicConfig.md)
 - [GoogleConfig](interfaces/GoogleConfig.md)
 - [AIProvider](interfaces/AIProvider.md)
+
+## Type Aliases
+
+- [~~GenerationOptions~~](type-aliases/GenerationOptions.md)

@@ -1,8 +1,8 @@
 # Examples
 
-Welcome to the AIKit cookbook! Here you'll find a collection of delicious recipes to get you started. Feel free to copy, paste, and modify to your heart's content. No need to credit the chef.
+Welcome to the AIKit snack bar—bite-sized snippets you can copy-paste straight into your codebase. Each one runs with a single `npx tsx` and _zero_ extra dependencies. We won't tell anyone you didn't cook them yourself.
 
-## Running the Examples
+## Running the examples
 
 Before you can run these examples, you'll need to clone the repo and install the dependencies.
 
@@ -11,6 +11,8 @@ git clone https://github.com/chinmaymk/aikit.git
 cd aikit
 npm install
 ```
+
+Clone the repo, install the dev deps (the library itself ships lean), and you're ready to roll.
 
 You'll also need to set your API keys as environment variables. Don't worry, your secrets are safe with us.
 

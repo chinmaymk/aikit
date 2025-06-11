@@ -6,7 +6,7 @@
 
 # Interface: OpenAIConfig
 
-Defined in: [types.ts:134](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L134)
+Defined in: [types.ts:155](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L155)
 
 Configuration options for OpenAI provider
 
@@ -16,7 +16,7 @@ Configuration options for OpenAI provider
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:136](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L136)
+Defined in: [types.ts:157](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L157)
 
 OpenAI API key
 
@@ -26,7 +26,7 @@ OpenAI API key
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:138](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L138)
+Defined in: [types.ts:159](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L159)
 
 Custom base URL for API requests
 
@@ -36,7 +36,7 @@ Custom base URL for API requests
 
 > `optional` **organization**: `string`
 
-Defined in: [types.ts:140](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L140)
+Defined in: [types.ts:161](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L161)
 
 OpenAI organization ID
 
@@ -46,7 +46,7 @@ OpenAI organization ID
 
 > `optional` **project**: `string`
 
-Defined in: [types.ts:142](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L142)
+Defined in: [types.ts:163](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L163)
 
 OpenAI project ID
 
@@ -56,7 +56,7 @@ OpenAI project ID
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
+Defined in: [types.ts:165](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L165)
 
 Request timeout in milliseconds
 
@@ -66,6 +66,6 @@ Request timeout in milliseconds
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
+Defined in: [types.ts:167](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L167)
 
 Maximum number of retries

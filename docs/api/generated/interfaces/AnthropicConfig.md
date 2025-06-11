@@ -6,7 +6,7 @@
 
 # Interface: AnthropicConfig
 
-Defined in: [types.ts:153](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L153)
+Defined in: [types.ts:174](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L174)
 
 Configuration options for Anthropic provider
 
@@ -16,7 +16,7 @@ Configuration options for Anthropic provider
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:155](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L155)
+Defined in: [types.ts:176](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L176)
 
 Anthropic API key
 
@@ -26,7 +26,7 @@ Anthropic API key
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:157](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L157)
+Defined in: [types.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L178)
 
 Custom base URL for API requests
 
@@ -36,7 +36,7 @@ Custom base URL for API requests
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:159](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L159)
+Defined in: [types.ts:180](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L180)
 
 Request timeout in milliseconds
 
@@ -46,7 +46,7 @@ Request timeout in milliseconds
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:161](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L161)
+Defined in: [types.ts:182](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L182)
 
 Maximum number of retries
 
@@ -56,6 +56,6 @@ Maximum number of retries
 
 > `optional` **beta**: `string`[]
 
-Defined in: [types.ts:163](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L163)
+Defined in: [types.ts:184](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L184)
 
 Beta features to enable

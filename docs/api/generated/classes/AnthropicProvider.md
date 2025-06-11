@@ -12,7 +12,7 @@ Core interface implemented by all AI providers
 
 ## Implements
 
-- [`AIProvider`](../interfaces/AIProvider.md)
+- [`AIProvider`](../interfaces/AIProvider.md)\<[`AnthropicGenerationOptions`](../interfaces/AnthropicGenerationOptions.md)\>
 
 ## Constructors
 
@@ -52,7 +52,7 @@ Array of conversation messages
 
 ##### options
 
-[`GenerationOptions`](../interfaces/GenerationOptions.md)
+[`AnthropicGenerationOptions`](../interfaces/AnthropicGenerationOptions.md)
 
 Generation options including model and parameters
 

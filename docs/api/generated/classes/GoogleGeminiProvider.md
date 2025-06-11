@@ -12,7 +12,7 @@ Core interface implemented by all AI providers
 
 ## Implements
 
-- [`AIProvider`](../interfaces/AIProvider.md)
+- [`AIProvider`](../interfaces/AIProvider.md)\<[`GoogleGenerationOptions`](../interfaces/GoogleGenerationOptions.md)\>
 
 ## Constructors
 
@@ -20,7 +20,7 @@ Core interface implemented by all AI providers
 
 > **new GoogleGeminiProvider**(`config`): `GoogleGeminiProvider`
 
-Defined in: [providers/google.ts:27](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L27)
+Defined in: [providers/google.ts:53](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L53)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [providers/google.ts:27](https://github.com/chinmaymk/aikit/blob/mai
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/google.ts:31](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L31)
+Defined in: [providers/google.ts:57](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L57)
 
 Generate streaming response for given messages
 
@@ -52,7 +52,7 @@ Array of conversation messages
 
 ##### options
 
-[`GenerationOptions`](../interfaces/GenerationOptions.md)
+[`GoogleGenerationOptions`](../interfaces/GoogleGenerationOptions.md)
 
 Generation options including model and parameters
 

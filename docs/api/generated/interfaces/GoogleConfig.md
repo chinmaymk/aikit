@@ -6,7 +6,7 @@
 
 # Interface: GoogleConfig
 
-Defined in: [types.ts:170](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L170)
+Defined in: [types.ts:191](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L191)
 
 Configuration options for Google Gemini provider
 
@@ -16,6 +16,6 @@ Configuration options for Google Gemini provider
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:172](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L172)
+Defined in: [types.ts:193](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L193)
 
 Google AI API key

@@ -159,7 +159,10 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
     return parts;
   }
 
-  private buildModelConfig(systemInstruction: string, options: GoogleGenerationOptions): ModelParams {
+  private buildModelConfig(
+    systemInstruction: string,
+    options: GoogleGenerationOptions
+  ): ModelParams {
     const params: ModelParams = {
       model: options.model,
       generationConfig: {

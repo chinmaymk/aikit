@@ -52,7 +52,7 @@ Array of conversation messages
 
 ##### options
 
-[`GenerationOptions`](../interfaces/GenerationOptions.md)
+[`OpenAIGenerationOptions`](../interfaces/OpenAIGenerationOptions.md)
 
 Generation options including model and parameters
 
