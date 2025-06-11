@@ -1,0 +1,50 @@
+{
+  "entryPoints": ["./src/index.ts"],
+  "out": "docs/api/generated",
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "none",
+  "hideGenerator": true,
+  "disableSources": false,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "sort": ["source-order"],
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/chinmaymk/aikit/blob/{gitRevision}/{path}#L{line}",
+  "includeVersion": true,
+  "excludeExternals": true,
+  "categorizeByGroup": false,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Factory Functions",
+    "Provider Classes", 
+    "Types",
+    "Interfaces",
+    "*"
+  ],
+  "groupOrder": [
+    "Factory Functions",
+    "Provider Classes",
+    "Types", 
+    "Interfaces",
+    "*"
+  ],
+  "kindSortOrder": [
+    "Project",
+    "Module",
+    "Namespace",
+    "Enum",
+    "EnumMember",
+    "Class",
+    "Interface",
+    "TypeAlias",
+    "Constructor",
+    "Property",
+    "Variable",
+    "Function",
+    "Accessor",
+    "Method",
+    "Reference"
+  ]
+} 

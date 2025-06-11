@@ -18,7 +18,11 @@
     "lint": "eslint src tests --ext .ts,.js",
     "lint:fix": "eslint src tests --ext .ts,.js --fix",
     "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test"
+    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test",
+    "docs:generate": "typedoc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "npm run docs:generate && vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "keywords": [
     "openai",
@@ -29,7 +33,7 @@
     "llm"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.0",
@@ -45,7 +49,10 @@
     "prettier": "^3.5.3",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitepress": "^1.0.0",
+    "typedoc": "0.28.5",
+    "typedoc-plugin-markdown": "^4.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",
