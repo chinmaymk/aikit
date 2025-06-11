@@ -105,10 +105,9 @@ export interface StreamChunk {
 }
 
 /**
- * Options for text generation
- * @group Types
+ * Common generation options shared by all providers.
  */
-export interface GenerationOptions {
+export interface BaseGenerationOptions {
   /** Model to use for generation */
   model: string;
   /** Maximum number of tokens to generate */
@@ -117,7 +116,7 @@ export interface GenerationOptions {
   temperature?: number;
   /** Top-p sampling parameter */
   topP?: number;
-  /** Top-k sampling parameter (Google only) */
+  /** Top-k sampling parameter (Google, Anthropic) */
   topK?: number;
   /** Sequences that will stop generation */
   stopSequences?: string[];
@@ -125,6 +124,28 @@ export interface GenerationOptions {
   tools?: Tool[];
   /** How to choose tools ('auto', 'required', 'none', or specific tool) */
   toolChoice?: 'auto' | 'required' | 'none' | { name: string };
+}
+
+/** OpenAI-specific generation options */
+export interface OpenAIGenerationOptions extends BaseGenerationOptions {
+  /** Presence penalty for sampling */
+  presencePenalty?: number;
+  /** Frequency penalty for sampling */
+  frequencyPenalty?: number;
+}
+
+/** Google Gemini-specific generation options */
+export interface GoogleGenerationOptions extends BaseGenerationOptions {
+  /** Top-k sampling parameter */
+  topK?: number;
+  /** Number of candidates to generate */
+  candidateCount?: number;
+}
+
+/** Anthropic-specific generation options */
+export interface AnthropicGenerationOptions extends BaseGenerationOptions {
+  /** Top-k sampling parameter */
+  topK?: number;
 }
 
 /**
@@ -176,7 +197,7 @@ export interface GoogleConfig {
  * Core interface implemented by all AI providers
  * @group Interfaces
  */
-export interface AIProvider {
+export interface AIProvider<O extends BaseGenerationOptions = BaseGenerationOptions> {
   /** List of available models for this provider */
   readonly models: string[];
 
@@ -186,5 +207,10 @@ export interface AIProvider {
    * @param options - Generation options including model and parameters
    * @returns Async iterable of stream chunks
    */
-  generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk>;
+  generate(messages: Message[], options: O): AsyncIterable<StreamChunk>;
 }
+
+/**
+ * @deprecated Use provider-specific generation option types instead.
+ */
+export type GenerationOptions = BaseGenerationOptions;

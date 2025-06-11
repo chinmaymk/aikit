@@ -3,13 +3,13 @@ import type {
   AIProvider,
   Message,
   AnthropicConfig,
-  GenerationOptions,
+  AnthropicGenerationOptions,
   StreamChunk,
   ToolCall,
 } from '../types';
 import { MessageTransformer, ToolFormatter, ToolChoiceHandler } from './utils';
 
-export class AnthropicProvider implements AIProvider {
+export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions> {
   private anthropic: Anthropic;
   readonly models = [
     'claude-3-5-sonnet-20241022',
@@ -23,7 +23,10 @@ export class AnthropicProvider implements AIProvider {
     this.anthropic = new Anthropic(config);
   }
 
-  async *generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk> {
+  async *generate(
+    messages: Message[],
+    options: AnthropicGenerationOptions
+  ): AsyncIterable<StreamChunk> {
     const { systemMessage, anthropicMessages } = this.transformMessages(messages);
     const params = this.buildRequestParams(systemMessage, anthropicMessages, options);
 
@@ -143,7 +146,7 @@ export class AnthropicProvider implements AIProvider {
   private buildRequestParams(
     systemMessage: string,
     messages: Anthropic.MessageParam[],
-    options: GenerationOptions
+    options: AnthropicGenerationOptions
   ): Anthropic.MessageCreateParamsStreaming {
     const params: Anthropic.MessageCreateParamsStreaming = {
       model: options.model,

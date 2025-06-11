@@ -1,5 +1,5 @@
 import { GoogleGeminiProvider } from '../src/providers/google';
-import type { Message, GenerationOptions } from '../src/types';
+import type { Message, GoogleGenerationOptions } from '../src/types';
 
 async function main() {
   // Check for API key
@@ -27,10 +27,11 @@ async function main() {
   ];
 
   // Generation options
-  const options: GenerationOptions = {
-    model: 'gemini-2.5-pro-exp-06-25',
+  const options: GoogleGenerationOptions = {
+    model: 'gemini-2.5-pro-preview-06-05',
     maxTokens: 1024,
     temperature: 0,
+    candidateCount: 1,
   };
 
   console.log('💎 Google Gemini Response:');

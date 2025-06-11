@@ -1,7 +1,7 @@
 import type {
   Content,
   Tool,
-  GenerationOptions,
+  BaseGenerationOptions,
   TextContent,
   ImageContent,
   ToolResultContent,
@@ -60,7 +60,7 @@ export class ToolFormatter {
 }
 
 export class ToolChoiceHandler {
-  static formatForAnthropic(toolChoice: GenerationOptions['toolChoice']): Anthropic.ToolChoice {
+  static formatForAnthropic(toolChoice: BaseGenerationOptions['toolChoice']): Anthropic.ToolChoice {
     if (toolChoice === 'required') return { type: 'any' };
     if (toolChoice === 'auto') return { type: 'auto' };
     if (typeof toolChoice === 'object') {
@@ -69,7 +69,7 @@ export class ToolChoiceHandler {
     return { type: 'auto' };
   }
 
-  static formatForGoogle(toolChoice: GenerationOptions['toolChoice'] | undefined) {
+  static formatForGoogle(toolChoice: BaseGenerationOptions['toolChoice'] | undefined) {
     const build = (mode: FunctionCallingMode) => ({
       functionCallingConfig: { mode },
     });

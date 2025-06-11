@@ -2,7 +2,7 @@ import type {
   AIProvider,
   Message,
   OpenAIConfig,
-  GenerationOptions,
+  OpenAIGenerationOptions,
   StreamChunk,
   Tool,
   ToolCall,
@@ -52,7 +52,10 @@ export class OpenAIProvider implements AIProvider {
     this.streamProcessor = new OpenAIStreamProcessor();
   }
 
-  async *generate(messages: Message[], options: GenerationOptions): AsyncIterable<StreamChunk> {
+  async *generate(
+    messages: Message[],
+    options: OpenAIGenerationOptions
+  ): AsyncIterable<StreamChunk> {
     const params = this.transformer.buildRequestParams(messages, options);
     const stream = await this.client.stream('/chat/completions', params);
     const lineStream = this.client.processStreamAsLines(stream);
@@ -63,7 +66,7 @@ export class OpenAIProvider implements AIProvider {
 class OpenAIMessageTransformer {
   buildRequestParams(
     messages: Message[],
-    options: GenerationOptions
+    options: OpenAIGenerationOptions
   ): ChatCompletionCreateParamsStreaming {
     const openaiMessages = this.transformMessages(messages);
     const params: ChatCompletionCreateParamsStreaming = {
@@ -74,6 +77,8 @@ class OpenAIMessageTransformer {
       temperature: options.temperature,
       top_p: options.topP,
       stop: options.stopSequences,
+      presence_penalty: options.presencePenalty,
+      frequency_penalty: options.frequencyPenalty,
     };
 
     if (options.tools) {
@@ -98,7 +103,7 @@ class OpenAIMessageTransformer {
   }
 
   private formatToolChoice(
-    toolChoice: GenerationOptions['toolChoice']
+    toolChoice: OpenAIGenerationOptions['toolChoice']
   ): 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } } {
     if (!toolChoice) {
       return 'auto';
@@ -322,6 +327,8 @@ type ChatCompletionCreateParamsStreaming = {
   temperature?: number;
   top_p?: number;
   stop?: string[];
+  presence_penalty?: number;
+  frequency_penalty?: number;
   tools?: any[];
   tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
 };
