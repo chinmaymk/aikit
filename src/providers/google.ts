@@ -5,7 +5,6 @@ import type {
   FunctionDeclaration,
   FunctionDeclarationsTool,
   ModelParams,
-  ToolConfig,
   GenerateContentRequest,
   GenerateContentStreamResult,
 } from '@google/generative-ai';
@@ -166,7 +165,7 @@ export class GoogleGeminiProvider implements AIProvider {
 
   private async *processStream(stream: GenerateContentStreamResult): AsyncIterable<StreamChunk> {
     let content = '';
-    let toolCalls: ToolCall[] = [];
+    const toolCalls: ToolCall[] = [];
 
     for await (const response of stream.stream) {
       const candidate = response.candidates?.[0];
