@@ -5,6 +5,7 @@ import type {
   AnthropicConfig,
   GenerationOptions,
   StreamChunk,
+  ToolCall,
 } from '../types';
 import { MessageTransformer, ToolFormatter, ToolChoiceHandler } from './utils';
 
@@ -174,7 +175,7 @@ export class AnthropicProvider implements AIProvider {
   ): AsyncIterable<StreamChunk> {
     let content = '';
     const toolCallStates: Record<string, { id: string; name: string; arguments: string }> = {};
-    const completedToolCalls: Record<string, { id: string; name: string; arguments: object }> = {};
+    const completedToolCalls: Record<string, ToolCall> = {};
 
     for await (const chunk of stream) {
       if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
@@ -225,10 +226,10 @@ export class AnthropicProvider implements AIProvider {
     }
   }
 
-  private parseToolArguments(args: string): object | null {
+  private parseToolArguments(args: string): Record<string, unknown> | null {
     if (!args) return {};
     try {
-      return JSON.parse(args);
+      return JSON.parse(args) as Record<string, unknown>;
     } catch (error) {
       return null;
     }

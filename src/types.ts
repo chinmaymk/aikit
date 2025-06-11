@@ -21,13 +21,13 @@ export type Content = TextContent | ImageContent | ToolResultContent;
 export interface Tool {
   name: string;
   description: string;
-  parameters: Record<string, unknown>; // JSON schema
+  parameters: Record<string, unknown>;
 }
 
 export interface ToolCall {
   id: string;
   name: string;
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
 }
 
 // Messages - simplified

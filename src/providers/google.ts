@@ -3,6 +3,7 @@ import type {
   Content as GoogleContent,
   Part,
   FunctionDeclaration,
+  FunctionDeclarationSchema,
   FunctionDeclarationsTool,
   ModelParams,
   GenerateContentRequest,
@@ -146,10 +147,10 @@ export class GoogleGeminiProvider implements AIProvider {
     }
 
     if (options.tools) {
-      const functionDeclarations: FunctionDeclaration[] = options.tools.map(t => ({
-        name: t.name,
-        description: t.description,
-        parameters: t.parameters as any, // Google expects specific schema format
+      const functionDeclarations: FunctionDeclaration[] = options.tools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters as unknown as FunctionDeclarationSchema,
       }));
 
       const googleTool: FunctionDeclarationsTool = { functionDeclarations };
@@ -181,10 +182,11 @@ export class GoogleGeminiProvider implements AIProvider {
           const fc = part.functionCall;
           const existingCall = toolCalls.find(tc => tc.name === fc.name);
           if (!existingCall) {
+            const args: Record<string, unknown> = (fc.args as Record<string, unknown>) || {};
             toolCalls.push({
               id: `${fc.name}_${toolCalls.length}`,
               name: fc.name,
-              arguments: fc.args || {},
+              arguments: args,
             });
           }
         }

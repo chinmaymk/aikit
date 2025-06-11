@@ -2,6 +2,16 @@ import { OpenAI } from 'openai';
 import type { AIProvider, Message, OpenAIConfig, GenerationOptions, StreamChunk } from '../types';
 import { MessageTransformer, ToolFormatter, ToolChoiceHandler, FinishReasonMapper } from './utils';
 
+// Minimal subset of OpenAI tool call delta type used within this provider
+interface OpenAIToolCallDelta {
+  index?: number;
+  id?: string;
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
+}
+
 export class OpenAIProvider implements AIProvider {
   private openai: OpenAI;
   readonly models = [
@@ -168,7 +178,14 @@ export class OpenAIProvider implements AIProvider {
   ): AsyncIterable<StreamChunk> {
     let content = '';
     const toolCallStates: Record<string, { id: string; name: string; arguments: string }> = {};
-    const completedToolCalls: Record<string, { id: string; name: string; arguments: object }> = {};
+    const completedToolCalls: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        arguments: Record<string, unknown>;
+      }
+    > = {};
 
     for await (const chunk of stream) {
       if (!chunk.choices || chunk.choices.length === 0) continue;
@@ -195,9 +212,12 @@ export class OpenAIProvider implements AIProvider {
   }
 
   private processToolCalls(
-    deltaToolCalls: any,
+    deltaToolCalls: OpenAIToolCallDelta[] | undefined,
     toolCallStates: Record<string, { id: string; name: string; arguments: string }>,
-    completedToolCalls: Record<string, { id: string; name: string; arguments: object }>
+    completedToolCalls: Record<
+      string,
+      { id: string; name: string; arguments: Record<string, unknown> }
+    >
   ): void {
     if (!deltaToolCalls || !Array.isArray(deltaToolCalls)) return;
 
@@ -228,8 +248,8 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  private parseToolArguments(args: string): object | null {
-    if (!args) return {};
+  private parseToolArguments(args: string): Record<string, unknown> | null {
+    if (!args) return {} as Record<string, unknown>;
     try {
       return JSON.parse(args);
     } catch (error) {

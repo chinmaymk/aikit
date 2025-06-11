@@ -9,7 +9,6 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:results": "JEST_JUNIT_CLASSNAME=\"{filepath}\" jest --reporters=jest-junit",
-    "build": "tsc",
     "dev": "ts-node test.ts",
     "test:basic": "ts-node tests/basic.ts",
     "test:compatibility": "ts-node tests/compatibility.ts",
@@ -18,7 +17,8 @@
     "format:check": "prettier --check .",
     "lint": "eslint src tests --ext .ts,.js",
     "lint:fix": "eslint src tests --ext .ts,.js --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test"
   },
   "keywords": [
     "openai",
