@@ -1,9 +1,7 @@
 # AIKit
 
 [![CI](https://github.com/chinmaymk/aikit/workflows/CI/badge.svg)](https://github.com/chinmaymk/aikit/actions)
-[![Coverage Status](https://coveralls.io/repos/github/chinmaymk/aikit/badge.svg?branch=main)](https://coveralls.io/github/chinmaymk/aikit?branch=main)
 [![codecov](https://codecov.io/gh/chinmaymk/aikit/branch/main/graph/badge.svg)](https://codecov.io/gh/chinmaymk/aikit)
-[![npm version](https://badge.fury.io/js/aikit.svg)](https://badge.fury.io/js/aikit)
 
 A unified TypeScript abstraction over OpenAI, Anthropic, and Google Gemini APIs. Provides consistent interfaces for text generation, streaming, multimodal content, and tool use across all three providers.
 
