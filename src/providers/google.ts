@@ -125,13 +125,29 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
    * Just don't be surprised if you encounter a grue.
    */
   readonly models = [
-    // The latest and greatest
+    // The latest Gemini 2.5 models
+    'gemini-2.5-pro-preview-06-05',
+    'gemini-2.5-pro-preview-05-06',
+    'gemini-2.5-pro-preview-03-25',
+    'gemini-2.5-flash-preview-05-20',
+    'gemini-2.5-flash-preview-native-audio-dialog',
+    'gemini-2.5-flash-exp-native-audio-thinking-dialog',
+    'gemini-2.5-flash-preview-tts',
+
+    // The latest Gemini 2.0 models
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash-preview-image-generation',
+    'gemini-2.0-flash-live-001',
+
+    // The latest and greatest 1.5 models
     'gemini-1.5-pro-latest',
     'gemini-1.5-flash-latest',
 
     // Specific versions of 1.5
     'gemini-1.5-pro',
     'gemini-1.5-flash',
+    'gemini-1.5-flash-8b',
 
     // The trusty old guard
     'gemini-1.0-pro',
@@ -268,10 +284,9 @@ class GoogleMessageTransformer {
       parts: [
         {
           functionResponse: {
-            // Google doesn't have a tool call ID, so we have to improvise
-            // and embed the function name in the response. A bit of a hack,
-            // but it gets the job done.
-            name: tr.toolCallId,
+            // Google doesn't have a tool call ID, so we use a consistent name
+            // for all function responses. This is a bit of a hack, but it works.
+            name: 'call',
             response: { result: tr.result },
           },
         },
@@ -305,7 +320,7 @@ class GoogleMessageTransformer {
     if (msg.role === 'assistant' && msg.toolCalls) {
       for (const tc of msg.toolCalls) {
         parts.push({
-          functionCall: { name: tc.id, args: tc.arguments },
+          functionCall: { name: tc.name, args: tc.arguments },
         });
       }
     }

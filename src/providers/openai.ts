@@ -133,9 +133,9 @@ class OpenAIMessageTransformer {
    * @param tools - An array of AIKit tools.
    * @returns An array of tools formatted for OpenAI.
    */
-  private formatTools(tools: Tool[]): any[] {
+  private formatTools(tools: Tool[]): OpenAIFunctionTool[] {
     return tools.map(tool => ({
-      type: 'function' as const,
+      type: 'function',
       function: {
         name: tool.name,
         description: tool.description,
@@ -363,9 +363,30 @@ class OpenAIStreamProcessor {
     toolCallStates: Record<string, ToolCallState>,
     completedToolCalls: Record<string, ToolCall>
   ): void {
+    // Keep track of tool call indices to IDs
+    const indexToId: Record<number, string> = {};
+
+    // Build the index mapping from existing states
+    Object.values(toolCallStates).forEach((state, idx) => {
+      if (state.id) {
+        indexToId[idx] = state.id;
+      }
+    });
+
     for (const delta of deltaToolCalls) {
-      const id = delta.id;
+      const index = delta.index ?? 0;
+      let id = delta.id;
+
+      // If no ID is provided, use the existing ID for this index
+      if (!id && indexToId[index]) {
+        id = indexToId[index];
+      }
+
+      // Skip if we still don't have an ID
       if (!id) continue;
+
+      // Update the index mapping
+      indexToId[index] = id;
 
       // Initialize the state for this tool call if we haven't seen it before.
       if (!toolCallStates[id]) {
@@ -380,11 +401,16 @@ class OpenAIStreamProcessor {
       if (delta.function?.arguments) {
         state.arguments += delta.function.arguments;
       }
+    }
 
-      // Check if this tool call is now complete and move it to the completed list.
-      // We assume it's complete if we have an ID, a name, and some arguments,
-      // and we're not expecting more data for it in this chunk.
-      // This is a bit of a heuristic, but it works in practice.
+    // Check all tool call states for completion after processing all deltas
+    // This handles cases where malformed JSON becomes valid after additional chunks
+    for (const [id, state] of Object.entries(toolCallStates)) {
+      if (completedToolCalls[id]) {
+        // Already completed, skip
+        continue;
+      }
+
       try {
         const parsedArgs = JSON.parse(state.arguments);
         if (state.id && state.name && typeof parsedArgs === 'object') {
@@ -439,6 +465,16 @@ type ChatCompletionContentPart = {
 };
 
 /** @internal */
+type OpenAIFunctionTool = {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: Record<string, unknown>;
+  };
+};
+
+/** @internal */
 type ChatCompletionCreateParamsStreaming = {
   model: string;
   messages: ChatCompletionMessageParam[];
@@ -449,7 +485,7 @@ type ChatCompletionCreateParamsStreaming = {
   stop?: string[] | null;
   presence_penalty?: number | null;
   frequency_penalty?: number | null;
-  tools?: any[] | null;
+  tools?: OpenAIFunctionTool[] | null;
   tool_choice?:
     | 'none'
     | 'auto'

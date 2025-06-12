@@ -346,52 +346,147 @@ describe('OpenAIProvider', () => {
       });
     });
 
-    it('should handle different tool choice configurations', async () => {
-      const testCases: Array<{
-        toolChoice: 'none' | 'auto' | 'required' | { name: string } | undefined;
-        expected: any;
-      }> = [
-        { toolChoice: 'none', expected: 'none' },
-        { toolChoice: 'auto', expected: 'auto' },
-        { toolChoice: 'required', expected: 'required' },
-        {
-          toolChoice: { name: 'specific_tool' },
-          expected: { type: 'function', function: { name: 'specific_tool' } },
-        },
-        { toolChoice: undefined, expected: undefined },
-      ];
+    it('should handle tool choice none', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: 'none',
+      };
 
-      for (const { toolChoice, expected } of testCases) {
-        const toolOptions: GenerationOptions = {
-          ...mockOptions,
-          tools: [
-            {
-              name: 'test_tool',
-              description: 'Test tool',
-              parameters: { type: 'object', properties: {} },
-            },
-          ],
-          toolChoice,
-        };
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
 
-        let requestBody: any;
-        const scope = mockChatCompletion(
-          [textChunk('Response', 'stop')],
-          body => (requestBody = body)
-        );
-
-        const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, toolOptions)) {
-          chunks.push(chunk);
-        }
-
-        expect(scope.isDone()).toBe(true);
-        if (expected === undefined) {
-          expect(requestBody.tool_choice).toBeUndefined();
-        } else {
-          expect(requestBody.tool_choice).toEqual(expected);
-        }
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
       }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual('none');
+    });
+
+    it('should handle tool choice auto', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: 'auto',
+      };
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual('auto');
+    });
+
+    it('should handle tool choice required', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: 'required',
+      };
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual('required');
+    });
+
+    it('should handle tool choice with specific tool', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: { name: 'specific_tool' },
+      };
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual({
+        type: 'function',
+        function: { name: 'specific_tool' },
+      });
+    });
+
+    it('should handle undefined tool choice', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: undefined,
+      };
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toBeUndefined();
     });
 
     it('should handle different finish reasons', async () => {
@@ -399,7 +494,6 @@ describe('OpenAIProvider', () => {
         { reason: 'length', expected: 'length' },
         { reason: 'tool_calls', expected: 'tool_use' },
         { reason: 'stop', expected: 'stop' },
-        { reason: null, expected: 'stop' },
         { reason: 'unknown', expected: 'stop' },
       ];
 
@@ -415,10 +509,24 @@ describe('OpenAIProvider', () => {
         }
 
         expect(scope.isDone()).toBe(true);
-        if (reason !== null) {
-          expect(chunks[0].finishReason).toBe(expected);
-        }
+        expect(chunks[0].finishReason).toBe(expected);
+        nock.cleanAll();
       }
+    });
+
+    it('should handle null finish reason', async () => {
+      const scope = mockChatCompletion(
+        [{ choices: [{ delta: { content: 'test' }, finish_reason: null }] }],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks[0].finishReason).toBeUndefined();
     });
 
     it('should handle messages with unknown roles', async () => {
@@ -516,7 +624,7 @@ describe('OpenAIProvider', () => {
             parameters: { type: 'object', properties: {} },
           },
         ],
-        // @ts-ignore - testing edge case
+        // @ts-expect-error - testing edge case
         toolChoice: null,
       };
 

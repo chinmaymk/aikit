@@ -84,10 +84,15 @@ describe('APIClient', () => {
         'https://api.example.com',
         { 'Content-Type': 'application/json' },
         undefined,
-        2
+        3 // Will attempt 3 times total
       );
 
       const mockBody = new ReadableStream();
+
+      // Clear any previous mocks
+      mockFetch.mockReset();
+
+      // Set up the mock to fail twice, then succeed
       mockFetch
         .mockRejectedValueOnce(new Error('Network error'))
         .mockRejectedValueOnce(new Error('Network error'))
@@ -107,12 +112,16 @@ describe('APIClient', () => {
         'https://api.example.com',
         { 'Content-Type': 'application/json' },
         undefined,
-        1
+        2 // Will attempt 2 times total
       );
 
       const error1 = new Error('Network error 1');
       const error2 = new Error('Network error 2');
 
+      // Clear any previous mocks
+      mockFetch.mockReset();
+
+      // Set up the mock to fail both times
       mockFetch.mockRejectedValueOnce(error1).mockRejectedValueOnce(error2);
 
       await expect(clientWithRetries.stream('/test', { data: 'test' })).rejects.toThrow(
@@ -130,6 +139,10 @@ describe('APIClient', () => {
       );
 
       const mockBody = new ReadableStream();
+
+      // Clear any previous mocks
+      mockFetch.mockReset();
+
       mockFetch.mockResolvedValueOnce({
         ok: true,
         body: mockBody,

@@ -36,17 +36,19 @@ export class APIClient {
    * @param body - The request payload.
    * @returns A `ReadableStream` of the response body.
    */
-  async stream(endpoint: string, body: any): Promise<ReadableStream<Uint8Array>> {
+  async stream(endpoint: string, body: unknown): Promise<ReadableStream<Uint8Array>> {
     const retries = this.maxRetries ?? 1;
     let lastError: Error | undefined;
 
     for (let i = 0; i < retries; i++) {
+      let timeoutId: NodeJS.Timeout | undefined;
       try {
-        const controller = new AbortController();
-        const signal = controller.signal;
+        let signal: AbortSignal | undefined;
 
         if (this.timeout) {
-          setTimeout(() => controller.abort(), this.timeout);
+          const controller = new AbortController();
+          signal = controller.signal;
+          timeoutId = setTimeout(() => controller.abort(), this.timeout);
         }
 
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -73,6 +75,10 @@ export class APIClient {
           throw lastError;
         }
         // Otherwise, we'll just go around again.
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
       }
     }
     // This should be unreachable, but TypeScript insists.

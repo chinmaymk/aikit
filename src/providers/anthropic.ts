@@ -164,7 +164,8 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
    * You can try others, but these are the ones we've formally introduced.
    */
   readonly models = [
-    'claude-3-5-sonnet-20240620',
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022',
     'claude-3-opus-20240229',
     'claude-3-sonnet-20240229',
     'claude-3-haiku-20240307',
@@ -500,13 +501,18 @@ class AnthropicStreamProcessor {
 
           case 'error': {
             const errorEvent = event as ErrorEvent;
+            // This is a specific API error, so we should throw it
             throw new Error(
               `Anthropic API error: ${errorEvent.error.type} - ${errorEvent.error.message}`
             );
           }
         }
-      } catch {
-        // Ignore malformed JSON. It's the wild west out here.
+      } catch (e) {
+        if (e instanceof Error && e.message.startsWith('Anthropic API error')) {
+          // Re-throw API errors to be caught by the consumer
+          throw e;
+        }
+        // Ignore other errors (e.g., malformed JSON). It's the wild west out here.
         continue;
       }
     }

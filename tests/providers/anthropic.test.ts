@@ -41,8 +41,8 @@ function mockAnthropicGeneration(
   expectedChunks: any[],
   captureBody: (body: any) => void
 ): nock.Scope {
-  return nock('https://api.anthropic.com')
-    .post('/v1/messages', body => {
+  return nock('https://api.anthropic.com/v1')
+    .post('/messages', body => {
       captureBody(body);
       return true; // allow the request
     })
@@ -57,7 +57,7 @@ function mockAnthropicGeneration(
 describe('AnthropicProvider', () => {
   const mockConfig: AnthropicConfig = {
     apiKey: 'test-api-key',
-    baseURL: 'https://api.anthropic.com',
+    baseURL: 'https://api.anthropic.com/v1',
     timeout: 30000,
   };
 
@@ -308,7 +308,7 @@ describe('AnthropicProvider', () => {
         ...toolOptions,
         toolChoice: 'required',
       })) {
-        // consume chunks
+        void chunk; // consume chunks
       }
 
       expect(scope.isDone()).toBe(true);
@@ -325,7 +325,7 @@ describe('AnthropicProvider', () => {
         ...toolOptions,
         toolChoice: { name: 'calculate' },
       })) {
-        // consume chunks
+        void chunk; // consume chunks
       }
 
       expect(scope.isDone()).toBe(true);
@@ -448,14 +448,14 @@ describe('AnthropicProvider', () => {
         for await (const chunk of provider.generate(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Anthropic API error: Overloaded');
+      }).rejects.toThrow('Anthropic API error: overloaded_error - Overloaded');
 
       expect(scope.isDone()).toBe(true);
     });
 
     it('should handle unknown message roles', async () => {
       const messageWithUnknownRole: Message[] = [
-        // @ts-ignore - Testing unknown role
+        // @ts-expect-error - Testing unknown role
         { role: 'unknown', content: [{ type: 'text', text: 'Test' }] },
         userText('Hello'),
       ];
