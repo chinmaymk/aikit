@@ -10,12 +10,7 @@ import {
   assistantWithToolCalls,
   toolResult as toolResultMsg,
 } from '../../src/createFuncs';
-import {
-  textChunk,
-  toolCallChunk,
-  textDelta,
-  completionChunk,
-} from '../helpers/openaiChunks';
+import { textChunk, toolCallChunk, textDelta, completionChunk } from '../helpers/openaiChunks';
 
 /**
  * Helper to create a chunked SSE response body for the OpenAI Responses API streaming.
@@ -138,10 +133,7 @@ describe('OpenAIProvider', () => {
         userImage('What is in this image?', 'data:image/jpeg;base64,iVBORw0KGgo='),
       ];
 
-      const scope = mockResponsesAPI(
-        [textChunk('I see an image', 'stop')],
-        () => {}
-      );
+      const scope = mockResponsesAPI([textChunk('I see an image', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
@@ -193,10 +185,7 @@ describe('OpenAIProvider', () => {
         arguments: { location: 'San Francisco' },
       });
 
-      const scope = mockResponsesAPI(
-        [textChunk('Let me check...', 'stop')],
-        () => {}
-      );
+      const scope = mockResponsesAPI([textChunk('Let me check...', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
@@ -212,10 +201,7 @@ describe('OpenAIProvider', () => {
         '{"temperature": 72, "condition": "sunny"}'
       );
 
-      const scope = mockResponsesAPI(
-        [textChunk('The weather is sunny', 'stop')],
-        () => {}
-      );
+      const scope = mockResponsesAPI([textChunk('The weather is sunny', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate([toolResult], mockOptions)) {
@@ -722,13 +708,7 @@ describe('OpenAIProvider', () => {
     });
 
     it('should map incomplete status to length finishReason', async () => {
-      const scope = mockResponsesAPI(
-        [
-          textDelta('Hello'),
-          completionChunk('incomplete'),
-        ],
-        () => {}
-      );
+      const scope = mockResponsesAPI([textDelta('Hello'), completionChunk('incomplete')], () => {});
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, mockOptions)) {
@@ -741,10 +721,7 @@ describe('OpenAIProvider', () => {
     it('should map failed_function_call status to tool_use finishReason', async () => {
       const assistantMsg: Message[] = [userText('Hi')];
       const scope = mockResponsesAPI(
-        [
-          textDelta('Hello'),
-          completionChunk('failed_function_call'),
-        ],
+        [textDelta('Hello'), completionChunk('failed_function_call')],
         () => {}
       );
 
