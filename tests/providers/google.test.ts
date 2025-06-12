@@ -230,7 +230,7 @@ describe('GoogleGeminiProvider', () => {
 
     it('should handle different tool choice configurations', async () => {
       const testToolChoices = ['none', 'required', { name: 'specific_tool' }] as const;
-      
+
       for (const toolChoice of testToolChoices) {
         const toolOptions: GoogleGenerationOptions = {
           ...mockOptions,
@@ -258,14 +258,16 @@ describe('GoogleGeminiProvider', () => {
 
         expect(scope.isDone()).toBe(true);
         expect(requestBody.toolConfig).toBeDefined();
-        
+
         if (toolChoice === 'none') {
           expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('NONE');
         } else if (toolChoice === 'required') {
           expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('ANY');
         } else if (typeof toolChoice === 'object') {
           expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('ANY');
-          expect(requestBody.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual(['specific_tool']);
+          expect(requestBody.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual([
+            'specific_tool',
+          ]);
         }
       }
     });
@@ -385,17 +387,15 @@ describe('GoogleGeminiProvider', () => {
 
       for (const { reason, expected } of finishReasonTests) {
         const customChunk = {
-          candidates: [{
-            finishReason: reason,
-            content: { parts: [{ text: 'test' }] }
-          }]
+          candidates: [
+            {
+              finishReason: reason,
+              content: { parts: [{ text: 'test' }] },
+            },
+          ],
         };
 
-        const scope = mockGoogleGeneration(
-          'gemini-1.5-pro',
-          [customChunk],
-          () => {}
-        );
+        const scope = mockGoogleGeneration('gemini-1.5-pro', [customChunk], () => {});
 
         const chunks: StreamChunk[] = [];
         for await (const chunk of provider.generate(mockMessages, mockOptions)) {
@@ -416,7 +416,7 @@ describe('GoogleGeminiProvider', () => {
           { candidates: [{}] }, // candidate without content
           { candidates: [{ content: {} }] }, // content without parts
           googleTextChunk('valid'),
-          googleStopChunk()
+          googleStopChunk(),
         ],
         () => {}
       );
@@ -526,13 +526,13 @@ describe('GoogleGeminiProvider', () => {
 
     it('should handle empty tool calls in streaming response', async () => {
       const chunkWithEmptyToolCall = {
-        candidates: [{
-          content: { 
-            parts: [
-              { functionCall: { name: '', args: {} } }
-            ] 
-          }
-        }]
+        candidates: [
+          {
+            content: {
+              parts: [{ functionCall: { name: '', args: {} } }],
+            },
+          },
+        ],
       };
 
       const scope = mockGoogleGeneration(

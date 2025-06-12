@@ -8,9 +8,10 @@
 
 > **createAnthropic**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:41](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L41)
+Defined in: [factory.ts:43](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L43)
 
-Creates an Anthropic provider instance
+Whips up an AIProvider that communicates with Anthropic's Claude.
+It's thoughtful, helpful, and probably won't start a robot uprising.
 
 ## Parameters
 
@@ -18,18 +19,18 @@ Creates an Anthropic provider instance
 
 [`AnthropicConfig`](../interfaces/AnthropicConfig.md)
 
-Configuration options for Anthropic
+The configuration needed to get Claude's attention.
 
 ## Returns
 
 [`AIProvider`](../interfaces/AIProvider.md)
 
-An AIProvider instance configured for Anthropic
+An AIProvider, configured to work with Anthropic's models.
 
 ## Example
 
 ```typescript
-const provider = createAnthropic({
+const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 ```

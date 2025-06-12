@@ -6,9 +6,9 @@
 
 # Interface: ImageContent
 
-Defined in: [types.ts:27](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L27)
+Defined in: [types.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L29)
 
-Image content for multimodal messages
+A picture is worth a thousand tokens. Use this for multimodal messages.
 
 ## Properties
 
@@ -16,9 +16,9 @@ Image content for multimodal messages
 
 > **type**: `"image"`
 
-Defined in: [types.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L29)
+Defined in: [types.ts:31](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L31)
 
-Content type identifier
+Yup, it's an image.
 
 ---
 
@@ -26,6 +26,6 @@ Content type identifier
 
 > **image**: `string`
 
-Defined in: [types.ts:31](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L31)
+Defined in: [types.ts:33](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L33)
 
-Base64 encoded image or data URL
+Base64 encoded image or a data URL. Don't worry, the AI knows what to do with it.

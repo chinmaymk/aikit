@@ -6,9 +6,9 @@
 
 # Interface: Tool
 
-Defined in: [types.ts:57](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L57)
+Defined in: [types.ts:61](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L61)
 
-Tool definition for function calling
+Teach the AI new tricks. This is how you define a tool it can use.
 
 ## Properties
 
@@ -16,9 +16,9 @@ Tool definition for function calling
 
 > **name**: `string`
 
-Defined in: [types.ts:59](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L59)
+Defined in: [types.ts:63](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L63)
 
-Name of the tool/function
+The name of your shiny new tool. Make it a good one.
 
 ---
 
@@ -26,9 +26,9 @@ Name of the tool/function
 
 > **description**: `string`
 
-Defined in: [types.ts:61](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L61)
+Defined in: [types.ts:65](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L65)
 
-Description of what the tool does
+A description of what the tool does. Be specific. The AI is smart, but not a mind reader.
 
 ---
 
@@ -36,6 +36,7 @@ Description of what the tool does
 
 > **parameters**: `Record`\<`string`, `unknown`\>
 
-Defined in: [types.ts:63](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L63)
+Defined in: [types.ts:70](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L70)
 
-JSON schema for the tool parameters
+The JSON schema for the tool's parameters.
+This is how you tell the AI what knobs and levers your tool has.

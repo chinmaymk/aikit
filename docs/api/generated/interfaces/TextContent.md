@@ -6,9 +6,9 @@
 
 # Interface: TextContent
 
-Defined in: [types.ts:16](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L16)
+Defined in: [types.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L18)
 
-Text content for messages
+Just good old-fashioned text. The bread and butter of language models.
 
 ## Properties
 
@@ -16,9 +16,9 @@ Text content for messages
 
 > **type**: `"text"`
 
-Defined in: [types.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L18)
+Defined in: [types.ts:20](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L20)
 
-Content type identifier
+It's text. What did you expect?
 
 ---
 
@@ -26,6 +26,6 @@ Content type identifier
 
 > **text**: `string`
 
-Defined in: [types.ts:20](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L20)
+Defined in: [types.ts:22](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L22)
 
-The text content
+The actual, you know, text.

@@ -6,9 +6,9 @@
 
 # Interface: Message
 
-Defined in: [types.ts:83](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L83)
+Defined in: [types.ts:90](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L90)
 
-Represents a message in a conversation
+A single message in a conversation. It's a bit like a text message, but with more structured data.
 
 ## Properties
 
@@ -16,9 +16,9 @@ Represents a message in a conversation
 
 > **role**: `"user"` \| `"assistant"` \| `"system"` \| `"tool"`
 
-Defined in: [types.ts:85](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L85)
+Defined in: [types.ts:92](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L92)
 
-Role of the message sender
+Who's talking? A user, the assistant, the system, or a tool.
 
 ---
 
@@ -26,9 +26,9 @@ Role of the message sender
 
 > **content**: [`Content`](../type-aliases/Content.md)[]
 
-Defined in: [types.ts:87](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L87)
+Defined in: [types.ts:94](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L94)
 
-Content of the message
+The actual content of the message. It's an array, because life is complicated.
 
 ---
 
@@ -36,6 +36,6 @@ Content of the message
 
 > `optional` **toolCalls**: [`ToolCall`](ToolCall.md)[]
 
-Defined in: [types.ts:89](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L89)
+Defined in: [types.ts:96](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L96)
 
-Tool calls made in this message (for assistant messages)
+If the assistant is calling a tool, the details will be in here.

@@ -6,9 +6,12 @@
 
 # Class: OpenAIProvider
 
-Defined in: [providers/openai.ts:13](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L13)
+Defined in: [providers/openai.ts:22](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L22)
 
-Core interface implemented by all AI providers
+The powerhouse behind OpenAI integration.
+This class translates AIKit's generic requests into OpenAI's specific dialect
+and handles the response, whether it's a stream of tokens or a tool call.
+It's like a universal translator, but for AI.
 
 ## Implements
 
@@ -20,13 +23,17 @@ Core interface implemented by all AI providers
 
 > **new OpenAIProvider**(`config`): `OpenAIProvider`
 
-Defined in: [providers/openai.ts:29](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L29)
+Defined in: [providers/openai.ts:47](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L47)
+
+Sets up the OpenAI provider with your configuration.
 
 #### Parameters
 
 ##### config
 
 [`OpenAIConfig`](../interfaces/OpenAIConfig.md)
+
+Your OpenAI API credentials and settings.
 
 #### Returns
 
@@ -38,9 +45,11 @@ Defined in: [providers/openai.ts:29](https://github.com/chinmaymk/aikit/blob/mai
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/openai.ts:55](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L55)
+Defined in: [providers/openai.ts:81](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L81)
 
-Generate streaming response for given messages
+Kicks off the generation process.
+It builds the request, sends it to OpenAI, and then processes the
+response stream, yielding chunks as they come in.
 
 #### Parameters
 
@@ -48,19 +57,19 @@ Generate streaming response for given messages
 
 [`Message`](../interfaces/Message.md)[]
 
-Array of conversation messages
+The conversation history.
 
 ##### options
 
 [`OpenAIGenerationOptions`](../interfaces/OpenAIGenerationOptions.md)
 
-Generation options including model and parameters
+The generation options.
 
 #### Returns
 
 `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Async iterable of stream chunks
+An async iterable of stream chunks.
 
 #### Implementation of
 
@@ -72,9 +81,11 @@ Async iterable of stream chunks
 
 > `readonly` **models**: `string`[]
 
-Defined in: [providers/openai.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L18)
+Defined in: [providers/openai.ts:32](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L32)
 
-List of available models for this provider
+A list of models that this provider officially supports.
+It's not exhaustive, but it's a good starting point.
+Feel free to try other models, but no promises.
 
 #### Implementation of
 

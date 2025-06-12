@@ -5,15 +5,16 @@ import { AnthropicProvider } from './providers/anthropic';
 import { GoogleGeminiProvider } from './providers/google';
 
 /**
- * Creates an OpenAI provider instance
+ * Summons an AIProvider that speaks fluent OpenAI.
+ * Just give it your credentials and it'll be ready to chat.
  *
- * @param config - Configuration options for OpenAI
- * @returns An AIProvider instance configured for OpenAI
+ * @param config - The secret handshake (configuration) for the OpenAI API.
+ * @returns An AIProvider, ready to do your bidding with OpenAI's models.
  *
  * @example
  * ```typescript
- * const provider = createOpenAI({
- *   apiKey: process.env.OPENAI_API_KEY!
+ * const openai = createOpenAI({
+ *   apiKey: process.env.OPENAI_API_KEY!,
  * });
  * ```
  *
@@ -24,15 +25,16 @@ export function createOpenAI(config: OpenAIConfig): AIProvider {
 }
 
 /**
- * Creates an Anthropic provider instance
+ * Whips up an AIProvider that communicates with Anthropic's Claude.
+ * It's thoughtful, helpful, and probably won't start a robot uprising.
  *
- * @param config - Configuration options for Anthropic
- * @returns An AIProvider instance configured for Anthropic
+ * @param config - The configuration needed to get Claude's attention.
+ * @returns An AIProvider, configured to work with Anthropic's models.
  *
  * @example
  * ```typescript
- * const provider = createAnthropic({
- *   apiKey: process.env.ANTHROPIC_API_KEY!
+ * const anthropic = createAnthropic({
+ *   apiKey: process.env.ANTHROPIC_API_KEY!,
  * });
  * ```
  *
@@ -43,15 +45,16 @@ export function createAnthropic(config: AnthropicConfig): AIProvider {
 }
 
 /**
- * Creates a Google Gemini provider instance
+ * Assembles an AIProvider for Google's Gemini.
+ * Get ready for some of that Google magic.
  *
- * @param config - Configuration options for Google Gemini
- * @returns An AIProvider instance configured for Google Gemini
+ * @param config - The keys to the Google AI kingdom.
+ * @returns An AIProvider, geared up for Gemini.
  *
  * @example
  * ```typescript
- * const provider = createGoogle({
- *   apiKey: process.env.GOOGLE_API_KEY!
+ * const google = createGoogle({
+ *   apiKey: process.env.GOOGLE_API_KEY!,
  * });
  * ```
  *
@@ -62,11 +65,13 @@ export function createGoogle(config: GoogleConfig): AIProvider {
 }
 
 /**
- * Generic provider creation with type safety
+ * The one function to rule them all.
+ * A generic way to create any provider with type safety.
+ * It's like a universal remote for AI.
  *
- * @param type - The provider type ('openai', 'anthropic', or 'google')
- * @param config - Configuration options for the specified provider
- * @returns An AIProvider instance configured for the specified provider
+ * @param type - The flavor of AI you're in the mood for: 'openai', 'anthropic', or 'google'.
+ * @param config - The configuration for your chosen flavor.
+ * @returns An AIProvider, ready for action.
  *
  * @example
  * ```typescript
@@ -93,6 +98,8 @@ export function createProvider<T extends 'openai' | 'anthropic' | 'google'>(
     case 'google':
       return createGoogle(config as GoogleConfig);
     default:
-      throw new Error(`Unknown provider type: ${type}`);
+      // This should be impossible with TypeScript, but we'll be safe.
+      // If you see this, you've somehow broken reality.
+      throw new Error(`Unknown provider type: ${type}. How did you do that?`);
   }
 }

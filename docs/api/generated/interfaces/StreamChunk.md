@@ -6,9 +6,10 @@
 
 # Interface: StreamChunk
 
-Defined in: [types.ts:96](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L96)
+Defined in: [types.ts:104](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L104)
 
-Represents a chunk of streaming response
+A little piece of the streaming response.
+It's like getting your data one delicious drop at a time.
 
 ## Properties
 
@@ -16,9 +17,9 @@ Represents a chunk of streaming response
 
 > **content**: `string`
 
-Defined in: [types.ts:98](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L98)
+Defined in: [types.ts:106](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L106)
 
-Full content received so far
+The full content of the response so far. It's cumulative, like student loan debt.
 
 ---
 
@@ -26,9 +27,9 @@ Full content received so far
 
 > **delta**: `string`
 
-Defined in: [types.ts:100](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L100)
+Defined in: [types.ts:108](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L108)
 
-Incremental content for this chunk
+The new bit of content that just arrived in this chunk. The delta.
 
 ---
 
@@ -36,9 +37,10 @@ Incremental content for this chunk
 
 > `optional` **finishReason**: `"stop"` \| `"length"` \| `"tool_use"` \| `"error"`
 
-Defined in: [types.ts:102](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L102)
+Defined in: [types.ts:113](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L113)
 
-Reason why generation finished (if it did)
+If the generation is done, this tells you why.
+Did it stop gracefully, run out of tokens, or decide to use a tool? The suspense is killing us.
 
 ---
 
@@ -46,6 +48,6 @@ Reason why generation finished (if it did)
 
 > `optional` **toolCalls**: [`ToolCall`](ToolCall.md)[]
 
-Defined in: [types.ts:104](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L104)
+Defined in: [types.ts:115](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L115)
 
-Tool calls in this chunk
+Any tool calls that came through in this chunk. The plot thickens.

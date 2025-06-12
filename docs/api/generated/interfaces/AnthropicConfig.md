@@ -6,9 +6,10 @@
 
 # Interface: AnthropicConfig
 
-Defined in: [types.ts:174](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L174)
+Defined in: [types.ts:227](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L227)
 
-Configuration options for Anthropic provider
+Configuration for the Anthropic provider.
+All the deets AIKit needs to talk to Claude.
 
 ## Properties
 
@@ -16,9 +17,9 @@ Configuration options for Anthropic provider
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:176](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L176)
+Defined in: [types.ts:229](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L229)
 
-Anthropic API key
+Your Anthropic API key. Don't tell anyone.
 
 ---
 
@@ -26,9 +27,9 @@ Anthropic API key
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L178)
+Defined in: [types.ts:231](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L231)
 
-Custom base URL for API requests
+A custom base URL for the API. You know the drill.
 
 ---
 
@@ -36,9 +37,9 @@ Custom base URL for API requests
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:180](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L180)
+Defined in: [types.ts:233](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L233)
 
-Request timeout in milliseconds
+How long to wait for a response before your patience wears out, in milliseconds.
 
 ---
 
@@ -46,9 +47,9 @@ Request timeout in milliseconds
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:182](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L182)
+Defined in: [types.ts:235](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L235)
 
-Maximum number of retries
+How many times to try again. Third time's the charm?
 
 ---
 
@@ -56,6 +57,6 @@ Maximum number of retries
 
 > `optional` **beta**: `string`[]
 
-Defined in: [types.ts:184](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L184)
+Defined in: [types.ts:237](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L237)
 
-Beta features to enable
+For enabling beta features. Live on the edge.

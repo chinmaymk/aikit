@@ -6,9 +6,9 @@
 
 # Interface: ToolCall
 
-Defined in: [types.ts:70](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L70)
+Defined in: [types.ts:77](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L77)
 
-Represents a tool call made by the AI model
+The AI has decided to use one of your tools. This is the moment we've all been waiting for.
 
 ## Properties
 
@@ -16,9 +16,9 @@ Represents a tool call made by the AI model
 
 > **id**: `string`
 
-Defined in: [types.ts:72](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L72)
+Defined in: [types.ts:79](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L79)
 
-Unique identifier for this tool call
+A unique ID for this specific tool invocation. Keep it safe.
 
 ---
 
@@ -26,9 +26,9 @@ Unique identifier for this tool call
 
 > **name**: `string`
 
-Defined in: [types.ts:74](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L74)
+Defined in: [types.ts:81](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L81)
 
-Name of the tool being called
+The name of the tool the model wants to use.
 
 ---
 
@@ -36,6 +36,6 @@ Name of the tool being called
 
 > **arguments**: `Record`\<`string`, `unknown`\>
 
-Defined in: [types.ts:76](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L76)
+Defined in: [types.ts:83](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L83)
 
-Arguments passed to the tool
+The arguments the model is passing to your tool. Handle with care.

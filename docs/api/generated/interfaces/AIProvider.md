@@ -6,15 +6,16 @@
 
 # Interface: AIProvider\<O\>
 
-Defined in: [types.ts:200](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L200)
+Defined in: [types.ts:255](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L255)
 
-Core interface implemented by all AI providers
+The core interface that all AI providers must implement.
+It's the social contract that holds this whole library together.
 
 ## Type Parameters
 
 ### O
 
-`O` _extends_ [`BaseGenerationOptions`](BaseGenerationOptions.md) = [`BaseGenerationOptions`](BaseGenerationOptions.md)
+`O` _extends_ [`GenerationOptions`](GenerationOptions.md) = [`GenerationOptions`](GenerationOptions.md)
 
 ## Methods
 
@@ -22,9 +23,10 @@ Core interface implemented by all AI providers
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](StreamChunk.md)\>
 
-Defined in: [types.ts:210](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L210)
+Defined in: [types.ts:266](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L266)
 
-Generate streaming response for given messages
+The main event. This is where the magic happens.
+Give it a list of messages and some options, and it'll give you back a stream of consciousness.
 
 #### Parameters
 
@@ -32,19 +34,19 @@ Generate streaming response for given messages
 
 [`Message`](Message.md)[]
 
-Array of conversation messages
+The conversation so far. A story waiting to be told.
 
 ##### options
 
 `O`
 
-Generation options including model and parameters
+The rules of the game. How you want the AI to behave.
 
 #### Returns
 
 `AsyncIterable`\<[`StreamChunk`](StreamChunk.md)\>
 
-Async iterable of stream chunks
+An async iterable of stream chunks. Data, glorious data!
 
 ## Properties
 
@@ -52,6 +54,6 @@ Async iterable of stream chunks
 
 > `readonly` **models**: `string`[]
 
-Defined in: [types.ts:202](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L202)
+Defined in: [types.ts:257](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L257)
 
-List of available models for this provider
+A list of the models this provider supports. A handy little cheat sheet.

@@ -354,7 +354,10 @@ describe('OpenAIProvider', () => {
         { toolChoice: 'none', expected: 'none' },
         { toolChoice: 'auto', expected: 'auto' },
         { toolChoice: 'required', expected: 'required' },
-        { toolChoice: { name: 'specific_tool' }, expected: { type: 'function', function: { name: 'specific_tool' } } },
+        {
+          toolChoice: { name: 'specific_tool' },
+          expected: { type: 'function', function: { name: 'specific_tool' } },
+        },
         { toolChoice: undefined, expected: undefined },
       ];
 
@@ -488,7 +491,10 @@ describe('OpenAIProvider', () => {
       ];
 
       let requestBody: any;
-      const scope = mockChatCompletion([textChunk('Response', 'stop')], body => (requestBody = body));
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(messagesWithNullContent, mockOptions)) {
@@ -515,7 +521,10 @@ describe('OpenAIProvider', () => {
       };
 
       let requestBody: any;
-      const scope = mockChatCompletion([textChunk('Response', 'stop')], body => (requestBody = body));
+      const scope = mockChatCompletion(
+        [textChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
 
       const chunks: StreamChunk[] = [];
       for await (const chunk of provider.generate(mockMessages, toolOptions)) {

@@ -8,9 +8,10 @@
 
 > **createGoogle**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:60](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L60)
+Defined in: [factory.ts:63](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L63)
 
-Creates a Google Gemini provider instance
+Assembles an AIProvider for Google's Gemini.
+Get ready for some of that Google magic.
 
 ## Parameters
 
@@ -18,18 +19,18 @@ Creates a Google Gemini provider instance
 
 [`GoogleConfig`](../interfaces/GoogleConfig.md)
 
-Configuration options for Google Gemini
+The keys to the Google AI kingdom.
 
 ## Returns
 
 [`AIProvider`](../interfaces/AIProvider.md)
 
-An AIProvider instance configured for Google Gemini
+An AIProvider, geared up for Gemini.
 
 ## Example
 
 ```typescript
-const provider = createGoogle({
+const google = createGoogle({
   apiKey: process.env.GOOGLE_API_KEY!,
 });
 ```

@@ -6,9 +6,10 @@
 
 # Interface: GoogleConfig
 
-Defined in: [types.ts:191](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L191)
+Defined in: [types.ts:245](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L245)
 
-Configuration options for Google Gemini provider
+Configuration for the Google Gemini provider.
+The credentials to unlock the power of Gemini.
 
 ## Properties
 
@@ -16,6 +17,6 @@ Configuration options for Google Gemini provider
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:193](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L193)
+Defined in: [types.ts:247](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L247)
 
-Google AI API key
+Your Google AI API key. The key to the kingdom.

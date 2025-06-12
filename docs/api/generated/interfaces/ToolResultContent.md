@@ -6,9 +6,10 @@
 
 # Interface: ToolResultContent
 
-Defined in: [types.ts:38](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L38)
+Defined in: [types.ts:41](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L41)
 
-Tool result content for tool responses
+The model used a tool, and this is what it brought back.
+Like a cat presenting you with a mouse, but hopefully more useful.
 
 ## Properties
 
@@ -16,9 +17,9 @@ Tool result content for tool responses
 
 > **type**: `"tool_result"`
 
-Defined in: [types.ts:40](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L40)
+Defined in: [types.ts:43](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L43)
 
-Content type identifier
+A tool result. The circle of life continues.
 
 ---
 
@@ -26,9 +27,9 @@ Content type identifier
 
 > **toolCallId**: `string`
 
-Defined in: [types.ts:42](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L42)
+Defined in: [types.ts:45](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L45)
 
-ID of the tool call this result corresponds to
+The ID of the tool call this is a response to. So we know which cat to praise.
 
 ---
 
@@ -36,6 +37,6 @@ ID of the tool call this result corresponds to
 
 > **result**: `string`
 
-Defined in: [types.ts:44](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L44)
+Defined in: [types.ts:47](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L47)
 
-The result of the tool execution
+The glorious result of the tool's hard work.

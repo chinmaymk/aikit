@@ -6,13 +6,14 @@
 
 # Interface: AnthropicGenerationOptions
 
-Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
+Defined in: [types.ts:194](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L194)
 
-Anthropic-specific generation options
+Anthropic-specific settings. For when you're feeling a bit more... anthropic.
+These are the special levers for Claude models.
 
 ## Extends
 
-- [`BaseGenerationOptions`](BaseGenerationOptions.md)
+- [`GenerationOptions`](GenerationOptions.md)
 
 ## Properties
 
@@ -20,13 +21,13 @@ Anthropic-specific generation options
 
 > **model**: `string`
 
-Defined in: [types.ts:112](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L112)
+Defined in: [types.ts:124](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L124)
 
-Model to use for generation
+The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-20240620'.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`model`](BaseGenerationOptions.md#model)
+[`GenerationOptions`](GenerationOptions.md).[`model`](GenerationOptions.md#model)
 
 ---
 
@@ -34,13 +35,13 @@ Model to use for generation
 
 > `optional` **maxTokens**: `number`
 
-Defined in: [types.ts:114](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L114)
+Defined in: [types.ts:126](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L126)
 
-Maximum number of tokens to generate
+The maximum number of tokens to generate. Don't want it to ramble on forever, do you?
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`maxTokens`](BaseGenerationOptions.md#maxtokens)
+[`GenerationOptions`](GenerationOptions.md).[`maxTokens`](GenerationOptions.md#maxtokens)
 
 ---
 
@@ -48,13 +49,15 @@ Maximum number of tokens to generate
 
 > `optional` **temperature**: `number`
 
-Defined in: [types.ts:116](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L116)
+Defined in: [types.ts:132](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L132)
 
-Sampling temperature (0-2)
+The sampling temperature. Higher values (e.g., 0.8) make the output more random,
+while lower values (e.g., 0.2) make it more focused and deterministic.
+A bit like adjusting the chaos knob.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`temperature`](BaseGenerationOptions.md#temperature)
+[`GenerationOptions`](GenerationOptions.md).[`temperature`](GenerationOptions.md#temperature)
 
 ---
 
@@ -62,13 +65,14 @@ Sampling temperature (0-2)
 
 > `optional` **topP**: `number`
 
-Defined in: [types.ts:118](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L118)
+Defined in: [types.ts:137](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L137)
 
-Top-p sampling parameter
+Top-p sampling. It's a way to control the randomness of the output by only considering
+the most likely tokens. It's like telling the AI to only pick from the top of the deck.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`topP`](BaseGenerationOptions.md#topp)
+[`GenerationOptions`](GenerationOptions.md).[`topP`](GenerationOptions.md#topp)
 
 ---
 
@@ -76,13 +80,13 @@ Top-p sampling parameter
 
 > `optional` **stopSequences**: `string`[]
 
-Defined in: [types.ts:122](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L122)
+Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
 
-Sequences that will stop generation
+A list of sequences that will stop the generation. A safe word, if you will.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`stopSequences`](BaseGenerationOptions.md#stopsequences)
+[`GenerationOptions`](GenerationOptions.md).[`stopSequences`](GenerationOptions.md#stopsequences)
 
 ---
 
@@ -90,13 +94,13 @@ Sequences that will stop generation
 
 > `optional` **tools**: [`Tool`](Tool.md)[]
 
-Defined in: [types.ts:124](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L124)
+Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
 
-Available tools for function calling
+The list of tools you're making available to the model.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`tools`](BaseGenerationOptions.md#tools)
+[`GenerationOptions`](GenerationOptions.md).[`tools`](GenerationOptions.md#tools)
 
 ---
 
@@ -104,13 +108,17 @@ Available tools for function calling
 
 > `optional` **toolChoice**: \{ `name`: `string`; \} \| `"auto"` \| `"required"` \| `"none"`
 
-Defined in: [types.ts:126](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L126)
+Defined in: [types.ts:154](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L154)
 
-How to choose tools ('auto', 'required', 'none', or specific tool)
+How the model should choose which tool to use.
+'auto': The model decides.
+'required': The model must use a tool.
+'none': The model can't use any tools.
+{ name: 'my_tool' }: Force the model to use a specific tool.
 
 #### Inherited from
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`toolChoice`](BaseGenerationOptions.md#toolchoice)
+[`GenerationOptions`](GenerationOptions.md).[`toolChoice`](GenerationOptions.md#toolchoice)
 
 ---
 
@@ -118,10 +126,11 @@ How to choose tools ('auto', 'required', 'none', or specific tool)
 
 > `optional` **topK**: `number`
 
-Defined in: [types.ts:148](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L148)
+Defined in: [types.ts:199](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L199)
 
-Top-k sampling parameter
+Top-k sampling. See `GenerationOptions` for the juicy gossip.
+It's here because Anthropic supports it too.
 
 #### Overrides
 
-[`BaseGenerationOptions`](BaseGenerationOptions.md).[`topK`](BaseGenerationOptions.md#topk)
+[`GenerationOptions`](GenerationOptions.md).[`topK`](GenerationOptions.md#topk)

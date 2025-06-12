@@ -8,9 +8,10 @@
 
 > **createOpenAI**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:22](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L22)
+Defined in: [factory.ts:23](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L23)
 
-Creates an OpenAI provider instance
+Summons an AIProvider that speaks fluent OpenAI.
+Just give it your credentials and it'll be ready to chat.
 
 ## Parameters
 
@@ -18,18 +19,18 @@ Creates an OpenAI provider instance
 
 [`OpenAIConfig`](../interfaces/OpenAIConfig.md)
 
-Configuration options for OpenAI
+The secret handshake (configuration) for the OpenAI API.
 
 ## Returns
 
 [`AIProvider`](../interfaces/AIProvider.md)
 
-An AIProvider instance configured for OpenAI
+An AIProvider, ready to do your bidding with OpenAI's models.
 
 ## Example
 
 ```typescript
-const provider = createOpenAI({
+const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 ```

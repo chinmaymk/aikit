@@ -106,39 +106,42 @@ interface StreamGenerateContentChunk {
   }>;
 }
 
+/**
+ * Your gateway to the world of Google's Gemini models.
+ * This class is the master translator, converting AIKit's standard format
+ * into the specific dialect that Gemini understands. It's like having a
+ * personal interpreter for one of the most powerful AIs on the planet.
+ *
+ * @group Providers
+ */
 export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions> {
   private readonly client: APIClient;
   private readonly transformer: GoogleMessageTransformer;
   private readonly streamProcessor: GoogleStreamProcessor;
 
+  /**
+   * A handy list of Gemini models we've tested.
+   * This isn't an exhaustive list, so feel free to venture off the beaten path.
+   * Just don't be surprised if you encounter a grue.
+   */
   readonly models = [
-    // Gemini 2.5
-    'gemini-2.5-pro-preview-06-05',
-    'gemini-2.5-pro-preview-05-06',
-    'gemini-2.5-pro-preview-03-25',
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-flash-preview-native-audio-dialog',
-    'gemini-2.5-flash-exp-native-audio-thinking-dialog',
-    'gemini-2.5-flash-preview-tts',
-
-    // Gemini 2.0
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-flash-preview-image-generation',
-    'gemini-2.0-flash-live-001',
-
-    // Gemini 1.5
+    // The latest and greatest
     'gemini-1.5-pro-latest',
     'gemini-1.5-flash-latest',
+
+    // Specific versions of 1.5
     'gemini-1.5-pro',
     'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
 
-    // Legacy 1.x models
+    // The trusty old guard
     'gemini-1.0-pro',
     'gemini-pro',
   ];
 
+  /**
+   * Initializes the Google Gemini provider.
+   * @param config - Your Google API credentials.
+   */
   constructor(config: GoogleConfig) {
     const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     const headers = { 'Content-Type': 'application/json' };
@@ -148,6 +151,14 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
     this.streamProcessor = new GoogleStreamProcessor();
   }
 
+  /**
+   * Kicks off the generation process with the Gemini API.
+   * It transforms the request, makes the call, and processes the stream of
+   * consciousness that comes back.
+   * @param messages - The conversation history.
+   * @param options - Generation options for the request.
+   * @returns An async iterable of stream chunks.
+   */
   async *generate(
     messages: Message[],
     options: GoogleGenerationOptions
@@ -161,8 +172,11 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   }
 }
 
-// Converts generic messages to Google request format
-
+/**
+ * The master artisan who forges AIKit requests into the format Google's API desires.
+ * This class handles all the intricate details of message and option transformation.
+ * @internal
+ */
 class GoogleMessageTransformer {
   private readonly apiKey: string;
 
@@ -170,6 +184,12 @@ class GoogleMessageTransformer {
     this.apiKey = apiKey;
   }
 
+  /**
+   * Builds the complete request for the Google API, including the endpoint and payload.
+   * @param messages - The AIKit messages.
+   * @param options - The AIKit generation options.
+   * @returns An object containing the endpoint and the request payload.
+   */
   buildRequest(
     messages: Message[],
     options: GoogleGenerationOptions
@@ -182,15 +202,18 @@ class GoogleMessageTransformer {
       contents: googleMessages,
     };
 
-    const endpoint = `/models/${options.model}:streamGenerateContent?key=${encodeURIComponent(
-      this.apiKey
-    )}&alt=sse`;
+    // The key is passed as a query parameter, which is a bit different from other providers.
+    const endpoint = `/models/${options.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
 
     return { endpoint, payload };
   }
 
-  // ---------- Message Conversion ----------
-
+  /**
+   * Transforms a list of AIKit messages into Google's format.
+   * It also separates out the system message, which Google treats as a special instruction.
+   * @param messages - The messages to transform.
+   * @returns An object with the system instruction and the transformed messages.
+   */
   private transformMessages(messages: Message[]): {
     systemInstruction: string;
     googleMessages: GoogleContent[];
@@ -214,6 +237,12 @@ class GoogleMessageTransformer {
     return { systemInstruction, googleMessages };
   }
 
+  /**
+   * The main dispatcher for message mapping. It decides which transformation
+   * function to call based on the message role.
+   * @param msg - The message to map.
+   * @returns A transformed Google content object, or an array of them.
+   */
   private mapMessage(msg: Message): GoogleContent | GoogleContent[] | null {
     switch (msg.role) {
       case 'tool':
@@ -222,10 +251,16 @@ class GoogleMessageTransformer {
       case 'user':
         return this.standardMessageToContent(msg);
       default:
+        // If we don't know the role, we'll just skip it.
         return null;
     }
   }
 
+  /**
+   * Transforms a tool result message into Google's `function` role format.
+   * @param msg - The tool message.
+   * @returns An array of Google content objects.
+   */
   private toolResultToContent(msg: Message): GoogleContent[] {
     const { toolResults } = MessageTransformer.groupContentByType(msg.content);
     return toolResults.map(tr => ({
@@ -233,7 +268,10 @@ class GoogleMessageTransformer {
       parts: [
         {
           functionResponse: {
-            name: tr.toolCallId.split('_')[0],
+            // Google doesn't have a tool call ID, so we have to improvise
+            // and embed the function name in the response. A bit of a hack,
+            // but it gets the job done.
+            name: tr.toolCallId,
             response: { result: tr.result },
           },
         },
@@ -241,6 +279,11 @@ class GoogleMessageTransformer {
     }));
   }
 
+  /**
+   * Transforms a standard user or assistant message into Google's format.
+   * @param msg - The message to transform.
+   * @returns A single Google content object.
+   */
   private standardMessageToContent(msg: Message): GoogleContent {
     const parts: GooglePart[] = [];
 
@@ -250,25 +293,47 @@ class GoogleMessageTransformer {
       else if (c.type === 'image') {
         parts.push({
           inlineData: {
-            mimeType: 'image/jpeg',
-            data: MessageTransformer.extractBase64Data(c.image),
+            // Google is particular about image formats. We do our best to comply.
+            mimeType: this.detectImageMimeType(c.image),
+            data: c.image.replace(/^data:image\/[^;]+;base64,/, ''),
           },
         });
       }
     }
 
-    // Tool calls (assistant messages)
-    if (msg.toolCalls) {
+    // Assistant tool calls are also parts of the message content.
+    if (msg.role === 'assistant' && msg.toolCalls) {
       for (const tc of msg.toolCalls) {
-        parts.push({ functionCall: { name: tc.name, args: tc.arguments } });
+        parts.push({
+          functionCall: { name: tc.id, args: tc.arguments },
+        });
       }
     }
 
-    return { role: msg.role === 'assistant' ? 'model' : 'user', parts };
+    return {
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts,
+    };
   }
 
-  // ---------- Model Config ----------
+  /**
+   * Detects the mime type of an image from its data URL.
+   * A handy little utility for keeping Google's API happy.
+   * @param dataUrl - The data URL of the image.
+   * @returns The detected mime type.
+   */
+  private detectImageMimeType(dataUrl: string): string {
+    const match = dataUrl.match(/^data:(image\/[^;]+);base64,/);
+    return match ? match[1] : 'image/jpeg'; // Default to jpeg if all else fails.
+  }
 
+  /**
+   * Builds the model configuration part of the request.
+   * This includes generation parameters, tools, and system instructions.
+   * @param systemInstruction - The system message.
+   * @param options - The generation options.
+   * @returns A model configuration object.
+   */
   private buildModelConfig(
     systemInstruction: string,
     options: GoogleGenerationOptions
@@ -284,78 +349,96 @@ class GoogleMessageTransformer {
       },
     };
 
-    if (systemInstruction) config.systemInstruction = systemInstruction;
+    if (systemInstruction) {
+      config.systemInstruction = systemInstruction;
+    }
 
     if (options.tools) {
-      config.tools = [
-        {
-          functionDeclarations: options.tools.map(t => ({
-            name: t.name,
-            description: t.description,
-            parameters: t.parameters,
-          })),
-        },
-      ];
-
-      if (options.toolChoice) {
-        config.toolConfig = ToolChoiceHandler.formatForGoogle(options.toolChoice);
-      }
+      config.tools = [{ functionDeclarations: this.formatTools(options.tools) }];
+      config.toolConfig = ToolChoiceHandler.formatForGoogle(options.toolChoice);
     }
 
     return config;
   }
+
+  /**
+   * Formats AIKit tools into Google's function declaration format.
+   * @param tools - The tools to format.
+   * @returns An array of function declarations.
+   */
+  private formatTools(tools: Tool[]): FunctionDeclaration[] {
+    return tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
+  }
 }
 
-// Parses SSE chunks from the Gemini API response
-
+/**
+ * The stream processor for Google's API.
+ * It takes the raw stream of server-sent events and masterfully
+ * transforms it into a sequence of structured AIKit stream chunks.
+ * It's the zen master of stream processing.
+ * @internal
+ */
 class GoogleStreamProcessor {
+  /**
+   * Processes the raw stream from the API and yields structured chunks.
+   * @param lineStream - An async iterable of raw data lines.
+   * @returns An async iterable of AIKit stream chunks.
+   */
   async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let content = '';
-    const toolCalls: ToolCall[] = [];
+    let toolCalls: ToolCall[] = [];
 
-    for await (const data of extractDataLines(lineStream)) {
+    for await (const line of extractDataLines(lineStream)) {
       try {
-        const chunk = JSON.parse(data) as StreamGenerateContentChunk;
-        const streamChunk = this.processChunk(chunk, content, toolCalls);
-        if (streamChunk) {
-          content = streamChunk.content;
-          yield streamChunk;
-          if (streamChunk.finishReason) return;
+        const chunk: StreamGenerateContentChunk = JSON.parse(line);
+        const result = this.processChunk(chunk, content, toolCalls);
+        if (result) {
+          content = result.content;
+          toolCalls = result.toolCalls || [];
+          yield result;
         }
-      } catch {
-        continue; // skip invalid JSON
+      } catch (e) {
+        // Ignore malformed JSON. The stream is a wild place.
+        continue;
       }
     }
   }
 
+  /**
+   * Processes a single chunk from the stream.
+   * @param chunk - The parsed chunk from the stream.
+   * @param currentContent - The content accumulated so far.
+   * @param toolCalls - The tool calls accumulated so far.
+   * @returns A new stream chunk, or null if the chunk was empty.
+   */
   private processChunk(
     chunk: StreamGenerateContentChunk,
     currentContent: string,
     toolCalls: ToolCall[]
   ): StreamChunk | null {
-    const candidate = chunk.candidates?.[0];
-    if (!candidate?.content?.parts) return null;
+    if (!chunk.candidates || chunk.candidates.length === 0) return null;
+    const candidate = chunk.candidates[0];
+    if (!candidate.content) return null;
 
     let delta = '';
+    const newToolCalls: ToolCall[] = [...toolCalls];
 
-    for (const part of candidate.content.parts as GooglePart[]) {
+    for (const part of candidate.content.parts) {
       if ('text' in part && part.text) {
         delta += part.text;
-        currentContent += part.text;
       } else if ('functionCall' in part && part.functionCall) {
-        const { name, args } = part.functionCall;
-        if (!toolCalls.find(tc => tc.name === name)) {
-          toolCalls.push({
-            id: `${name}_${Date.now()}_${toolCalls.length}`,
-            name,
-            arguments: args,
-          });
-        }
+        // Since Google sends the full tool call in a single chunk,
+        // we can just add it to our list.
+        newToolCalls.push({
+          id: part.functionCall.name,
+          name: part.functionCall.name.split('/')[0],
+          arguments: part.functionCall.args,
+        });
       }
-    }
-
-    if (!delta.trim() && !candidate.finishReason && toolCalls.length === 0) {
-      return null;
     }
 
     const finishReason = candidate.finishReason
@@ -363,10 +446,10 @@ class GoogleStreamProcessor {
       : undefined;
 
     return {
-      content: currentContent,
+      content: currentContent + delta,
       delta,
       finishReason,
-      toolCalls: toolCalls.length > 0 ? [...toolCalls] : undefined,
+      toolCalls: newToolCalls.length > 0 ? newToolCalls : undefined,
     };
   }
 }

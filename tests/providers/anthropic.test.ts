@@ -210,9 +210,7 @@ describe('AnthropicProvider', () => {
       ];
 
       for (const { input, expected } of testCases) {
-        const messagesWithImage: Message[] = [
-          userImage('Test image', input),
-        ];
+        const messagesWithImage: Message[] = [userImage('Test image', input)];
 
         let requestBody: any;
         const scope = mockAnthropicGeneration(
@@ -306,7 +304,10 @@ describe('AnthropicProvider', () => {
         body => (requestBody = body)
       );
 
-      for await (const chunk of provider.generate(mockMessages, { ...toolOptions, toolChoice: 'required' })) {
+      for await (const chunk of provider.generate(mockMessages, {
+        ...toolOptions,
+        toolChoice: 'required',
+      })) {
         // consume chunks
       }
 
@@ -320,7 +321,10 @@ describe('AnthropicProvider', () => {
         body => (requestBody = body)
       );
 
-      for await (const chunk of provider.generate(mockMessages, { ...toolOptions, toolChoice: { name: 'calculate' } })) {
+      for await (const chunk of provider.generate(mockMessages, {
+        ...toolOptions,
+        toolChoice: { name: 'calculate' },
+      })) {
         // consume chunks
       }
 
@@ -559,9 +563,7 @@ describe('AnthropicProvider', () => {
 
       expect(scope.isDone()).toBe(true);
       expect(chunks).toHaveLength(1);
-      expect(chunks[0].toolCalls).toEqual([
-        { id: 'call_123', name: 'test_tool', arguments: {} },
-      ]);
+      expect(chunks[0].toolCalls).toEqual([{ id: 'call_123', name: 'test_tool', arguments: {} }]);
     });
   });
 });

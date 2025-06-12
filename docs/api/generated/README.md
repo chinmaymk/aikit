@@ -24,10 +24,7 @@
 
 ## Interfaces
 
-- [AnthropicProvider](classes/AnthropicProvider.md)
-- [GoogleGeminiProvider](classes/GoogleGeminiProvider.md)
-- [OpenAIProvider](classes/OpenAIProvider.md)
-- [BaseGenerationOptions](interfaces/BaseGenerationOptions.md)
+- [GenerationOptions](interfaces/GenerationOptions.md)
 - [OpenAIGenerationOptions](interfaces/OpenAIGenerationOptions.md)
 - [GoogleGenerationOptions](interfaces/GoogleGenerationOptions.md)
 - [AnthropicGenerationOptions](interfaces/AnthropicGenerationOptions.md)
@@ -36,6 +33,8 @@
 - [GoogleConfig](interfaces/GoogleConfig.md)
 - [AIProvider](interfaces/AIProvider.md)
 
-## Type Aliases
+## Providers
 
-- [~~GenerationOptions~~](type-aliases/GenerationOptions.md)
+- [AnthropicProvider](classes/AnthropicProvider.md)
+- [GoogleGeminiProvider](classes/GoogleGeminiProvider.md)
+- [OpenAIProvider](classes/OpenAIProvider.md)
