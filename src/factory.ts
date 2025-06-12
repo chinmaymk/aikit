@@ -5,6 +5,24 @@ import { AnthropicProvider } from './providers/anthropic';
 import { GoogleGeminiProvider } from './providers/google';
 
 /**
+ * Maps provider type strings to their corresponding provider classes
+ */
+type ProviderMap = {
+  openai: OpenAIProvider;
+  anthropic: AnthropicProvider;
+  google: GoogleGeminiProvider;
+};
+
+/**
+ * Maps provider type strings to their corresponding config types
+ */
+type ConfigMap = {
+  openai: OpenAIConfig;
+  anthropic: AnthropicConfig;
+  google: GoogleConfig;
+};
+
+/**
  * Summons an AIProvider that speaks fluent OpenAI.
  * Just give it your credentials and it'll be ready to chat.
  *
@@ -71,7 +89,7 @@ export function createGoogle(config: GoogleConfig): AIProvider {
  *
  * @param type - The flavor of AI you're in the mood for: 'openai', 'anthropic', or 'google'.
  * @param config - The configuration for your chosen flavor.
- * @returns An AIProvider, ready for action.
+ * @returns The specific provider instance for the chosen type.
  *
  * @example
  * ```typescript
@@ -86,17 +104,17 @@ export function createGoogle(config: GoogleConfig): AIProvider {
  *
  * @group Factory Functions
  */
-export function createProvider<T extends 'openai' | 'anthropic' | 'google'>(
+export function createProvider<T extends keyof ProviderMap>(
   type: T,
-  config: T extends 'openai' ? OpenAIConfig : T extends 'anthropic' ? AnthropicConfig : GoogleConfig
-): AIProvider {
+  config: ConfigMap[T]
+): ProviderMap[T] {
   switch (type) {
     case 'openai':
-      return createOpenAI(config as OpenAIConfig);
+      return createOpenAI(config as OpenAIConfig) as ProviderMap[T];
     case 'anthropic':
-      return createAnthropic(config as AnthropicConfig);
+      return createAnthropic(config as AnthropicConfig) as ProviderMap[T];
     case 'google':
-      return createGoogle(config as GoogleConfig);
+      return createGoogle(config as GoogleConfig) as ProviderMap[T];
     default:
       // This should be impossible with TypeScript, but we'll be safe.
       // If you see this, you've somehow broken reality.

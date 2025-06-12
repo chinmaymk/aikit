@@ -120,30 +120,6 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   private readonly streamProcessor: GoogleStreamProcessor;
 
   /**
-   * A handy list of Gemini models we've tested.
-   * This isn't an exhaustive list, so feel free to venture off the beaten path.
-   * Just don't be surprised if you encounter a grue.
-   */
-  readonly models = [
-    'gemini-2.5-flash-preview-05-20',
-    'gemini-2.5-flash-preview-native-audio-dialog',
-    'gemini-2.5-flash-exp-native-audio-thinking-dialog',
-    'gemini-2.5-flash-preview-tts',
-    'gemini-2.5-pro-preview-06-05',
-    'gemini-2.5-pro-preview-tts',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-preview-image-generation',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-1.5-pro',
-    'gemini-embedding-exp',
-    'imagen-3.0-generate-002',
-    'veo-2.0-generate-001',
-    'gemini-2.0-flash-live-001',
-  ];
-
-  /**
    * Initializes the Google Gemini provider.
    * @param config - Your Google API credentials.
    */

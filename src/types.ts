@@ -253,9 +253,6 @@ export interface GoogleConfig {
  * @group Interfaces
  */
 export interface AIProvider<GenOpts extends GenerationOptions = GenerationOptions> {
-  /** A list of the models this provider supports. A handy little cheat sheet. */
-  readonly models: string[];
-
   /**
    * The main event. This is where the magic happens.
    * Give it a list of messages and some options, and it'll give you back a stream of consciousness.
