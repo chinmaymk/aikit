@@ -576,5 +576,27 @@ describe('GoogleGeminiProvider', () => {
       // Should handle empty tool call gracefully
       expect(chunks).toHaveLength(2);
     });
+
+    it('should fallback to image/jpeg for unknown image MIME types', async () => {
+      const messagesWithUnknownImage: Message[] = [
+        userImage('Check image', 'data:application/octet-stream;base64,abc123'),
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Looks like an image'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      for await (const _ of provider.generate(messagesWithUnknownImage, mockOptions)) {
+        void _; // consume stream
+      }
+
+      expect(scope.isDone()).toBe(true);
+      const parts = requestBody.contents[0].parts;
+      // Second part should be the image inlineData with default mimeType image/jpeg
+      expect(parts[1].inlineData.mimeType).toBe('image/jpeg');
+    });
   });
 });

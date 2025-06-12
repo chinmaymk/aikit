@@ -1,176 +1,148 @@
 import { APIClient, extractDataLines } from '../../src/providers/api';
-
-// Mock fetch globally
-global.fetch = jest.fn();
-
-const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+import nock from 'nock';
+import { Readable } from 'node:stream';
 
 describe('APIClient', () => {
+  const baseUrl = 'https://api.example.com';
+  const headers = { 'Content-Type': 'application/json' };
+
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
+  afterEach(() => {
+    nock.cleanAll();
+  });
+
+  afterAll(() => {
+    nock.enableNetConnect();
+  });
+
   let client: APIClient;
 
   beforeEach(() => {
-    client = new APIClient('https://api.example.com', { 'Content-Type': 'application/json' });
-    mockFetch.mockClear();
+    client = new APIClient(baseUrl, headers);
   });
 
   describe('constructor', () => {
     it('should initialize with basic config', () => {
-      const basicClient = new APIClient('https://api.test.com', { Authorization: 'Bearer test' });
+      const basicClient = new APIClient(baseUrl, headers);
       expect(basicClient).toBeInstanceOf(APIClient);
     });
 
     it('should initialize with timeout and max retries', () => {
-      const advancedClient = new APIClient(
-        'https://api.test.com',
-        { Authorization: 'Bearer test' },
-        5000,
-        3
-      );
+      const advancedClient = new APIClient(baseUrl, headers, 5000, 3);
       expect(advancedClient).toBeInstanceOf(APIClient);
     });
   });
 
   describe('stream', () => {
     it('should make successful API call', async () => {
-      const mockBody = new ReadableStream();
-      const mockResponse = {
-        ok: true,
-        body: mockBody,
-      };
+      const mockData = 'test response data';
+      const stream = new Readable({ read() {} });
+      stream.push(mockData);
+      stream.push(null);
 
-      mockFetch.mockResolvedValueOnce(mockResponse as Response);
+      const scope = nock(baseUrl)
+        .post('/test', { key: 'value' })
+        .reply(200, () => stream, { 'Content-Type': 'text/event-stream' });
 
-      const result = await client.stream('/test', { data: 'test' });
+      const resultStream = await client.stream('/test', { key: 'value' });
 
-      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'test' }),
-        signal: undefined,
-      });
-      expect(result).toBe(mockBody);
+      expect(resultStream).toBeInstanceOf(ReadableStream);
+      expect(scope.isDone()).toBe(true);
     });
 
     it('should handle API errors', async () => {
-      const mockResponse = {
-        ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        text: jest.fn().mockResolvedValue('Invalid request'),
-      };
+      const scope = nock(baseUrl).post('/test').reply(400, 'Bad Request');
 
-      mockFetch.mockResolvedValueOnce(mockResponse as unknown as Response);
-
-      await expect(client.stream('/test', { data: 'test' })).rejects.toThrow(
-        'API error: 400 Bad Request - Invalid request'
-      );
+      await expect(client.stream('/test', {})).rejects.toThrow('API error: 400');
+      expect(scope.isDone()).toBe(true);
     });
 
     it('should handle missing response body', async () => {
-      const mockResponse = {
+      // Test the edge case where response.body is null
+      const originalFetch = global.fetch;
+      global.fetch = jest.fn().mockResolvedValueOnce({
         ok: true,
-        body: null,
-      };
+        status: 200,
+        statusText: 'OK',
+        body: null, // This is the key - null body
+        text: async () => '',
+      } as any);
 
-      mockFetch.mockResolvedValueOnce(mockResponse as Response);
+      await expect(client.stream('/test', {})).rejects.toThrow('No response body from API');
 
-      await expect(client.stream('/test', { data: 'test' })).rejects.toThrow(
-        'No response body from API'
-      );
+      global.fetch = originalFetch;
     });
 
     it('should retry on failure', async () => {
-      const clientWithRetries = new APIClient(
-        'https://api.example.com',
-        { 'Content-Type': 'application/json' },
-        undefined,
-        3 // Will attempt 3 times total
-      );
+      const retryClient = new APIClient(baseUrl, headers, undefined, 2);
 
-      const mockBody = new ReadableStream();
+      const scope = nock(baseUrl)
+        .post('/test')
+        .reply(500, 'Internal Server Error')
+        .post('/test')
+        .reply(200, () => new Readable({ read() {} }));
 
-      // Clear any previous mocks
-      mockFetch.mockReset();
+      const resultStream = await retryClient.stream('/test', {});
 
-      // Set up the mock to fail twice, then succeed
-      mockFetch
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({
-          ok: true,
-          body: mockBody,
-        } as Response);
-
-      const result = await clientWithRetries.stream('/test', { data: 'test' });
-
-      expect(mockFetch).toHaveBeenCalledTimes(3);
-      expect(result).toBe(mockBody);
+      expect(resultStream).toBeInstanceOf(ReadableStream);
+      expect(scope.isDone()).toBe(true);
     });
 
     it('should throw last error after max retries', async () => {
-      const clientWithRetries = new APIClient(
-        'https://api.example.com',
-        { 'Content-Type': 'application/json' },
-        undefined,
-        2 // Will attempt 2 times total
-      );
+      const retryClient = new APIClient(baseUrl, headers, undefined, 2);
 
-      const error1 = new Error('Network error 1');
-      const error2 = new Error('Network error 2');
+      const scope = nock(baseUrl)
+        .post('/test')
+        .reply(500, 'Internal Server Error')
+        .post('/test')
+        .reply(500, 'Internal Server Error');
 
-      // Clear any previous mocks
-      mockFetch.mockReset();
-
-      // Set up the mock to fail both times
-      mockFetch.mockRejectedValueOnce(error1).mockRejectedValueOnce(error2);
-
-      await expect(clientWithRetries.stream('/test', { data: 'test' })).rejects.toThrow(
-        'Network error 2'
-      );
-
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      await expect(retryClient.stream('/test', {})).rejects.toThrow('API error: 500');
+      expect(scope.isDone()).toBe(true);
     });
 
-    it('should use timeout when specified', async () => {
-      const clientWithTimeout = new APIClient(
-        'https://api.example.com',
-        { 'Content-Type': 'application/json' },
-        5000
-      );
+    it('should handle max retries correctly', async () => {
+      const retryClient = new APIClient(baseUrl, headers, undefined, 2);
 
-      const mockBody = new ReadableStream();
+      const scope = nock(baseUrl)
+        .post('/test')
+        .reply(500, 'Internal Server Error')
+        .post('/test')
+        .reply(500, 'Internal Server Error');
 
-      // Clear any previous mocks
-      mockFetch.mockReset();
+      await expect(retryClient.stream('/test', {})).rejects.toThrow('API error: 500');
+      expect(scope.isDone()).toBe(true);
+    });
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        body: mockBody,
-      } as Response);
+    it('should handle timeout properly', async () => {
+      const timeoutClient = new APIClient(baseUrl, headers, 10); // 10ms timeout
 
-      await clientWithTimeout.stream('/test', { data: 'test' });
+      const _scope = nock(baseUrl)
+        .post('/test')
+        .delay(100) // Delay longer than timeout
+        .reply(200, () => new Readable({ read() {} }));
 
-      expect(mockFetch).toHaveBeenCalledWith('https://api.example.com/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: 'test' }),
-        signal: expect.any(AbortSignal),
-      });
+      await expect(timeoutClient.stream('/test', {})).rejects.toThrow();
+      nock.cleanAll(); // Clean up manually since delay may prevent auto-cleanup
+      expect(_scope.isDone()).toBe(true);
     });
   });
 
   describe('processStreamAsLines', () => {
     it('should process stream and yield lines', async () => {
-      const mockData = new TextEncoder().encode('line1\nline2\nline3');
-      const mockStream = new ReadableStream({
+      const data = 'line1\nline2\nline3';
+      const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(mockData);
+          controller.enqueue(new TextEncoder().encode(data));
           controller.close();
         },
       });
 
       const lines: string[] = [];
-      for await (const line of client.processStreamAsLines(mockStream)) {
+      for await (const line of client.processStreamAsLines(stream)) {
         lines.push(line);
       }
 
@@ -178,32 +150,33 @@ describe('APIClient', () => {
     });
 
     it('should handle partial lines and buffer correctly', async () => {
-      const mockStream = new ReadableStream({
+      const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(new TextEncoder().encode('partial'));
-          controller.enqueue(new TextEncoder().encode('line\ncomplete\n'));
-          controller.enqueue(new TextEncoder().encode('final'));
+          // Send data in chunks that split lines
+          controller.enqueue(new TextEncoder().encode('line'));
+          controller.enqueue(new TextEncoder().encode('1\nline2\npar'));
+          controller.enqueue(new TextEncoder().encode('tial'));
           controller.close();
         },
       });
 
       const lines: string[] = [];
-      for await (const line of client.processStreamAsLines(mockStream)) {
+      for await (const line of client.processStreamAsLines(stream)) {
         lines.push(line);
       }
 
-      expect(lines).toEqual(['partialline', 'complete', 'final']);
+      expect(lines).toEqual(['line1', 'line2', 'partial']);
     });
 
     it('should handle empty stream', async () => {
-      const mockStream = new ReadableStream({
+      const stream = new ReadableStream({
         start(controller) {
           controller.close();
         },
       });
 
       const lines: string[] = [];
-      for await (const line of client.processStreamAsLines(mockStream)) {
+      for await (const line of client.processStreamAsLines(stream)) {
         lines.push(line);
       }
 
@@ -213,35 +186,35 @@ describe('APIClient', () => {
 
   describe('processStreamAsRaw', () => {
     it('should process stream and yield raw chunks', async () => {
-      const mockData1 = new TextEncoder().encode('chunk1');
-      const mockData2 = new TextEncoder().encode('chunk2');
-      const mockStream = new ReadableStream({
+      const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(mockData1);
-          controller.enqueue(mockData2);
+          controller.enqueue(new TextEncoder().encode('chunk1'));
+          controller.enqueue(new TextEncoder().encode('chunk2'));
+          controller.enqueue(new TextEncoder().encode('chunk3'));
           controller.close();
         },
       });
 
       const chunks: string[] = [];
-      for await (const chunk of client.processStreamAsRaw(mockStream)) {
+      for await (const chunk of client.processStreamAsRaw(stream)) {
         chunks.push(chunk);
       }
 
-      expect(chunks).toEqual(['chunk1', 'chunk2']);
+      expect(chunks).toEqual(['chunk1', 'chunk2', 'chunk3']);
     });
 
     it('should handle empty chunks', async () => {
-      const mockStream = new ReadableStream({
+      const stream = new ReadableStream({
         start(controller) {
           controller.enqueue(new TextEncoder().encode(''));
           controller.enqueue(new TextEncoder().encode('data'));
+          controller.enqueue(new TextEncoder().encode(''));
           controller.close();
         },
       });
 
       const chunks: string[] = [];
-      for await (const chunk of client.processStreamAsRaw(mockStream)) {
+      for await (const chunk of client.processStreamAsRaw(stream)) {
         chunks.push(chunk);
       }
 
@@ -251,7 +224,7 @@ describe('APIClient', () => {
 });
 
 describe('extractDataLines', () => {
-  async function* createLineStream(lines: string[]): AsyncIterable<string> {
+  async function* createLineStream(lines: string[]) {
     for (const line of lines) {
       yield line;
     }
@@ -259,12 +232,12 @@ describe('extractDataLines', () => {
 
   it('should extract data lines from SSE stream', async () => {
     const lines = [
-      'event: message',
-      'data: {"content": "hello"}',
-      'data: {"content": "world"}',
+      'event: start',
+      'data: {"type": "start"}',
+      'data: {"type": "delta", "content": "hello"}',
       '',
-      'data: ',
-      'data: {"content": "end"}',
+      'data: [DONE]',
+      'event: end',
     ];
 
     const dataLines: string[] = [];
@@ -272,11 +245,7 @@ describe('extractDataLines', () => {
       dataLines.push(data);
     }
 
-    expect(dataLines).toEqual([
-      '{"content": "hello"}',
-      '{"content": "world"}',
-      '{"content": "end"}',
-    ]);
+    expect(dataLines).toEqual(['{"type": "start"}', '{"type": "delta", "content": "hello"}']);
   });
 
   it('should handle empty stream', async () => {
@@ -289,13 +258,20 @@ describe('extractDataLines', () => {
   });
 
   it('should filter out non-data lines', async () => {
-    const lines = ['event: start', 'id: 123', 'retry: 1000', 'data: actual data', ': comment'];
+    const lines = [
+      'event: message',
+      'id: 123',
+      'retry: 1000',
+      'data: actual data',
+      ': comment line',
+      'data: more data',
+    ];
 
     const dataLines: string[] = [];
     for await (const data of extractDataLines(createLineStream(lines))) {
       dataLines.push(data);
     }
 
-    expect(dataLines).toEqual(['actual data']);
+    expect(dataLines).toEqual(['actual data', 'more data']);
   });
 });

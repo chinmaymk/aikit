@@ -171,6 +171,61 @@ export interface OpenAIGenerationOptions extends GenerationOptions {
    * repeat the same line verbatim. Stop me if you've heard this one before.
    */
   frequencyPenalty?: number;
+  /**
+   * Whether to run the model response in the background.
+   */
+  background?: boolean;
+  /**
+   * Specify additional output data to include in the model response.
+   */
+  include?: string[];
+  /**
+   * Inserts a system (or developer) message as the first item in the model's context.
+   */
+  instructions?: string;
+  /**
+   * Set of key-value pairs that can be attached to an object.
+   */
+  metadata?: Record<string, string>;
+  /**
+   * Whether to allow the model to run tool calls in parallel.
+   */
+  parallelToolCalls?: boolean;
+  /**
+   * The unique ID of the previous response to the model for multi-turn conversations.
+   */
+  previousResponseId?: string;
+  /**
+   * Configuration options for reasoning models (o-series models only).
+   */
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high';
+  };
+  /**
+   * Specifies the latency tier to use for processing the request.
+   */
+  serviceTier?: 'auto' | 'default' | 'flex';
+  /**
+   * Whether to store the generated model response for later retrieval via API.
+   */
+  store?: boolean;
+  /**
+   * Configuration options for a text response from the model.
+   */
+  text?: {
+    format?: {
+      type: 'text' | 'json_object' | 'json_schema';
+      json_schema?: Record<string, unknown>;
+    };
+  };
+  /**
+   * The truncation strategy to use for the model response.
+   */
+  truncation?: 'auto' | 'disabled';
+  /**
+   * A stable identifier for your end-users.
+   */
+  user?: string;
 }
 
 /**

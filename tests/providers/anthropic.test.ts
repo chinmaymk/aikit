@@ -1,4 +1,4 @@
-import { AnthropicProvider } from '../../src/providers/anthropic';
+import { AnthropicProvider, AnthropicMessageUtils } from '../../src/providers/anthropic';
 import type { Message, GenerationOptions, AnthropicConfig, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
@@ -79,16 +79,38 @@ describe('AnthropicProvider', () => {
 
   describe('constructor', () => {
     it('should have correct provider configuration', () => {
-      expect(provider).toBeDefined();
+      expect(provider).toBeInstanceOf(AnthropicProvider);
     });
 
     it('should handle beta configuration', () => {
-      const betaConfig: AnthropicConfig = {
-        ...mockConfig,
-        beta: ['feature1', 'feature2'],
+      const configWithBeta: AnthropicConfig = {
+        apiKey: 'test-api-key',
+        beta: ['message-batches-2024-09-24', 'prompt-caching-2024-07-31'],
       };
-      const betaProvider = new AnthropicProvider(betaConfig);
-      expect(betaProvider).toBeDefined();
+
+      const providerWithBeta = new AnthropicProvider(configWithBeta);
+      expect(providerWithBeta).toBeInstanceOf(AnthropicProvider);
+    });
+  });
+
+  describe('AnthropicMessageUtils', () => {
+    it('should test groupContentByType', () => {
+      const content = [
+        { type: 'text' as const, text: 'Hello' },
+        { type: 'image' as const, image: 'data:image/png;base64,xyz' },
+        { type: 'tool_result' as const, toolCallId: 'call_1', result: 'result' },
+      ];
+
+      const grouped = AnthropicMessageUtils.groupContentByType(content);
+      expect(grouped.text).toHaveLength(1);
+      expect(grouped.images).toHaveLength(1);
+      expect(grouped.toolResults).toHaveLength(1);
+    });
+
+    it('should test extractBase64Data', () => {
+      const dataUrl = 'data:image/png;base64,xyz123';
+      const base64Data = AnthropicMessageUtils.extractBase64Data(dataUrl);
+      expect(base64Data).toBe('xyz123');
     });
   });
 
@@ -554,6 +576,54 @@ describe('AnthropicProvider', () => {
       expect(scope.isDone()).toBe(true);
       expect(chunks).toHaveLength(1);
       expect(chunks[0].toolCalls).toEqual([{ id: 'call_123', name: 'test_tool', arguments: {} }]);
+    });
+
+    it('should prepend user message when first message is not from user', async () => {
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Hi there!' }],
+      } as Message;
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hello!'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // First message should be an empty user message as required by Anthropic
+      expect(requestBody.messages[0]).toEqual({ role: 'user', content: [] });
+      // Second message should be the assistant one we sent
+      expect(requestBody.messages[1]).toMatchObject({ role: 'assistant' });
+    });
+
+    it('should skip tool messages with no tool results', async () => {
+      // A tool message with empty content should be ignored entirely
+      const emptyToolMsg: Message = {
+        role: 'tool',
+        content: [],
+      } as unknown as Message;
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Done'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate([userText('Ping'), emptyToolMsg], mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // We should only have the original user message in the payload
+      expect(requestBody.messages).toHaveLength(1);
+      expect(requestBody.messages[0].role).toBe('user');
     });
   });
 });

@@ -1,5 +1,5 @@
 import { OpenAIProvider } from '../src/providers/openai';
-import type { Message, GenerationOptions, Tool } from '../src/types';
+import type { Message, GenerationOptions, Tool, ToolCall } from '../src/types';
 
 // Mock weather function
 function getCurrentWeather(location: string, unit: 'celsius' | 'fahrenheit' = 'celsius') {
@@ -81,7 +81,7 @@ async function main() {
 
   while (!conversationComplete) {
     let assistantMessage = '';
-    let toolCalls: any[] = [];
+    let toolCalls: ToolCall[] = [];
 
     // Stream the response
     for await (const chunk of provider.generate(messages, options)) {
@@ -112,8 +112,8 @@ async function main() {
 
             if (toolCall.name === 'getCurrentWeather') {
               const result = getCurrentWeather(
-                toolCall.arguments.location,
-                toolCall.arguments.unit
+                toolCall.arguments.location as string,
+                toolCall.arguments.unit as 'celsius' | 'fahrenheit'
               );
 
               console.log('📊 Tool result:', result);

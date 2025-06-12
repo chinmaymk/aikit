@@ -13,16 +13,16 @@ import { extractDataLines } from './api';
 
 /**
  * The powerhouse behind OpenAI integration.
- * This class translates AIKit's generic requests into OpenAI's specific dialect
+ * This class translates AIKit's generic requests into OpenAI's Responses API dialect
  * and handles the response, whether it's a stream of tokens or a tool call.
- * It's like a universal translator, but for AI.
+ * It's like a universal translator, but for AI - now with improved state management.
  *
  * @group Providers
  */
 export class OpenAIProvider implements AIProvider {
   private client: APIClient;
-  private transformer: OpenAIMessageTransformer;
-  private streamProcessor: OpenAIStreamProcessor;
+  private transformer: OpenAIResponseTransformer;
+  private streamProcessor: OpenAIResponseStreamProcessor;
 
   /**
    * Sets up the OpenAI provider with your configuration.
@@ -50,12 +50,12 @@ export class OpenAIProvider implements AIProvider {
     }
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.transformer = new OpenAIMessageTransformer();
-    this.streamProcessor = new OpenAIStreamProcessor();
+    this.transformer = new OpenAIResponseTransformer();
+    this.streamProcessor = new OpenAIResponseStreamProcessor();
   }
 
   /**
-   * Kicks off the generation process.
+   * Kicks off the generation process using the Responses API.
    * It builds the request, sends it to OpenAI, and then processes the
    * response stream, yielding chunks as they come in.
    * @param messages - The conversation history.
@@ -67,7 +67,7 @@ export class OpenAIProvider implements AIProvider {
     options: OpenAIGenerationOptions
   ): AsyncIterable<StreamChunk> {
     const params = this.transformer.buildRequestParams(messages, options);
-    const stream = await this.client.stream('/chat/completions', params);
+    const stream = await this.client.stream('/responses', params);
     const lineStream = this.client.processStreamAsLines(stream);
     yield* this.streamProcessor.processStream(lineStream);
   }
@@ -75,32 +75,41 @@ export class OpenAIProvider implements AIProvider {
 
 /**
  * A dedicated class for transforming messages and options into the format
- * OpenAI expects. It's the meticulous diplomat of the provider.
+ * the OpenAI Responses API expects. It's the meticulous diplomat of the provider.
  * @internal
  */
-class OpenAIMessageTransformer {
+class OpenAIResponseTransformer {
   /**
-   * Constructs the complete request payload for the OpenAI API.
+   * Constructs the complete request payload for the OpenAI Responses API.
    * @param messages - The AIKit messages.
    * @param options - The AIKit generation options.
-   * @returns A payload that will make OpenAI happy.
+   * @returns A payload that will make the Responses API happy.
    */
-  buildRequestParams(
-    messages: Message[],
-    options: OpenAIGenerationOptions
-  ): ChatCompletionCreateParamsStreaming {
-    const openaiMessages = this.transformMessages(messages);
-    const params: ChatCompletionCreateParamsStreaming = {
+  buildRequestParams(messages: Message[], options: OpenAIGenerationOptions): ResponsesCreateParams {
+    const input = this.transformMessages(messages);
+    const params: ResponsesCreateParams = {
       model: options.model,
-      messages: openaiMessages,
+      input,
       stream: true,
-      max_tokens: options.maxTokens,
+      max_output_tokens: options.maxTokens,
       temperature: options.temperature,
       top_p: options.topP,
-      stop: options.stopSequences,
-      presence_penalty: options.presencePenalty,
-      frequency_penalty: options.frequencyPenalty,
     };
+
+    // Add optional parameters if provided
+    if (options.background !== undefined) params.background = options.background;
+    if (options.include) params.include = options.include;
+    if (options.instructions) params.instructions = options.instructions;
+    if (options.metadata) params.metadata = options.metadata;
+    if (options.parallelToolCalls !== undefined)
+      params.parallel_tool_calls = options.parallelToolCalls;
+    if (options.previousResponseId) params.previous_response_id = options.previousResponseId;
+    if (options.reasoning) params.reasoning = options.reasoning;
+    if (options.serviceTier) params.service_tier = options.serviceTier;
+    if (options.store !== undefined) params.store = options.store;
+    if (options.text) params.text = options.text;
+    if (options.truncation) params.truncation = options.truncation;
+    if (options.user) params.user = options.user;
 
     if (options.tools) {
       params.tools = this.formatTools(options.tools);
@@ -113,73 +122,77 @@ class OpenAIMessageTransformer {
   }
 
   /**
-   * Formats AIKit tools into the structure OpenAI expects.
+   * Formats AIKit tools into the structure the Responses API expects.
    * @param tools - An array of AIKit tools.
-   * @returns An array of tools formatted for OpenAI.
+   * @returns An array of tools formatted for the Responses API.
    */
-  private formatTools(tools: Tool[]): OpenAIFunctionTool[] {
+  private formatTools(tools: Tool[]): ResponsesAPITool[] {
     return tools.map(tool => ({
       type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-      },
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
     }));
   }
 
   /**
-   * Formats the tool choice option for the OpenAI API.
+   * Formats the tool choice option for the Responses API.
    * @param toolChoice - The AIKit tool choice option.
-   * @returns A tool choice option that OpenAI can understand.
+   * @returns A tool choice option that the Responses API can understand.
    */
   private formatToolChoice(
     toolChoice: OpenAIGenerationOptions['toolChoice']
-  ): 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } } {
+  ): 'auto' | 'required' | { type: 'function'; name: string } {
     if (!toolChoice) {
       return 'auto';
     }
     if (typeof toolChoice === 'object') {
-      return { type: 'function', function: { name: toolChoice.name } };
+      // Support specific tool selection
+      return { type: 'function', name: toolChoice.name };
     }
-    return toolChoice;
+    // The Responses API doesn't support 'none' for tool_choice
+    return toolChoice === 'required' ? 'required' : 'auto';
   }
 
   /**
-   * Transforms an array of AIKit messages into OpenAI's format.
-   * It's a bit like translating from English to American English.
+   * Transforms an array of AIKit messages into the Responses API input format.
+   * The Responses API accepts messages in a similar format but with some differences.
    * @param messages - The messages to transform.
-   * @returns An array of OpenAI-compatible messages.
+   * @returns An array of Responses API-compatible input messages.
    */
-  private transformMessages(messages: Message[]): ChatCompletionMessageParam[] {
+  private transformMessages(messages: Message[]): ResponsesAPIMessage[] {
     return messages.flatMap(msg => this.mapMessage(msg));
   }
 
   /**
-   * Converts one of our internal `Message` objects into one or more OpenAI
-   * `ChatCompletionMessageParam` records. Always returns an array so callers
-   * can safely `flatMap` the result without having to deal with `null` or
-   * `undefined` values.
-   *
-   * It's the workhorse of message transformation.
+   * Converts one of our internal `Message` objects into one or more Responses API
+   * message objects. Always returns an array so callers can safely `flatMap`.
    */
-  private mapMessage(msg: Message): ChatCompletionMessageParam[] {
+  private mapMessage(msg: Message): ResponsesAPIMessage[] {
     switch (msg.role) {
       case 'system':
         return [
           {
             role: 'system',
-            content: MessageTransformer.extractTextContent(msg.content),
+            content: [
+              {
+                type: 'input_text',
+                text: MessageTransformer.extractTextContent(msg.content),
+              },
+            ],
           },
         ];
 
       case 'tool': {
         const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-        return toolResults.map(content => ({
-          role: 'tool',
-          tool_call_id: content.toolCallId,
-          content: content.result,
-        }));
+        return toolResults.map(
+          content =>
+            ({
+              type: 'function_call_output',
+              call_id: content.toolCallId,
+              output: content.result,
+            }) as ResponsesAPIFunctionCallOutput
+        );
       }
 
       case 'user':
@@ -191,27 +204,38 @@ class OpenAIMessageTransformer {
         ];
 
       case 'assistant': {
-        const assistantMsg: ChatCompletionMessageParam = {
-          role: 'assistant',
-          content: MessageTransformer.extractTextContent(msg.content),
-        };
+        const messages: ResponsesAPIMessage[] = [];
 
-        if (msg.toolCalls) {
-          assistantMsg.tool_calls = msg.toolCalls.map(tc => ({
-            id: tc.id,
-            type: 'function',
-            function: {
-              name: tc.name,
-              arguments: JSON.stringify(tc.arguments),
-            },
-          }));
+        // Add text content if present
+        const textContent = MessageTransformer.extractTextContent(msg.content);
+        if (textContent) {
+          messages.push({
+            role: 'assistant',
+            content: [
+              {
+                type: 'output_text',
+                text: textContent,
+              },
+            ],
+          });
         }
 
-        return [assistantMsg];
+        // Add tool calls as separate input items (not as assistant message content)
+        if (msg.toolCalls) {
+          msg.toolCalls.forEach(tc => {
+            messages.push({
+              type: 'function_call',
+              call_id: tc.id,
+              name: tc.name,
+              arguments: JSON.stringify(tc.arguments),
+            } as ResponsesAPIFunctionCall);
+          });
+        }
+
+        return messages;
       }
 
       default:
-        // We should never get here, but if we do, we'll just ignore it.
         return [];
     }
   }
@@ -219,283 +243,296 @@ class OpenAIMessageTransformer {
   /**
    * Builds the content parts for a message, handling both text and images.
    * @param content - The content array from an AIKit message.
-   * @returns An array of content parts for an OpenAI message.
+   * @returns An array of content parts for a Responses API message.
    */
-  private buildContentParts(content: Message['content']): ChatCompletionContentPart[] {
+  private buildContentParts(content: Message['content']): ResponsesAPIContentPart[] {
     const parts = content
       .map(c => {
         if (c.type === 'text') {
-          return { type: 'text' as const, text: c.text };
+          return { type: 'input_text' as const, text: c.text };
         }
         if (c.type === 'image') {
-          return { type: 'image_url' as const, image_url: { url: c.image } };
+          return { type: 'input_image' as const, image_url: c.image };
         }
         return null;
       })
       .filter(Boolean);
 
-    // It's safe to cast here because we've filtered out the nulls.
-    return parts as ChatCompletionContentPart[];
+    return parts as ResponsesAPIContentPart[];
   }
 }
 
 /**
- * A processor that handles the incoming stream of data from OpenAI.
+ * A processor that handles the incoming stream of data from the Responses API.
  * It parses the server-sent events, extracts the relevant data, and
  * reconstructs the response, including tool calls.
- *
- * It's the archaeologist of the provider, carefully piecing together
- * the fragments of the response.
  * @internal
  */
-class OpenAIStreamProcessor {
+class OpenAIResponseStreamProcessor {
   /**
-   * Processes the raw line stream from the API and yields structured chunks.
+   * Processes the raw line stream from the Responses API and yields structured chunks.
    * @param lineStream - An async iterable of raw data lines.
    * @returns An async iterable of AIKit stream chunks.
    */
   async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let content = '';
-    // A temporary home for tool calls as they're being assembled from chunks.
-    const toolCallStates: Record<string, ToolCallState> = {};
-    // A final resting place for tool calls that have been fully assembled.
-    const completedToolCalls: Record<string, ToolCall> = {};
+    const toolCalls: Record<string, ToolCall> = {}; // Track by call_id
+    const accumulatingArgs: Record<string, string> = {}; // Accumulate arguments by call_id
+    const outputIndexToCallId: Record<number, string> = {}; // Map output_index to call_id
+    let hasToolCalls = false;
 
     for await (const data of extractDataLines(lineStream)) {
       if (data.trim() === '[DONE]') {
-        // The stream is done, but we need to make sure we've yielded any
-        // completed tool calls that were finalized in the last chunk.
-        const finalCalls = Object.values(completedToolCalls).filter(
-          tc => tc.id && tc.name && tc.arguments
-        );
-        if (finalCalls.length > 0) {
-          yield {
-            content,
-            delta: '',
-            toolCalls: finalCalls,
-          };
-        }
         return;
       }
 
       try {
-        const chunk: ChatCompletionChunk = JSON.parse(data);
-        if (!chunk.choices || chunk.choices.length === 0) {
-          continue;
+        const event: ResponsesAPIStreamEvent = JSON.parse(data);
+
+        switch (event.type) {
+          case 'response.output_text.delta':
+            content += event.delta;
+            yield {
+              content,
+              delta: event.delta,
+              toolCalls: hasToolCalls ? Object.values(toolCalls) : undefined,
+            };
+            break;
+
+          case 'response.output_item.added':
+            // Handle function calls when they are added as output items
+            if (event.item && event.item.type === 'function_call') {
+              const callId = event.item.call_id;
+              toolCalls[callId] = {
+                id: callId, // Use call_id as the id for AIKit compatibility
+                name: event.item.name,
+                arguments: {}, // Will be populated by argument events
+              };
+              hasToolCalls = true;
+              // Map output_index to call_id for argument delta events
+              outputIndexToCallId[event.output_index] = callId;
+              // Initialize arguments accumulator for this call
+              accumulatingArgs[callId] = '';
+
+              // Yield immediately when tool call is detected
+              yield {
+                content,
+                delta: '',
+                toolCalls: Object.values(toolCalls),
+              };
+            }
+            break;
+
+          case 'response.function_call_arguments.delta': {
+            // Accumulate function call arguments using call_id
+            const deltaCallId = event.call_id || outputIndexToCallId[event.output_index];
+            if (deltaCallId && toolCalls[deltaCallId]) {
+              if (!accumulatingArgs[deltaCallId]) {
+                accumulatingArgs[deltaCallId] = '';
+              }
+              accumulatingArgs[deltaCallId] += event.delta;
+
+              // Yield progress with partially accumulated args
+              yield {
+                content,
+                delta: '',
+                toolCalls: Object.values(toolCalls),
+              };
+            }
+            break;
+          }
+
+          case 'response.function_call_arguments.done': {
+            // Parse the accumulated arguments and update the tool call
+            const doneCallId = event.call_id || outputIndexToCallId[event.output_index];
+            const completedToolCall = doneCallId ? toolCalls[doneCallId] : undefined;
+            if (completedToolCall && doneCallId) {
+              const argsString = accumulatingArgs[doneCallId] || event.arguments || '{}';
+              try {
+                completedToolCall.arguments = JSON.parse(argsString);
+                // Clean up the accumulation
+                delete accumulatingArgs[doneCallId];
+                yield {
+                  content,
+                  delta: '',
+                  toolCalls: Object.values(toolCalls),
+                };
+              } catch {
+                // If parsing fails, keep as empty object
+                completedToolCall.arguments = {};
+                delete accumulatingArgs[doneCallId];
+                yield {
+                  content,
+                  delta: '',
+                  toolCalls: Object.values(toolCalls),
+                };
+              }
+            }
+            break;
+          }
+
+          case 'response.completed': {
+            // Determine finish reason based on response status and presence of tool calls
+            let finishReason: 'stop' | 'length' | 'tool_use';
+
+            if (hasToolCalls) {
+              finishReason = 'tool_use';
+            } else {
+              finishReason = this.mapFinishReason(event.response?.status || 'completed');
+            }
+
+            yield {
+              content,
+              delta: '',
+              finishReason,
+              toolCalls: hasToolCalls ? Object.values(toolCalls) : undefined,
+            };
+            break;
+          }
         }
-
-        const choice = chunk.choices[0];
-        const delta = choice.delta?.content || '';
-        content += delta;
-
-        this.processToolCallDeltas(
-          choice.delta?.tool_calls ?? [],
-          toolCallStates,
-          completedToolCalls
-        );
-
-        const finishReason = choice.finish_reason
-          ? this.mapFinishReason(choice.finish_reason)
-          : undefined;
-
-        const completedCalls = Object.values(completedToolCalls);
-        yield {
-          content,
-          delta,
-          finishReason,
-          toolCalls: completedCalls.length > 0 ? completedCalls : undefined,
-        };
-      } catch {
-        // We might get an error here if the JSON is malformed.
-        // If so, we'll just skip this line and hope for the best.
-        // It's a risky business, this streaming stuff.
+      } catch (error) {
+        // Skip malformed JSON lines but log for debugging
+        console.warn('Failed to parse OpenAI stream event:', error);
         continue;
       }
     }
   }
 
   /**
-   * Maps the finish reason from OpenAI's vocabulary to our own.
-   * @param reason - The reason from OpenAI.
+   * Maps the finish reason from the Responses API to our vocabulary.
+   * @param status - The status from the Responses API.
    * @returns The corresponding AIKit finish reason.
    */
-  private mapFinishReason(reason: string | null): 'stop' | 'length' | 'tool_use' {
-    switch (reason) {
-      case 'stop':
+  private mapFinishReason(status: string): 'stop' | 'length' | 'tool_use' {
+    switch (status) {
+      case 'completed':
         return 'stop';
-      case 'length':
+      case 'incomplete':
+      case 'max_tokens':
         return 'length';
+      case 'failed_function_call':
       case 'tool_calls':
+      case 'requires_action':
         return 'tool_use';
       default:
-        // If we don't know the reason, we'll just assume it was a normal stop.
         return 'stop';
-    }
-  }
-
-  /**
-   * Processes the tool call deltas from a stream chunk.
-   * This is where the magic happens for reconstructing tool calls from a stream.
-   * It's a bit like building a ship in a bottle.
-   *
-   * @param deltaToolCalls - The tool call deltas from the chunk.
-   * @param toolCallStates - The current state of partially built tool calls.
-   * @param completedToolCalls - The collection of fully built tool calls.
-   */
-  private processToolCallDeltas(
-    deltaToolCalls: OpenAIToolCallDelta[],
-    toolCallStates: Record<string, ToolCallState>,
-    completedToolCalls: Record<string, ToolCall>
-  ): void {
-    // Keep track of tool call indices to IDs
-    const indexToId: Record<number, string> = {};
-
-    // Build the index mapping from existing states
-    Object.values(toolCallStates).forEach((state, idx) => {
-      if (state.id) {
-        indexToId[idx] = state.id;
-      }
-    });
-
-    for (const delta of deltaToolCalls) {
-      const index = delta.index ?? 0;
-      let id = delta.id;
-
-      // If no ID is provided, use the existing ID for this index
-      if (!id && indexToId[index]) {
-        id = indexToId[index];
-      }
-
-      // Skip if we still don't have an ID
-      if (!id) continue;
-
-      // Update the index mapping
-      indexToId[index] = id;
-
-      // Initialize the state for this tool call if we haven't seen it before.
-      if (!toolCallStates[id]) {
-        toolCallStates[id] = { id, name: '', arguments: '' };
-      }
-      const state = toolCallStates[id];
-
-      // Append the new parts of the tool call to its state.
-      if (delta.function?.name) {
-        state.name += delta.function.name;
-      }
-      if (delta.function?.arguments) {
-        state.arguments += delta.function.arguments;
-      }
-    }
-
-    // Check all tool call states for completion after processing all deltas
-    // This handles cases where malformed JSON becomes valid after additional chunks
-    for (const [id, state] of Object.entries(toolCallStates)) {
-      if (completedToolCalls[id]) {
-        // Already completed, skip
-        continue;
-      }
-
-      try {
-        const parsedArgs = JSON.parse(state.arguments);
-        if (state.id && state.name && typeof parsedArgs === 'object') {
-          completedToolCalls[state.id] = {
-            id: state.id,
-            name: state.name,
-            arguments: parsedArgs,
-          };
-        }
-      } catch {
-        // The arguments are not yet valid JSON, so we'll wait for more chunks.
-        // It's like waiting for a download to finish.
-      }
     }
   }
 }
 
-/** A temporary state for assembling a tool call from a stream. @internal */
-type ToolCallState = {
-  id: string;
+// These are the internal types that mirror the OpenAI Responses API.
+// They are not exposed to the user, but they are essential for
+// the provider to function correctly.
+// @internal
+
+/** @internal */
+type ResponsesCreateParams = {
+  model: string;
+  input: ResponsesAPIMessage[];
+  stream: true;
+  max_output_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  tools?: ResponsesAPITool[];
+  tool_choice?: 'auto' | 'required' | { type: 'function'; name: string };
+  background?: boolean;
+  include?: string[];
+  instructions?: string;
+  metadata?: Record<string, string>;
+  parallel_tool_calls?: boolean;
+  previous_response_id?: string;
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high';
+  };
+  service_tier?: 'auto' | 'default' | 'flex';
+  store?: boolean;
+  text?: {
+    format?: {
+      type: 'text' | 'json_object' | 'json_schema';
+      json_schema?: Record<string, unknown>;
+    };
+  };
+  truncation?: 'auto' | 'disabled';
+  user?: string;
+};
+
+/** @internal */
+type ResponsesAPIMessage =
+  | {
+      role: 'system' | 'user' | 'assistant';
+      content: ResponsesAPIContentPart[];
+    }
+  | ResponsesAPIFunctionCall
+  | ResponsesAPIFunctionCallOutput;
+
+/** @internal */
+type ResponsesAPIFunctionCall = {
+  type: 'function_call';
+  call_id: string;
   name: string;
   arguments: string;
 };
 
-// These are the internal types that mirror the OpenAI API.
-// They are not exposed to the user, but they are essential for
-// the provider to function correctly. They are defined here
-// to avoid adding the entire OpenAI SDK as a dependency.
-// It's our own little, self-contained universe.
-// @internal
-
 /** @internal */
-type ChatCompletionMessageParam = {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | ChatCompletionContentPart[] | null;
-  tool_calls?: {
-    id: string;
-    type: 'function';
-    function: {
-      name: string;
-      arguments: string;
-    };
-  }[];
-  tool_call_id?: string;
+type ResponsesAPIFunctionCallOutput = {
+  type: 'function_call_output';
+  call_id: string;
+  output: string;
 };
 
 /** @internal */
-type ChatCompletionContentPart = {
-  type: 'text' | 'image_url';
-  text?: string;
-  image_url?: { url: string };
-};
+type ResponsesAPIContentPart =
+  | { type: 'input_text'; text: string }
+  | { type: 'input_image'; image_url: string }
+  | { type: 'output_text'; text: string }
+  | { type: 'function_call'; call_id: string; name: string; arguments: Record<string, unknown> }
+  | { type: 'function_call_output'; call_id: string; output: string };
 
 /** @internal */
-type OpenAIFunctionTool = {
+type ResponsesAPITool = {
   type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
-  };
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
 };
 
 /** @internal */
-type ChatCompletionCreateParamsStreaming = {
-  model: string;
-  messages: ChatCompletionMessageParam[];
-  stream: true;
-  max_tokens?: number | null;
-  temperature?: number | null;
-  top_p?: number | null;
-  stop?: string[] | null;
-  presence_penalty?: number | null;
-  frequency_penalty?: number | null;
-  tools?: OpenAIFunctionTool[] | null;
-  tool_choice?:
-    | 'none'
-    | 'auto'
-    | 'required'
-    | { type: 'function'; function: { name: string } }
-    | null;
-};
-
-/** @internal */
-type ChatCompletionChunk = {
-  choices: {
-    delta: {
-      content?: string | null;
-      tool_calls?: OpenAIToolCallDelta[];
+type ResponsesAPIStreamEvent =
+  | {
+      type: 'response.output_text.delta';
+      delta: string;
+    }
+  | {
+      type: 'response.output_item.added';
+      response_id: string;
+      output_index: number;
+      item: {
+        type: 'function_call';
+        id: string;
+        call_id: string;
+        name: string;
+        arguments: string;
+      };
+    }
+  | {
+      type: 'response.function_call_arguments.delta';
+      response_id: string;
+      item_id: string;
+      output_index: number;
+      call_id: string;
+      delta: string;
+    }
+  | {
+      type: 'response.function_call_arguments.done';
+      response_id: string;
+      item_id: string;
+      output_index: number;
+      call_id: string;
+      arguments: string;
+    }
+  | {
+      type: 'response.completed';
+      response: {
+        status: string;
+      };
     };
-    finish_reason?: string | null;
-  }[];
-};
-
-/** @internal */
-interface OpenAIToolCallDelta {
-  index?: number;
-  id?: string;
-  function?: {
-    name?: string;
-    arguments?: string;
-  };
-  type?: 'function';
-}

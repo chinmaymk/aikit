@@ -4,10 +4,47 @@ interface ModelInfo {
   timestamp: string;
 }
 
+interface OpenAIModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
+interface OpenAIResponse {
+  data: OpenAIModel[];
+  object: string;
+}
+
+interface GoogleModel {
+  name: string;
+  baseModelId: string;
+  version: string;
+  displayName: string;
+}
+
+interface GoogleResponse {
+  models: GoogleModel[];
+}
+
+interface AnthropicModel {
+  id: string;
+  type: string;
+  display_name: string;
+  created_at: string;
+}
+
+interface AnthropicResponse {
+  data: AnthropicModel[];
+  has_more: boolean;
+  first_id: string;
+  last_id: string;
+}
+
 interface ProviderConfig {
   url: string;
   headers: (key: string) => Record<string, string>;
-  transform: (data: any) => string[];
+  transform: (data: OpenAIResponse | GoogleResponse | AnthropicResponse) => string[];
 }
 
 const providers: Record<string, ProviderConfig> = {
@@ -17,7 +54,10 @@ const providers: Record<string, ProviderConfig> = {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     }),
-    transform: (data: any) => data.data.map((m: any) => m.id),
+    transform: (data: OpenAIResponse | GoogleResponse | AnthropicResponse) => {
+      const openaiData = data as OpenAIResponse;
+      return openaiData.data.map(m => m.id);
+    },
   },
   google: {
     url: 'https://generativelanguage.googleapis.com/v1/models',
@@ -25,7 +65,10 @@ const providers: Record<string, ProviderConfig> = {
       'x-goog-api-key': key,
       'Content-Type': 'application/json',
     }),
-    transform: (data: any) => data.models.map((m: any) => m.name),
+    transform: (data: OpenAIResponse | GoogleResponse | AnthropicResponse) => {
+      const googleData = data as GoogleResponse;
+      return googleData.models.map(m => m.name);
+    },
   },
   anthropic: {
     url: 'https://api.anthropic.com/v1/models',
@@ -34,7 +77,10 @@ const providers: Record<string, ProviderConfig> = {
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     }),
-    transform: (data: any) => data.data.map((m: any) => m.id),
+    transform: (data: OpenAIResponse | GoogleResponse | AnthropicResponse) => {
+      const anthropicData = data as AnthropicResponse;
+      return anthropicData.data.map(m => m.id);
+    },
   },
 };
 
@@ -49,7 +95,7 @@ async function fetchModelsForProvider(provider: string, apiKey: string): Promise
     throw new Error(`${provider} API error: ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as OpenAIResponse | GoogleResponse | AnthropicResponse;
   return config.transform(data);
 }
 

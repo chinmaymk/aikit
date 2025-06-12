@@ -19,7 +19,7 @@ export interface GroupedContent {
   toolResults: ToolResultContent[];
 }
 
-class AnthropicMessageUtils {
+export class AnthropicMessageUtils {
   static extractTextContent(content: Content[]): string {
     const textContent = content.find(c => c.type === 'text') as TextContent;
     return textContent?.text ?? '';

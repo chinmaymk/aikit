@@ -16,6 +16,8 @@ alwaysApply: true
 - DO organize imports after editing a file
 - DO enfore typesafety, avoid using any
 - DO NOT add import first, auto reorganize will remove it if its not used, DO add code block using the import first and then add the import
+- DO NOT add | undefined or | null type, never
+- DO NOT overuse type assertions and casting
 
 ## Project Overview
 AIKit is a TypeScript library that provides a unified interface for OpenAI, Anthropic, and Google Gemini APIs. It supports streaming, multi-modal content, and tool use.

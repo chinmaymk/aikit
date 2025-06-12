@@ -1,5 +1,5 @@
 import { createProvider } from '../src/factory';
-import type { Message, Tool } from '../src/types';
+import type { Message, Tool, ToolCall } from '../src/types';
 
 const PROVIDER_CONFIG = {
   openai: {
@@ -106,7 +106,7 @@ async function runExample(providerType: keyof typeof PROVIDER_CONFIG) {
 
   while (!conversationComplete) {
     let assistantMessage = '';
-    let toolCalls: any[] = [];
+    let toolCalls: ToolCall[] = [];
 
     for await (const chunk of provider.generate(messages, {
       model: config.model,
@@ -133,8 +133,8 @@ async function runExample(providerType: keyof typeof PROVIDER_CONFIG) {
 
             if (toolCall.name === 'getCurrentWeatherTool') {
               const result = getCurrentWeatherTool(
-                toolCall.arguments.location,
-                toolCall.arguments.unit
+                toolCall.arguments.location as string,
+                toolCall.arguments.unit as 'celsius' | 'fahrenheit'
               );
               console.log('Tool result:', result);
 
