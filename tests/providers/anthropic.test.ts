@@ -91,6 +91,15 @@ describe('AnthropicProvider', () => {
     it('should have correct provider configuration', () => {
       expect(provider).toBeDefined();
     });
+
+    it('should handle beta configuration', () => {
+      const betaConfig: AnthropicConfig = {
+        ...mockConfig,
+        beta: ['feature1', 'feature2'],
+      };
+      const betaProvider = new AnthropicProvider(betaConfig);
+      expect(betaProvider).toBeDefined();
+    });
   });
 
   describe('generate', () => {
@@ -192,6 +201,36 @@ describe('AnthropicProvider', () => {
       ]);
     });
 
+    it('should detect different image MIME types', async () => {
+      const testCases = [
+        { input: 'data:image/png;base64,abc', expected: 'image/png' },
+        { input: 'data:image/gif;base64,abc', expected: 'image/gif' },
+        { input: 'data:image/webp;base64,abc', expected: 'image/webp' },
+        { input: 'data:image/unknown;base64,abc', expected: 'image/jpeg' }, // fallback
+      ];
+
+      for (const { input, expected } of testCases) {
+        const messagesWithImage: Message[] = [
+          userImage('Test image', input),
+        ];
+
+        let requestBody: any;
+        const scope = mockAnthropicGeneration(
+          anthropicTextResponse('Image detected'),
+          body => (requestBody = body)
+        );
+
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+          chunks.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        expect(requestBody.messages[0].content[1].source.media_type).toBe(expected);
+        nock.cleanAll();
+      }
+    });
+
     it('should handle tools configuration', async () => {
       const toolOptions: GenerationOptions = {
         ...mockOptions,
@@ -246,6 +285,48 @@ describe('AnthropicProvider', () => {
           },
         ],
       });
+    });
+
+    it('should handle different tool choice options', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'calculate',
+            description: 'Perform calculations',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+      };
+
+      // Test 'required' tool choice
+      let requestBody: any;
+      let scope = mockAnthropicGeneration(
+        anthropicToolCallResponse('call_456', 'calculate', '{}'),
+        body => (requestBody = body)
+      );
+
+      for await (const chunk of provider.generate(mockMessages, { ...toolOptions, toolChoice: 'required' })) {
+        // consume chunks
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual({ type: 'any' });
+      nock.cleanAll();
+
+      // Test specific tool choice
+      scope = mockAnthropicGeneration(
+        anthropicToolCallResponse('call_789', 'calculate', '{}'),
+        body => (requestBody = body)
+      );
+
+      for await (const chunk of provider.generate(mockMessages, { ...toolOptions, toolChoice: { name: 'calculate' } })) {
+        // consume chunks
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual({ type: 'tool', name: 'calculate' });
+      nock.cleanAll();
     });
 
     it('should handle streaming text generation', async () => {
@@ -366,6 +447,121 @@ describe('AnthropicProvider', () => {
       }).rejects.toThrow('Anthropic API error: Overloaded');
 
       expect(scope.isDone()).toBe(true);
+    });
+
+    it('should handle unknown message roles', async () => {
+      const messageWithUnknownRole: Message[] = [
+        // @ts-ignore - Testing unknown role
+        { role: 'unknown', content: [{ type: 'text', text: 'Test' }] },
+        userText('Hello'),
+      ];
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Response'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(messageWithUnknownRole, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should only have user message, unknown role should be filtered out
+      expect(requestBody.messages).toEqual([
+        { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+      ]);
+    });
+
+    it('should handle malformed JSON in tool arguments', async () => {
+      const malformedJsonChunks = [
+        anthropicMessageStartChunk(),
+        anthropicContentBlockStartChunk(0, 'tool_use', { id: 'call_123', name: 'test_tool' }),
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '{"invalid":' },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: ' malformed' },
+        },
+        anthropicContentBlockStopChunk(0),
+        anthropicMessageDeltaChunk('tool_use'),
+        anthropicMessageStopChunk(),
+      ];
+
+      const scope = mockAnthropicGeneration(malformedJsonChunks, () => {});
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should handle malformed JSON gracefully
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].finishReason).toBe('tool_use');
+    });
+
+    it('should handle different finish reasons', async () => {
+      const finishReasons = [
+        { reason: 'max_tokens' as const, expected: 'length' },
+        { reason: 'stop_sequence' as const, expected: 'stop' },
+      ];
+
+      for (const { reason, expected } of finishReasons) {
+        const chunks = [
+          anthropicMessageStartChunk(),
+          anthropicContentBlockStartChunk(0, 'text'),
+          anthropicTextDeltaChunk('Test'),
+          anthropicContentBlockStopChunk(0),
+          anthropicMessageDeltaChunk(reason),
+          anthropicMessageStopChunk(),
+        ];
+
+        const scope = mockAnthropicGeneration(chunks, () => {});
+
+        const results: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          results.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        const finalChunk = results[results.length - 1];
+        expect(finalChunk.finishReason).toBe(expected);
+        nock.cleanAll();
+      }
+    });
+
+    it('should handle empty tool arguments', async () => {
+      const emptyArgsChunks = [
+        anthropicMessageStartChunk(),
+        anthropicContentBlockStartChunk(0, 'tool_use', { id: 'call_123', name: 'test_tool' }),
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'input_json_delta', partial_json: '{}' },
+        },
+        anthropicContentBlockStopChunk(0),
+        anthropicMessageDeltaChunk('tool_use'),
+        anthropicMessageStopChunk(),
+      ];
+
+      const scope = mockAnthropicGeneration(emptyArgsChunks, () => {});
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].toolCalls).toEqual([
+        { id: 'call_123', name: 'test_tool', arguments: {} },
+      ]);
     });
   });
 });

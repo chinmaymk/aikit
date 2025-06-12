@@ -1,10 +1,5 @@
-import {
-  MessageTransformer,
-  ToolFormatter,
-  ToolChoiceHandler,
-  FinishReasonMapper,
-} from '../../src/providers/utils';
-import type { Content, Tool } from '../../src/types';
+import { MessageTransformer } from '../../src/providers/utils';
+import type { Content } from '../../src/types';
 
 describe('MessageTransformer', () => {
   describe('extractTextContent', () => {
@@ -68,63 +63,6 @@ describe('MessageTransformer', () => {
       expect(result).toBe(
         '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A'
       );
-    });
-  });
-});
-
-describe('ToolFormatter', () => {
-  const mockTool: Tool = {
-    name: 'get_weather',
-    description: 'Get weather information',
-    parameters: {
-      type: 'object',
-      properties: {
-        location: { type: 'string' },
-      },
-    },
-  };
-
-  describe('formatForGoogle', () => {
-    it('should format tools for Google API', () => {
-      const result = ToolFormatter.formatForGoogle([mockTool]);
-      expect(result).toEqual([
-        {
-          functionDeclarations: [mockTool],
-        },
-      ]);
-    });
-  });
-});
-
-describe('ToolChoiceHandler', () => {
-  describe('formatForGoogle', () => {
-    it('should handle string tool choices', () => {
-      expect(ToolChoiceHandler.formatForGoogle('required')).toEqual({
-        functionCallingConfig: { mode: 'ANY' },
-      });
-      expect(ToolChoiceHandler.formatForGoogle('auto')).toEqual({
-        functionCallingConfig: { mode: 'AUTO' },
-      });
-      expect(ToolChoiceHandler.formatForGoogle('none')).toEqual({
-        functionCallingConfig: { mode: 'NONE' },
-      });
-    });
-
-    it('should handle undefined tool choice', () => {
-      const result = ToolChoiceHandler.formatForGoogle(undefined);
-      expect(result).toEqual({
-        functionCallingConfig: { mode: 'AUTO' },
-      });
-    });
-  });
-});
-
-describe('FinishReasonMapper', () => {
-  describe('mapGoogle', () => {
-    it('should map Google finish reasons', () => {
-      expect(FinishReasonMapper.mapGoogle('STOP')).toBe('stop');
-      expect(FinishReasonMapper.mapGoogle('MAX_TOKENS')).toBe('length');
-      expect(FinishReasonMapper.mapGoogle('UNKNOWN')).toBe('stop');
     });
   });
 });

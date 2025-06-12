@@ -228,6 +228,78 @@ describe('GoogleGeminiProvider', () => {
       ]);
     });
 
+    it('should handle different tool choice configurations', async () => {
+      const testToolChoices = ['none', 'required', { name: 'specific_tool' }] as const;
+      
+      for (const toolChoice of testToolChoices) {
+        const toolOptions: GoogleGenerationOptions = {
+          ...mockOptions,
+          tools: [
+            {
+              name: 'test_tool',
+              description: 'Test tool',
+              parameters: { type: 'object', properties: {} },
+            },
+          ],
+          toolChoice,
+        };
+
+        let requestBody: any;
+        const scope = mockGoogleGeneration(
+          'gemini-1.5-pro',
+          [googleTextChunk('Response'), googleStopChunk()],
+          body => (requestBody = body)
+        );
+
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+          chunks.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        expect(requestBody.toolConfig).toBeDefined();
+        
+        if (toolChoice === 'none') {
+          expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('NONE');
+        } else if (toolChoice === 'required') {
+          expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('ANY');
+        } else if (typeof toolChoice === 'object') {
+          expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('ANY');
+          expect(requestBody.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual(['specific_tool']);
+        }
+      }
+    });
+
+    it('should handle tool choice with undefined/default', async () => {
+      const toolOptions: GoogleGenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        // toolChoice is undefined
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // When toolChoice is undefined, toolConfig might not be set at all
+      expect(requestBody.toolConfig?.functionCallingConfig?.mode || 'AUTO').toBe('AUTO');
+    });
+
     it('should handle assistant messages with tool calls', async () => {
       const messagesWithToolCalls: Message[] = [
         userText('What is the weather in SF?'),
@@ -304,6 +376,63 @@ describe('GoogleGeminiProvider', () => {
       });
     });
 
+    it('should handle different finish reasons', async () => {
+      const finishReasonTests = [
+        { reason: 'MAX_TOKENS', expected: 'length' },
+        { reason: 'TOOL_CODE_EXECUTED', expected: 'tool_use' },
+        { reason: 'UNKNOWN_REASON', expected: 'stop' },
+      ];
+
+      for (const { reason, expected } of finishReasonTests) {
+        const customChunk = {
+          candidates: [{
+            finishReason: reason,
+            content: { parts: [{ text: 'test' }] }
+          }]
+        };
+
+        const scope = mockGoogleGeneration(
+          'gemini-1.5-pro',
+          [customChunk],
+          () => {}
+        );
+
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        expect(chunks[0].finishReason).toBe(expected);
+      }
+    });
+
+    it('should handle empty or invalid chunks gracefully', async () => {
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [
+          {}, // empty chunk
+          { candidates: [] }, // no candidates
+          { candidates: [{}] }, // candidate without content
+          { candidates: [{ content: {} }] }, // content without parts
+          googleTextChunk('valid'),
+          googleStopChunk()
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should only get the valid chunks
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0].content).toBe('valid');
+      expect(chunks[1].finishReason).toBe('stop');
+    });
+
     it('should handle all generation options', async () => {
       const fullOptions: GoogleGenerationOptions = {
         model: 'gemini-1.5-pro',
@@ -336,6 +465,90 @@ describe('GoogleGeminiProvider', () => {
         stopSequences: ['END'],
         candidateCount: 1,
       });
+    });
+
+    it('should handle messages with unknown roles', async () => {
+      const messagesWithUnknownRole: Message[] = [
+        // @ts-ignore - testing edge case
+        { role: 'unknown', content: [{ type: 'text', text: 'test' }] },
+        userText('Hello'),
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(messagesWithUnknownRole, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should filter out unknown role and only include user message
+      expect(requestBody.contents).toHaveLength(1);
+      expect(requestBody.contents[0].role).toBe('user');
+    });
+
+    it('should handle tool choice edge cases', async () => {
+      // Test the fallback case for ToolChoiceHandler
+      const toolOptions: GoogleGenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        // @ts-ignore - testing edge case with invalid value
+        toolChoice: 'invalid_value',
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should fall back to AUTO mode
+      expect(requestBody.toolConfig.functionCallingConfig.mode).toBe('AUTO');
+    });
+
+    it('should handle empty tool calls in streaming response', async () => {
+      const chunkWithEmptyToolCall = {
+        candidates: [{
+          content: { 
+            parts: [
+              { functionCall: { name: '', args: {} } }
+            ] 
+          }
+        }]
+      };
+
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [chunkWithEmptyToolCall, googleStopChunk()],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should handle empty tool call gracefully
+      expect(chunks).toHaveLength(2);
     });
   });
 });

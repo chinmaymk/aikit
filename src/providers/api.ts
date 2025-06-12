@@ -1,4 +1,4 @@
-export class StreamingAPIClient {
+export class APIClient {
   private baseUrl: string;
   private headers: Record<string, string>;
   private timeout?: number;
@@ -85,5 +85,16 @@ export class StreamingAPIClient {
         yield chunk;
       }
     }
+  }
+}
+
+export async function* extractDataLines(lineStream: AsyncIterable<string>): AsyncIterable<string> {
+  for await (const line of lineStream) {
+    if (!line.startsWith('data: ')) continue;
+
+    const data = line.slice(6);
+    if (!data.trim()) continue;
+
+    yield data;
   }
 }

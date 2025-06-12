@@ -37,8 +37,8 @@ class AnthropicMessageUtils {
     return dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
   }
 }
-import { StreamingAPIClient } from './api';
-import { extractDataLines } from './sse';
+import { APIClient } from './api';
+import { extractDataLines } from './api';
 
 // Anthropic API types
 interface AnthropicTextBlockParam {
@@ -148,7 +148,7 @@ interface ErrorEvent extends AnthropicStreamEvent {
 }
 
 export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions> {
-  private readonly client: StreamingAPIClient;
+  private readonly client: APIClient;
   private readonly transformer: AnthropicMessageTransformer;
   private readonly streamProcessor: AnthropicStreamProcessor;
 
@@ -173,7 +173,7 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
       headers['anthropic-beta'] = config.beta.join(',');
     }
 
-    this.client = new StreamingAPIClient(baseURL, headers, timeout, maxRetries);
+    this.client = new APIClient(baseURL, headers, timeout, maxRetries);
     this.transformer = new AnthropicMessageTransformer();
     this.streamProcessor = new AnthropicStreamProcessor();
   }

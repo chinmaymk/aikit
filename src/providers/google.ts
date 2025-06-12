@@ -5,11 +5,59 @@ import type {
   GoogleGenerationOptions,
   StreamChunk,
   ToolCall,
+  Tool,
+  GenerationOptions,
 } from '../types';
 
-import { MessageTransformer, ToolChoiceHandler, FinishReasonMapper } from './utils';
-import { StreamingAPIClient } from './api';
-import { extractDataLines } from './sse';
+import { MessageTransformer } from './utils';
+import { APIClient } from './api';
+import { extractDataLines } from './api';
+
+// Local replacement for the Google SDK `FunctionCallingMode` enum
+type GoogleFunctionCallingMode = 'AUTO' | 'NONE' | 'ANY';
+
+// Google-specific utility classes
+class ToolChoiceHandler {
+  static formatForGoogle(toolChoice: GenerationOptions['toolChoice'] | undefined) {
+    const build = (mode: GoogleFunctionCallingMode) => ({
+      functionCallingConfig: { mode },
+    });
+
+    if (!toolChoice) return build('AUTO' as GoogleFunctionCallingMode);
+
+    if (toolChoice === 'auto') return build('AUTO' as GoogleFunctionCallingMode);
+    if (toolChoice === 'none') return build('NONE' as GoogleFunctionCallingMode);
+    if (toolChoice === 'required') return build('ANY' as GoogleFunctionCallingMode);
+
+    if (typeof toolChoice === 'object' && toolChoice.name) {
+      return {
+        functionCallingConfig: {
+          mode: 'ANY' as GoogleFunctionCallingMode,
+          allowedFunctionNames: [toolChoice.name],
+        },
+      };
+    }
+
+    return build('AUTO' as GoogleFunctionCallingMode);
+  }
+}
+
+type FinishReason = 'stop' | 'length' | 'tool_use' | 'error';
+
+class FinishReasonMapper {
+  static mapGoogle(reason: string): FinishReason {
+    switch (reason) {
+      case 'STOP':
+        return 'stop';
+      case 'MAX_TOKENS':
+        return 'length';
+      case 'TOOL_CODE_EXECUTED':
+        return 'tool_use';
+      default:
+        return 'stop';
+    }
+  }
+}
 
 // Google Gemini provider implementation
 
@@ -59,7 +107,7 @@ interface StreamGenerateContentChunk {
 }
 
 export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions> {
-  private readonly client: StreamingAPIClient;
+  private readonly client: APIClient;
   private readonly transformer: GoogleMessageTransformer;
   private readonly streamProcessor: GoogleStreamProcessor;
 
@@ -95,7 +143,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
     const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     const headers = { 'Content-Type': 'application/json' };
 
-    this.client = new StreamingAPIClient(baseUrl, headers);
+    this.client = new APIClient(baseUrl, headers);
     this.transformer = new GoogleMessageTransformer(config.apiKey);
     this.streamProcessor = new GoogleStreamProcessor();
   }

@@ -8,11 +8,11 @@ import type {
   ToolCall,
 } from '../types';
 import { MessageTransformer } from './utils';
-import { StreamingAPIClient } from './api';
-import { extractDataLines } from './sse';
+import { APIClient } from './api';
+import { extractDataLines } from './api';
 
 export class OpenAIProvider implements AIProvider {
-  private client: StreamingAPIClient;
+  private client: APIClient;
   private transformer: OpenAIMessageTransformer;
   private streamProcessor: OpenAIStreamProcessor;
 
@@ -48,7 +48,7 @@ export class OpenAIProvider implements AIProvider {
       headers['OpenAI-Project'] = project;
     }
 
-    this.client = new StreamingAPIClient(baseURL, headers, timeout, maxRetries);
+    this.client = new APIClient(baseURL, headers, timeout, maxRetries);
     this.transformer = new OpenAIMessageTransformer();
     this.streamProcessor = new OpenAIStreamProcessor();
   }
