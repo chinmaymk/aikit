@@ -22,7 +22,7 @@ It's the kind of diplomat who is fluent in both cultures and always knows the ri
 
 > **new AnthropicProvider**(`config`): `AnthropicProvider`
 
-Defined in: [providers/anthropic.ts:177](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L177)
+Defined in: [providers/anthropic.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L178)
 
 Initializes the Anthropic provider.
 
@@ -44,7 +44,7 @@ Your Anthropic API credentials and settings.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/anthropic.ts:203](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L203)
+Defined in: [providers/anthropic.ts:204](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L204)
 
 Orchestrates the generation process with Anthropic's API.
 It transforms the request, makes the call, and then processes the

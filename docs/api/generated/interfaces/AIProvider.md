@@ -4,7 +4,7 @@
 
 [aikit](../README.md) / AIProvider
 
-# Interface: AIProvider\<O\>
+# Interface: AIProvider\<GenOpts\>
 
 Defined in: [types.ts:255](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L255)
 
@@ -13,9 +13,9 @@ It's the social contract that holds this whole library together.
 
 ## Type Parameters
 
-### O
+### GenOpts
 
-`O` _extends_ [`GenerationOptions`](GenerationOptions.md) = [`GenerationOptions`](GenerationOptions.md)
+`GenOpts` _extends_ [`GenerationOptions`](GenerationOptions.md) = [`GenerationOptions`](GenerationOptions.md)
 
 ## Methods
 
@@ -38,7 +38,7 @@ The conversation so far. A story waiting to be told.
 
 ##### options
 
-`O`
+`GenOpts`
 
 The rules of the game. How you want the AI to behave.
 

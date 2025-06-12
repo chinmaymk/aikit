@@ -23,7 +23,7 @@ personal interpreter for one of the most powerful AIs on the planet.
 
 > **new GoogleGeminiProvider**(`config`): `GoogleGeminiProvider`
 
-Defined in: [providers/google.ts:145](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L145)
+Defined in: [providers/google.ts:161](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L161)
 
 Initializes the Google Gemini provider.
 
@@ -45,7 +45,7 @@ Your Google API credentials.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/google.ts:162](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L162)
+Defined in: [providers/google.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L178)
 
 Kicks off the generation process with the Gemini API.
 It transforms the request, makes the call, and processes the stream of
