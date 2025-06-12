@@ -252,7 +252,7 @@ export interface GoogleConfig {
  * It's the social contract that holds this whole library together.
  * @group Interfaces
  */
-export interface AIProvider<O extends GenerationOptions = GenerationOptions> {
+export interface AIProvider<GenOpts extends GenerationOptions = GenerationOptions> {
   /** A list of the models this provider supports. A handy little cheat sheet. */
   readonly models: string[];
 
@@ -263,5 +263,5 @@ export interface AIProvider<O extends GenerationOptions = GenerationOptions> {
    * @param options - The rules of the game. How you want the AI to behave.
    * @returns An async iterable of stream chunks. Data, glorious data!
    */
-  generate(messages: Message[], options: O): AsyncIterable<StreamChunk>;
+  generate(messages: Message[], options: GenOpts): AsyncIterable<StreamChunk>;
 }
