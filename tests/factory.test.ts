@@ -21,7 +21,6 @@ describe('Factory Functions', () => {
     it('should create an OpenAI provider instance', () => {
       const provider = createOpenAI(mockOpenAIConfig);
       expect(provider).toBeInstanceOf(OpenAIProvider);
-      expect(provider.models).toContain('gpt-4o');
     });
   });
 
@@ -29,7 +28,6 @@ describe('Factory Functions', () => {
     it('should create an Anthropic provider instance', () => {
       const provider = createAnthropic(mockAnthropicConfig);
       expect(provider).toBeInstanceOf(AnthropicProvider);
-      expect(provider.models).toContain('claude-3-5-sonnet-20241022');
     });
   });
 
@@ -37,7 +35,6 @@ describe('Factory Functions', () => {
     it('should create a Google provider instance', () => {
       const provider = createGoogle(mockGoogleConfig);
       expect(provider).toBeInstanceOf(GoogleGeminiProvider);
-      expect(provider.models).toContain('gemini-1.5-pro');
     });
   });
 

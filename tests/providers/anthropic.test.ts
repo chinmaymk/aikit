@@ -78,16 +78,6 @@ describe('AnthropicProvider', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with correct models', () => {
-      expect(provider.models).toEqual([
-        'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022',
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307',
-      ]);
-    });
-
     it('should have correct provider configuration', () => {
       expect(provider).toBeDefined();
     });

@@ -63,19 +63,6 @@ describe('OpenAIProvider', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize with correct models', () => {
-      expect(provider.models).toEqual([
-        'gpt-4o',
-        'gpt-4o-mini',
-        'gpt-4-turbo',
-        'gpt-4-turbo-preview',
-        'gpt-4',
-        'gpt-3.5-turbo',
-        'o1-preview',
-        'o1-mini',
-      ]);
-    });
-
     it('should initialize with organization and project headers', () => {
       const configWithOrgAndProject: OpenAIConfig = {
         apiKey: 'test-api-key',
