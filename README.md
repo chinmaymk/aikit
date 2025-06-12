@@ -5,7 +5,6 @@
 
 > **AIKit** is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 
-![image](https://github.com/user-attachments/assets/b496b6ef-9301-4aa1-8ec4-bb6c7d65962a)
 ---
 
 ## Features
@@ -67,6 +66,8 @@ Vendor generation endpoints rarely break. When they occasionally do, we publish 
 <summary><strong>What are the best use cases for AIKit?</strong></summary>
 
 Hand-rolling works for simple cases, but when you want streaming, multimodal inputs, consistent typings across providers, tool calls, environment-agnostic execution, or when you're simply interested in the generative features of large models, AIKit makes it easy—all in just a few lines.
+
+![image](https://github.com/user-attachments/assets/b496b6ef-9301-4aa1-8ec4-bb6c7d65962a)
 
 ---
 
