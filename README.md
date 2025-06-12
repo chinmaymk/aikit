@@ -3,51 +3,77 @@
 [![CI](https://github.com/chinmaymk/aikit/workflows/CI/badge.svg)](https://github.com/chinmaymk/aikit/actions)
 [![codecov](https://codecov.io/gh/chinmaymk/aikit/branch/main/graph/badge.svg)](https://codecov.io/gh/chinmaymk/aikit)
 
-**Lightweight generation abstraction for OpenAI, Anthropic, and Google Gemini.**
+> **AIKit** is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 
-Minimal wrapper that preserves native generation capabilities while providing a unified interface.
-![image](https://github.com/user-attachments/assets/b496b6ef-9301-4aa1-8ec4-bb6c7d65962a)
-
-## Scope
-
-**Use AIKit for**: Generation, streaming, tool calling (text and image inputs)  
-**Use official SDKs for**: Fine-tuning, embeddings, moderation, file management, assistants
+---
 
 ## Features
 
-- 🪶 **Minimal**: Lightweight wrapper preserving native capabilities
-- ⚙️ **Complete**: Full access to provider-specific generation options
-- 🔄 **Unified**: Consistent API across providers
-- 📡 **Streaming**: Native streaming support
-- 🖼️ **Multimodal**: Text and image inputs
-- 🛠️ **Tools**: Function calling support
-- 📝 **TypeScript**: Full type safety
+Use **AIKit** for: Generation & streaming, multimodal prompts (text + images), tool/function calling, and embeddings.
 
-## Installation
+_Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
 
-```bash
-npm install aikit
-```
+| Feature | What That Means |
+|---------|-----------------|
+| **Small but Mighty** | Just a slim wrapper over HTTP—no bloat. |
+| **Zero Dependencies** | Uses only the built-in `fetch`; no freeloaders. |
+| **No Surprises** | Every provider option is right there—no secret sauce. |
+| **Multimodal** | Text and images get equal treatment. |
+| **Embeddings Included** | Vectors are first-class citizens. |
+| **Tool-Friendly** | Helpers for tool and function calls, ready to go. |
+| **Unified API** | Same call shape for OpenAI, Anthropic & Gemini. |
+| **Type-Safe** | Exhaustive TypeScript types for requests & responses. |
+| **Streaming** | `for await` over tokens or deltas. |
+
+---
 
 ## Quick Start
 
-```typescript
+```ts
 import { createProvider } from 'aikit';
 
-const provider = createProvider('openai', {
+const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hello!' }] }];
+const messages = [
+  { role: 'user', content: [{ type: 'text', text: 'Hello!' }] },
+];
 
-for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
+for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
 ```
 
+---
+
+## FAQ
+
+<details>
+<summary><strong>How does this differ from the official SDKs?</strong></summary>
+
+AIKit focuses only on **generation** features across providers. That narrow focus lets us ship a smaller,
+unified API surface. If you need file uploads, fine-tuning, vector stores, etc., use the vendor SDK.
+</details>
+
+<details>
+<summary><strong>Will the API change under my feet?</strong></summary>
+
+Vendor generation endpoints rarely break. When they occasionally do, we publish a new **major** AIKit version right away so you can upgrade with minimal fuss. We follow semantic versioning and document any change in the changelog.
+</details>
+
+<details>
+<summary><strong>What are the best use cases for AIKit?</strong></summary>
+
+Hand-rolling works for simple cases, but when you want streaming, multimodal inputs, consistent typings across providers, tool calls, environment-agnostic execution, or when you're simply interested in the generative features of large models, AIKit makes it easy—all in just a few lines.
+
+---
+
 ## Documentation
 
-📚 **[Full Documentation](https://chinmaymk.github.io/aikit/)**
+📚 **Full docs & API reference:** https://chinmaymk.github.io/aikit/
+
+---
 
 ## License
 
