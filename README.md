@@ -55,6 +55,7 @@ for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
 <summary><strong>How does this work?</strong></summary>
 
 AIKit directly calls apis of underlying llm providers, and maps responses to a unified result stream and consistent types.
+
 </details>
 
 <details>
