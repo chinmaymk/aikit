@@ -134,3 +134,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Auto-generated documentation
+docs/api/generated/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
