@@ -209,11 +209,14 @@ export function createEmbeddingsProvider(
   type: EmbeddingProviderType,
   options: WithApiKey<OpenAIEmbeddingOptions | GoogleEmbeddingOptions>
 ): AnyEmbeddingProvider {
-  const factory = embeddingProviders[type];
-  if (!factory) {
-    throw new Error(`Unknown embedding provider type: ${type}`);
+  switch (type) {
+    case 'openai_embeddings':
+      return embeddingProviders[type](options as WithApiKey<OpenAIEmbeddingOptions>);
+    case 'google_embeddings':
+      return embeddingProviders[type](options as WithApiKey<GoogleEmbeddingOptions>);
+    default:
+      throw new Error(`Unknown embedding provider type: ${type}`);
   }
-  return factory(options as any);
 }
 
 /**
@@ -259,11 +262,18 @@ export function createProvider(
   type: GenerationProviderType,
   options: WithApiKey<OpenAIOptions | AnthropicOptions | GoogleOptions | OpenAIResponsesOptions>
 ): AnyGenerationProvider {
-  const factory = generationProviders[type];
-  if (!factory) {
-    throw new Error(`Unknown generation provider type: ${type}`);
+  switch (type) {
+    case 'openai':
+      return generationProviders[type](options as WithApiKey<OpenAIOptions>);
+    case 'anthropic':
+      return generationProviders[type](options as WithApiKey<AnthropicOptions>);
+    case 'google':
+      return generationProviders[type](options as WithApiKey<GoogleOptions>);
+    case 'openai_responses':
+      return generationProviders[type](options as WithApiKey<OpenAIResponsesOptions>);
+    default:
+      throw new Error(`Unknown generation provider type: ${type}`);
   }
-  return factory(options as any);
 }
 
 /**
