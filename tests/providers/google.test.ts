@@ -10,18 +10,7 @@ import {
   toolResult,
 } from '../../src/utils';
 import { googleTextChunk, googleStopChunk, googleToolCallChunk } from '../helpers/googleChunks';
-
-/**
- * Helper to create a chunked SSE response body for the Google Gemini streaming API.
- */
-function createGoogleSSEStream(chunks: any[]): Readable {
-  const stream = new Readable({ read() {} });
-  chunks.forEach(chunk => {
-    stream.push(`data: ${JSON.stringify(chunk)}\n`);
-  });
-  stream.push(null); // end of stream
-  return stream;
-}
+import { createGoogleSSEStream } from '../helpers/stream';
 
 /**
  * Set up nock to intercept the Google Gemini request and return the provided chunks.

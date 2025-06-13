@@ -9,18 +9,7 @@ import {
 } from '../helpers/anthropicChunks';
 import nock from 'nock';
 import { Readable } from 'node:stream';
-
-/**
- * Helper to create a chunked SSE response body for the Anthropic streaming API.
- */
-function createAnthropicSSEStream(chunks: any[]): Readable {
-  const stream = new Readable({ read() {} });
-  chunks.forEach(chunk => {
-    stream.push(`event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`);
-  });
-  stream.push(null); // end of stream
-  return stream;
-}
+import { createAnthropicSSEStream } from '../helpers/stream';
 
 /**
  * Helper to create an OpenAI streaming response with reasoning.

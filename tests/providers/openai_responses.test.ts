@@ -13,23 +13,7 @@ import {
   createTool,
 } from '../../src/utils';
 import { textChunk, toolCallChunk, textDelta, completionChunk } from '../helpers/openaiChunks';
-
-/**
- * Helper to create a chunked SSE response body for the OpenAI Responses API streaming.
- */
-function createSSEStream(chunks: any[]): Readable {
-  const stream = new Readable({ read() {} });
-
-  // Flatten chunks array since some helpers return arrays
-  const flatChunks = chunks.flat();
-
-  flatChunks.forEach(chunk => {
-    stream.push(`data: ${JSON.stringify(chunk)}\n\n`);
-  });
-  stream.push('data: [DONE]\n\n');
-  stream.push(null); // end of stream
-  return stream;
-}
+import { createOpenAISSEStream as createSSEStream } from '../helpers/stream';
 
 /**
  * Set up nock to intercept the responses API request and return the provided chunks.

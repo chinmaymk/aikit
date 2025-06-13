@@ -10,19 +10,7 @@ import {
   toolResult as toolResultMsg,
 } from '../../src/utils';
 import { chatTextChunk, chatStopChunk, chatToolCallChunk } from '../helpers/openaiChunks';
-
-/**
- * Helper to create a chunked SSE response body for the OpenAI streaming API.
- */
-function createSSEStream(chunks: any[]): Readable {
-  const stream = new Readable({ read() {} });
-  chunks.forEach(chunk => {
-    stream.push(`data: ${JSON.stringify(chunk)}\n`);
-  });
-  stream.push('data: [DONE]\n');
-  stream.push(null); // end of stream
-  return stream;
-}
+import { createOpenAISSEStream as createSSEStream } from '../helpers/stream';
 
 /**
  * Set up nock to intercept the chat completion request and return the provided chunks.

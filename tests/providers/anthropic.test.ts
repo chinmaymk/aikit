@@ -16,6 +16,7 @@ import {
   assistantWithToolCalls,
   toolResult,
 } from '../../src/utils';
+import { createAnthropicSSEStream } from '../helpers/stream';
 import {
   anthropicTextResponse,
   anthropicToolCallResponse,
@@ -27,18 +28,6 @@ import {
   anthropicMessageDeltaChunk,
   anthropicMessageStopChunk,
 } from '../helpers/anthropicChunks';
-
-/**
- * Helper to create a chunked SSE response body for the Anthropic streaming API.
- */
-function createAnthropicSSEStream(chunks: any[]): Readable {
-  const stream = new Readable({ read() {} });
-  chunks.forEach(chunk => {
-    stream.push(`event: ${chunk.type}\ndata: ${JSON.stringify(chunk)}\n\n`);
-  });
-  stream.push(null); // end of stream
-  return stream;
-}
 
 /**
  * Set up nock to intercept the Anthropic request and return the provided chunks.
