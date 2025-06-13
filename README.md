@@ -32,6 +32,8 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 
 ## Quick Start
 
+### Text Generation
+
 ```ts
 import { createProvider, userText, printStream } from 'aikit';
 
@@ -48,6 +50,20 @@ await printStream(openai.generate(messages, { model: 'gpt-4o' }));
 for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
+```
+
+### Embeddings
+
+```ts
+import { createOpenAIEmbeddings } from 'aikit';
+
+const embeddings = createOpenAIEmbeddings({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// Turn text into vectors
+const result = await embeddings.embed(['Hello, world!', 'How are you?']);
+console.log(result.embeddings[0].values); // [0.123, -0.456, ...]
 ```
 
 ---

@@ -85,8 +85,7 @@ describe('Factory Functions', () => {
 
     it('should throw error for unknown provider type', () => {
       expect(() => {
-        // @ts-expect-error Testing invalid type
-        createProvider('unknown', {});
+        createProvider('unknown' as any, {});
       }).toThrow('Unknown provider type: unknown');
     });
   });
@@ -151,7 +150,7 @@ describe('Factory Functions', () => {
       expect(result.name).toBe('OpenAI');
     });
 
-    it('should return null when no API keys are available', () => {
+    it('should return undefined when no API keys are available', () => {
       process.env.OPENAI_API_KEY = '';
       process.env.ANTHROPIC_API_KEY = '';
       process.env.GOOGLE_API_KEY = '';
@@ -161,9 +160,9 @@ describe('Factory Functions', () => {
 
       const result = getAvailableProvider();
 
-      expect(result.provider).toBeNull();
-      expect(result.type).toBeNull();
-      expect(result.name).toBeNull();
+      expect(result.provider).toBeUndefined();
+      expect(result.type).toBeUndefined();
+      expect(result.name).toBeUndefined();
     });
   });
 });

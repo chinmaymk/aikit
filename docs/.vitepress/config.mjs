@@ -23,6 +23,7 @@ export default defineConfig({
             { text: 'Multimodal', link: '/guide/multimodal' },
             { text: 'Function Calling', link: '/guide/tools' },
             { text: 'Conversations', link: '/guide/conversations' },
+            { text: 'Embeddings', link: '/guide/embeddings' },
           ],
         },
       ],

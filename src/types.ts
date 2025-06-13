@@ -145,6 +145,113 @@ export interface StreamResult {
 }
 
 /**
+ * Usage information for an embedding request.
+ * Provides details about token consumption and any truncation that occurred.
+ * @group Types
+ */
+export interface EmbeddingUsage {
+  /** The number of tokens in the input text. */
+  inputTokens?: number;
+  /** The total number of tokens used in the request. */
+  totalTokens?: number;
+  /** Whether the input text was truncated due to length limits. */
+  truncated?: boolean;
+}
+
+/**
+ * A single embedding result containing the vector and metadata.
+ * @group Types
+ */
+export interface EmbeddingResult {
+  /** The embedding vector as an array of floating-point numbers. */
+  values: number[];
+  /** Index of this embedding in the original batch request. */
+  index?: number;
+  /** Usage information for this specific embedding. */
+  usage?: EmbeddingUsage;
+}
+
+/**
+ * The complete response from an embedding generation request.
+ * Contains all embeddings and aggregated usage information.
+ * @group Types
+ */
+export interface EmbeddingResponse {
+  /** Array of embedding results, one for each input text. */
+  embeddings: EmbeddingResult[];
+  /** Total usage information across all embeddings in the batch. */
+  usage?: EmbeddingUsage;
+  /** The model used to generate the embeddings. */
+  model?: string;
+}
+
+/**
+ * The basic options for controlling embedding generation.
+ * These are the options that all embedding providers understand.
+ */
+export interface EmbeddingOptions {
+  /** The specific embedding model you want to use. e.g., 'text-embedding-3-small' or 'text-embedding-004'. */
+  model?: string;
+  /** The number of dimensions in the output embeddings. Only supported by some models. */
+  dimensions?: number;
+  /** The type of task the embeddings will be used for. Helps optimize the embeddings. */
+  taskType?: 'query' | 'document' | 'similarity' | 'classification' | 'clustering';
+  /** Whether to automatically truncate input text that exceeds the model's limit. */
+  autoTruncate?: boolean;
+}
+
+/**
+ * Base interface for embedding provider-specific configuration options.
+ * Contains common options shared across all AI embedding providers.
+ */
+export interface EmbeddingProviderOptions extends EmbeddingOptions {
+  /** API key for authentication with the provider. */
+  apiKey?: string;
+  /** Custom base URL for the API endpoint. */
+  baseURL?: string;
+  /** Request timeout in milliseconds. */
+  timeout?: number;
+  /** Maximum number of retry attempts for failed requests. */
+  maxRetries?: number;
+}
+
+/**
+ * OpenAI-specific embedding options.
+ * Extends the base embedding options with OpenAI-specific parameters.
+ */
+export interface OpenAIEmbeddingOptions extends EmbeddingProviderOptions {
+  /** Your OpenAI organization ID. For when you're part of a fancy club. */
+  organization?: string;
+  /** Your OpenAI project ID. For even fancier clubs. */
+  project?: string;
+  /** Encoding format for the embeddings. Defaults to 'float'. */
+  encodingFormat?: 'float' | 'base64';
+  /** A stable identifier for your end-users. */
+  user?: string;
+}
+
+/**
+ * Google Gemini-specific embedding options.
+ * Extends the base embedding options with Google-specific parameters.
+ */
+export interface GoogleEmbeddingOptions extends Omit<EmbeddingProviderOptions, 'taskType'> {
+  /** Output data type for the embeddings. */
+  outputDtype?: 'float' | 'int8' | 'uint8' | 'binary' | 'ubinary';
+  /** Optional title for the text when task type is 'document'. */
+  title?: string;
+  /** Task type specific to Google's API format. */
+  taskType?:
+    | 'RETRIEVAL_QUERY'
+    | 'RETRIEVAL_DOCUMENT'
+    | 'SEMANTIC_SIMILARITY'
+    | 'CLASSIFICATION'
+    | 'CLUSTERING'
+    | 'QUESTION_ANSWERING'
+    | 'FACT_VERIFICATION'
+    | 'CODE_RETRIEVAL_QUERY';
+}
+
+/**
  * The basic knobs and dials for controlling the AI's creative genius.
  * These are the options that all providers understand.
  */
@@ -522,4 +629,20 @@ export interface AIProvider<GenOpts extends GenerationOptions = GenerationOption
    * @returns An async iterable of stream chunks. Data, glorious data!
    */
   generate(messages: Message[], options?: GenOpts): AsyncIterable<StreamChunk>;
+}
+
+/**
+ * Interface for AI providers that support embedding generation.
+ * Embedding providers convert text into numerical vectors for semantic similarity tasks.
+ * @group Types
+ */
+export interface EmbeddingProvider<EmbedOpts extends EmbeddingOptions = EmbeddingOptions> {
+  /**
+   * Generate embeddings for one or more text inputs.
+   * Transforms text into numerical vectors that capture semantic meaning.
+   * @param texts - Array of text strings to embed. Each string will be converted to an embedding vector.
+   * @param options - Configuration options for the embedding generation.
+   * @returns Promise that resolves to an embedding response with vectors and usage information.
+   */
+  embed(texts: string[], options?: EmbedOpts): Promise<EmbeddingResponse>;
 }

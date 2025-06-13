@@ -30,6 +30,33 @@ export class APIClient {
   }
 
   /**
+   * Makes a non-streaming API request.
+   * @param endpoint - The API endpoint to hit.
+   * @param body - The request payload.
+   * @returns A Promise resolving to the parsed JSON response.
+   */
+  async post(endpoint: string, body: unknown): Promise<unknown> {
+    const stream = await this.stream(endpoint, body);
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let result = '';
+
+    try {
+      let done = false;
+      while (!done) {
+        const chunk = await reader.read();
+        done = chunk.done;
+        if (chunk.value) {
+          result += decoder.decode(chunk.value, { stream: true });
+        }
+      }
+      return JSON.parse(result);
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  /**
    * Makes a streaming API request.
    * It's resilient, with built-in retries and timeout support.
    * @param endpoint - The API endpoint to hit.

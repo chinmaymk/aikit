@@ -9,7 +9,7 @@
  * This script validates that all providers work correctly with the AIKit interface.
  */
 
-import { createProvider } from '../src/factory';
+import { createProvider, createOpenAIEmbeddings, createGoogleEmbeddings } from '../src/factory';
 import {
   generate,
   conversation,
@@ -21,7 +21,9 @@ import {
 import type { ToolCall } from '../src/types';
 
 // Define provider type
-type ProviderType = 'openai' | 'anthropic' | 'google';
+import type { GenerationProviderType } from '../src/index';
+
+type ProviderType = GenerationProviderType;
 
 // === Test Configuration ===
 interface ProviderConfig {
@@ -323,15 +325,68 @@ async function testReasoning(providerType: ProviderType, providerName: string, m
   }
 }
 
+async function testEmbeddings(providerType: ProviderType, providerName: string) {
+  console.log(`\nTesting ${providerName} - Embeddings`);
+  console.log('─'.repeat(50));
+
+  try {
+    const apiKey = process.env[`${providerType.toUpperCase()}_API_KEY`];
+    if (!apiKey) {
+      console.log(
+        `FAILED ${providerName}: No API key found (${providerType.toUpperCase()}_API_KEY)`
+      );
+      return false;
+    }
+
+    // Only test providers that have embedding support
+    if (providerType === 'anthropic') {
+      console.log(`SKIPPED ${providerName}: Provider does not support embeddings`);
+      return true; // Not a failure, just not supported
+    }
+
+    let embeddings;
+    if (providerType === 'openai') {
+      embeddings = createOpenAIEmbeddings({ apiKey });
+    } else if (providerType === 'google') {
+      embeddings = createGoogleEmbeddings({ apiKey, taskType: 'SEMANTIC_SIMILARITY' });
+    } else {
+      console.log(`SKIPPED ${providerName}: Provider does not support embeddings`);
+      return true;
+    }
+
+    const testTexts = ['Hello, world!', 'How are you today?'];
+    const result = await embeddings.embed(testTexts);
+
+    if (result.embeddings && result.embeddings.length === testTexts.length) {
+      const dimensions = result.embeddings[0].values.length;
+      console.log(
+        `PASSED ${providerName}: Generated ${result.embeddings.length} embeddings (${dimensions} dimensions)`
+      );
+      console.log(`   Tokens used: ${result.usage?.totalTokens || 0}`);
+      return true;
+    } else {
+      console.log(`FAILED ${providerName}: Invalid embedding response`);
+      return false;
+    }
+  } catch (error) {
+    console.log(`FAILED ${providerName}: Error during embeddings test`);
+    console.log(`   Error: ${error}`);
+    return false;
+  }
+}
+
 async function main() {
   console.log('AIKit Provider Test Suite');
   console.log('═'.repeat(60));
-  console.log('Testing all providers for basic generation, tool calling, and reasoning...\n');
+  console.log(
+    'Testing all providers for basic generation, tool calling, reasoning, and embeddings...\n'
+  );
 
   const results = {
     generation: { passed: 0, failed: 0 },
     tools: { passed: 0, failed: 0 },
     reasoning: { passed: 0, failed: 0 },
+    embeddings: { passed: 0, failed: 0 },
     total: { passed: 0, failed: 0 },
   };
 
@@ -373,6 +428,16 @@ async function main() {
         results.total.failed++;
       }
     }
+
+    // Test embeddings (once per provider, not per model)
+    const embeddingSuccess = await testEmbeddings(type, name);
+    if (embeddingSuccess) {
+      results.embeddings.passed++;
+      results.total.passed++;
+    } else {
+      results.embeddings.failed++;
+      results.total.failed++;
+    }
   }
 
   // Print summary
@@ -390,6 +455,9 @@ async function main() {
   console.log(`Tool Calling:     PASSED ${results.tools.passed}, FAILED ${results.tools.failed}`);
   console.log(
     `Reasoning:        PASSED ${results.reasoning.passed}, FAILED ${results.reasoning.failed}`
+  );
+  console.log(
+    `Embeddings:       PASSED ${results.embeddings.passed}, FAILED ${results.embeddings.failed}`
   );
   console.log(`Total Tests:      PASSED ${results.total.passed}, FAILED ${results.total.failed}`);
   console.log(

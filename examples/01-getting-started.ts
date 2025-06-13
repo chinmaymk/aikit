@@ -9,7 +9,7 @@
  * 5. Multiple provider comparison
  */
 
-import { createProvider, getAvailableProvider } from '../src/factory';
+import { createProvider, getAvailableProvider, type GenerationProviderType } from '../src/index';
 import { generate, userText, systemText, conversation } from '../src/utils';
 import { getModelName, printDelimiter, printSectionHeader } from './utils';
 
@@ -116,7 +116,7 @@ async function step5_MultipleProviders() {
 
   for (const providerInfo of availableProviders) {
     try {
-      const provider = createProvider(providerInfo.type as 'openai' | 'anthropic' | 'google', {
+      const provider = createProvider(providerInfo.type as GenerationProviderType, {
         apiKey: process.env[`${providerInfo.type.toUpperCase()}_API_KEY`]!,
       });
 

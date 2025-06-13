@@ -13,7 +13,7 @@
 import { createProvider } from '../src/factory';
 import { userText, generate } from '../src/utils';
 import { printDelimiter, printSectionHeader } from './utils';
-import type { OpenAIOptions, AnthropicOptions, GoogleOptions } from '../src/types';
+import type { AIProvider, OpenAIOptions, AnthropicOptions, GoogleOptions } from '../src/types';
 
 async function pattern1_BasicConfiguration() {
   printSectionHeader('Pattern 1: Basic Configuration - Everything at Generation Time');
@@ -280,7 +280,7 @@ async function pattern9_MultiProviderConsistency() {
         ...baseOptions,
       }),
     ],
-  ].filter(Boolean) as [string, ReturnType<typeof createProvider>][];
+  ].filter(Boolean) as [string, AIProvider][];
 
   if (providers.length === 0) {
     console.log('No API keys configured\n');
