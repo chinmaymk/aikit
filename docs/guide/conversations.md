@@ -4,7 +4,7 @@ Great AI conversations are more than single exchanges—they're contextual, cohe
 
 ## Why Conversation Management?
 
-Single-shot AI interactions are like speed dating—quick, but shallow. Real conversations build context, maintain state, and develop over time. Whether you're building a chatbot, a coding assistant, or an AI tutor, good conversation management is crucial.
+Single-shot AI interactions are like speed dating—quick, but shallow. Real conversations build context, maintain state, and develop over time. Whether you're building a chatbot, a coding assistant, or an AI tutor, good context management is crucial.
 
 ## Basic Conversation Flow
 
