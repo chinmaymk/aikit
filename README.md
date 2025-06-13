@@ -95,7 +95,7 @@ Vendor generation endpoints rarely break. When they occasionally do, we publish 
 <details>
 <summary><strong>What are the best use cases for AIKit?</strong></summary>
 
-Hand-rolling works for simple cases, but when you want streaming, multimodal inputs, consistent typings across providers, tool calls, environment-agnostic execution, or when you're simply interested in the generative features of large models, AIKit makes it easy—all in just a few lines.
+When you want streaming, multimodal inputs, consistent typings across providers, tool calls, environment-agnostic execution, or when you're simply interested in the generative features of large models, AIKit makes it easy—all in just a few lines.
 
 </details>
 
