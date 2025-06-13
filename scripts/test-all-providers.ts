@@ -11,11 +11,8 @@
 import { createProvider } from '../src/factory';
 import {
   generate,
-  userText,
-  systemText,
   conversation,
   createTool,
-  executeToolCall,
   assistantWithToolCalls,
   toolResult,
 } from '../src/utils';

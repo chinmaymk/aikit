@@ -120,7 +120,9 @@ describe('GoogleGeminiProvider', () => {
       }
 
       expect(scope.isDone()).toBe(true);
-      expect(requestBody.systemInstruction).toBe('You are a helpful assistant');
+      expect(requestBody.systemInstruction).toEqual({
+        parts: [{ text: 'You are a helpful assistant' }],
+      });
       expect(requestBody.contents).toEqual([
         {
           role: 'user',
@@ -371,7 +373,7 @@ describe('GoogleGeminiProvider', () => {
         parts: [
           {
             functionResponse: {
-              name: 'call_123',
+              name: 'get_weather',
               response: { result: 'Sunny, 72°F' },
             },
           },
