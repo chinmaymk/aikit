@@ -102,10 +102,6 @@ const result2 = await generate(provider, [userText('Be creative!')], {
 });
 ```
 
-::: tip
-For detailed configuration patterns, provider-specific types, and advanced options, see the [Configuration Guide](./configuration.md).
-:::
-
 ## Provider Switching
 
 The beauty of AIKit? Same code, different AI. Switch providers with one line.
