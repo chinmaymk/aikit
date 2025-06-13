@@ -1,4 +1,5 @@
-import { AnthropicProvider, AnthropicMessageUtils } from '../../src/providers/anthropic';
+import { AnthropicProvider } from '../../src/providers/anthropic';
+import { MessageTransformer } from '../../src/providers/utils';
 import type { Message, GenerationOptions, AnthropicConfig, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
@@ -93,7 +94,7 @@ describe('AnthropicProvider', () => {
     });
   });
 
-  describe('AnthropicMessageUtils', () => {
+  describe('MessageTransformer (Anthropic tests)', () => {
     it('should test groupContentByType', () => {
       const content = [
         { type: 'text' as const, text: 'Hello' },
@@ -101,7 +102,7 @@ describe('AnthropicProvider', () => {
         { type: 'tool_result' as const, toolCallId: 'call_1', result: 'result' },
       ];
 
-      const grouped = AnthropicMessageUtils.groupContentByType(content);
+      const grouped = MessageTransformer.groupContentByType(content);
       expect(grouped.text).toHaveLength(1);
       expect(grouped.images).toHaveLength(1);
       expect(grouped.toolResults).toHaveLength(1);
@@ -109,7 +110,7 @@ describe('AnthropicProvider', () => {
 
     it('should test extractBase64Data', () => {
       const dataUrl = 'data:image/png;base64,xyz123';
-      const base64Data = AnthropicMessageUtils.extractBase64Data(dataUrl);
+      const base64Data = MessageTransformer.extractBase64Data(dataUrl);
       expect(base64Data).toBe('xyz123');
     });
   });

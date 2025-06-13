@@ -6,37 +6,10 @@ import type {
   StreamChunk,
   ToolCall,
   Tool,
-  Content,
-  TextContent,
-  ImageContent,
   ToolResultContent,
 } from '../types';
 
-// Anthropic-specific message utilities
-export interface GroupedContent {
-  text: TextContent[];
-  images: ImageContent[];
-  toolResults: ToolResultContent[];
-}
-
-export class AnthropicMessageUtils {
-  static extractTextContent(content: Content[]): string {
-    const textContent = content.find(c => c.type === 'text') as TextContent;
-    return textContent?.text ?? '';
-  }
-
-  static groupContentByType(content: Content[]): GroupedContent {
-    return {
-      text: content.filter(c => c.type === 'text') as TextContent[],
-      images: content.filter(c => c.type === 'image') as ImageContent[],
-      toolResults: content.filter(c => c.type === 'tool_result') as ToolResultContent[],
-    };
-  }
-
-  static extractBase64Data(dataUrl: string): string {
-    return dataUrl.replace(/^data:image\/[^;]+;base64,/, '');
-  }
-}
+import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
 import { APIClient } from './api';
 import { extractDataLines } from './api';
 
@@ -59,7 +32,7 @@ interface AnthropicToolUseBlockParam {
   type: 'tool_use';
   id: string;
   name: string;
-  input: Record<string, unknown>;
+  input: DynamicParams;
 }
 
 interface AnthropicToolResultBlockParam {
@@ -82,7 +55,7 @@ interface AnthropicMessageParam {
 interface AnthropicTool {
   name: string;
   description: string;
-  input_schema: Record<string, unknown>;
+  input_schema: DynamicParams;
 }
 
 interface AnthropicToolChoice {
@@ -115,7 +88,7 @@ interface ContentBlockStartEvent extends AnthropicStreamEvent {
   index: number;
   content_block:
     | { type: 'text'; text: string }
-    | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+    | { type: 'tool_use'; id: string; name: string; input: DynamicParams };
 }
 
 interface ContentBlockDeltaEvent extends AnthropicStreamEvent {
@@ -156,8 +129,6 @@ interface ErrorEvent extends AnthropicStreamEvent {
  */
 export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions> {
   private readonly client: APIClient;
-  private readonly transformer: AnthropicMessageTransformer;
-  private readonly streamProcessor: AnthropicStreamProcessor;
 
   /**
    * Initializes the Anthropic provider.
@@ -177,8 +148,6 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
     }
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.transformer = new AnthropicMessageTransformer();
-    this.streamProcessor = new AnthropicStreamProcessor();
   }
 
   /**
@@ -193,28 +162,18 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
     messages: Message[],
     options: AnthropicGenerationOptions
   ): AsyncIterable<StreamChunk> {
-    const params = this.transformer.buildRequestParams(messages, options);
+    const params = this.buildRequestParams(messages, options);
     const stream = await this.client.stream('/messages', params);
     const lineStream = this.client.processStreamAsLines(stream);
     const sseStream = extractDataLines(lineStream);
-    yield* this.streamProcessor.processStream(sseStream);
+    yield* this.processStream(sseStream);
   }
-}
 
-/**
- * The master of disguise for Anthropic messages.
- * This class takes AIKit's standard message format and masterfully
- * transforms it into the specific structure Anthropic's API requires.
- * @internal
- */
-class AnthropicMessageTransformer {
   /**
-   * Constructs the full request payload for the Anthropic API.
-   * @param messages - The AIKit messages.
-   * @param options - The AIKit generation options.
-   * @returns A request payload that Claude will find agreeable.
+   * Builds request parameters for the Anthropic API.
+   * Handles message transformation, tool formatting, and system messages.
    */
-  buildRequestParams(
+  private buildRequestParams(
     messages: Message[],
     options: AnthropicGenerationOptions
   ): AnthropicCreateMessageRequest {
@@ -224,21 +183,19 @@ class AnthropicMessageTransformer {
       model: options.model,
       messages: anthropicMessages,
       max_tokens: options.maxTokens || 1024,
-      temperature: options.temperature,
-      top_p: options.topP,
-      top_k: options.topK,
-      stop_sequences: options.stopSequences,
       stream: true,
     };
 
-    if (systemMessage) {
-      params.system = systemMessage;
+    if (systemMessage) params.system = systemMessage;
+    if (options.temperature !== undefined) params.temperature = options.temperature;
+    if (options.topP !== undefined) params.top_p = options.topP;
+    if (options.topK !== undefined) params.top_k = options.topK;
+    if (options.stopSequences && options.stopSequences.length > 0) {
+      params.stop_sequences = options.stopSequences;
     }
 
     if (options.tools) {
       params.tools = this.formatTools(options.tools);
-      // Anthropic is a bit particular about tool_choice.
-      // We have to translate our abstract choices into their concrete terms.
       if (options.toolChoice) {
         params.tool_choice = this.formatToolChoice(options.toolChoice);
       }
@@ -248,209 +205,18 @@ class AnthropicMessageTransformer {
   }
 
   /**
-   * Formats AIKit tools into Anthropic's preferred structure.
-   * @param tools - An array of AIKit tools.
-   * @returns An array of tools formatted for Claude.
-   */
-  private formatTools(tools: Tool[]): AnthropicTool[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      input_schema: tool.parameters,
-    }));
-  }
-
-  /**
-   * Translates AIKit's abstract tool choice into Anthropic's specific format.
-   * It's a small but crucial piece of diplomacy.
-   * @param toolChoice - The AIKit tool choice.
-   * @returns An Anthropic-compatible tool choice object.
-   */
-  private formatToolChoice(
-    toolChoice: AnthropicGenerationOptions['toolChoice']
-  ): AnthropicToolChoice {
-    if (toolChoice === 'required') return { type: 'any' };
-    if (toolChoice === 'auto') return { type: 'auto' };
-    if (typeof toolChoice === 'object') {
-      return { type: 'tool', name: toolChoice.name };
-    }
-    // Default to 'auto' if the choice is something we don't recognize.
-    return { type: 'auto' };
-  }
-
-  /**
-   * Transforms a list of AIKit messages into the format Anthropic expects.
-   * It also extracts the system message, as Anthropic handles it separately.
-   * @param messages - The messages to transform.
-   * @returns An object containing the system message and the transformed messages.
-   */
-  private transformMessages(messages: Message[]): {
-    systemMessage: string;
-    anthropicMessages: AnthropicMessageParam[];
-  } {
-    let systemMessage = '';
-    const anthropicMessages: AnthropicMessageParam[] = [];
-
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        systemMessage = AnthropicMessageUtils.extractTextContent(msg.content);
-        continue;
-      }
-
-      const transformed = this.transformMessage(msg);
-      if (transformed) {
-        if (Array.isArray(transformed)) {
-          anthropicMessages.push(...transformed);
-        } else {
-          anthropicMessages.push(transformed);
-        }
-      }
-    }
-
-    // Anthropic requires a user message to start the conversation.
-    // If the first message isn't from a user, we'll prepend an empty one.
-    // It's a bit of a hack, but it keeps the API happy.
-    if (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
-      anthropicMessages.unshift({ role: 'user', content: [] });
-    }
-
-    return { systemMessage, anthropicMessages };
-  }
-
-  /**
-   * The core transformation logic for a single message.
-   * It's a multi-talented function that can handle various message roles.
-   * @param msg - The message to transform.
-   * @returns A transformed message or an array of them.
-   */
-  private transformMessage(msg: Message): AnthropicMessageParam | AnthropicMessageParam[] | null {
-    switch (msg.role) {
-      case 'system':
-        // System messages are handled separately, so we just return the text content.
-        return null;
-      case 'tool':
-        // Tool messages are special and need to be handled in their own function.
-        return this.transformToolMessage(msg);
-      case 'user':
-      case 'assistant':
-        // User and assistant messages are handled by a common function.
-        return this.transformUserOrAssistantMessage(msg);
-      default:
-        return null;
-    }
-  }
-
-  /**
-   * Transforms a tool message into a sequence of user and assistant messages.
-   * Anthropic's API expects tool results to be framed by a user message
-   * containing the results and an assistant message that came before it.
-   * This function constructs that sequence.
-   * @param msg - The tool message to transform.
-   * @returns An array of transformed messages.
-   */
-  private transformToolMessage(msg: Message): AnthropicMessageParam[] {
-    const toolResults = (msg.content as ToolResultContent[]).map(c => ({
-      type: 'tool_result' as const,
-      tool_use_id: c.toolCallId,
-      content: c.result,
-    }));
-
-    if (toolResults.length === 0) {
-      return [];
-    }
-
-    // This structure might look odd, but it's what Anthropic expects.
-    return [{ role: 'user', content: toolResults }];
-  }
-
-  /**
-   * Transforms a user or assistant message into the Anthropic format.
-   * @param msg - The message to transform.
-   * @returns A single transformed message.
-   */
-  private transformUserOrAssistantMessage(msg: Message): AnthropicMessageParam {
-    return {
-      role: msg.role as 'user' | 'assistant',
-      content: this.buildContentBlocks(msg),
-    };
-  }
-
-  /**
-   * Builds the content blocks for a message, handling text, images, and tool calls.
-   * @param msg - The message to build content for.
-   * @returns An array of Anthropic content blocks.
-   */
-  private buildContentBlocks(msg: Message): AnthropicContentBlock[] {
-    const blocks: AnthropicContentBlock[] = [];
-
-    // First, add any text or image content.
-    for (const content of msg.content) {
-      if (content.type === 'text') {
-        blocks.push({ type: 'text', text: content.text });
-      } else if (content.type === 'image') {
-        blocks.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: this.detectImageMimeType(content.image),
-            data: content.image.replace(/^data:image\/[^;]+;base64,/, ''),
-          },
-        });
-      }
-    }
-
-    // Then, if it's an assistant message with tool calls, add them.
-    if (msg.role === 'assistant' && msg.toolCalls) {
-      for (const toolCall of msg.toolCalls) {
-        blocks.push({
-          type: 'tool_use',
-          id: toolCall.id,
-          name: toolCall.name,
-          input: toolCall.arguments,
-        });
-      }
-    }
-
-    return blocks;
-  }
-
-  /**
-   * A clever little function to figure out the mime type of an image from its data URL.
-   * It's not foolproof, but it's good enough for our purposes.
-   * @param dataUrl - The data URL of the image.
-   * @returns The detected mime type.
-   */
-  private detectImageMimeType(
-    dataUrl: string
-  ): 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' {
-    if (dataUrl.includes('data:image/png')) return 'image/png';
-    if (dataUrl.includes('data:image/gif')) return 'image/gif';
-    if (dataUrl.includes('data:image/webp')) return 'image/webp';
-    return 'image/jpeg'; // Default to jpeg if we can't figure it out.
-  }
-}
-
-/**
- * The stream whisperer for Anthropic's API.
- * This class processes the server-sent events stream from Anthropic and
- * translates it into a coherent sequence of AIKit stream chunks.
- * It's a master of asynchronous ceremonies.
- * @internal
- */
-class AnthropicStreamProcessor {
-  /**
    * Processes the server-sent events stream from Anthropic.
-   * @param sseStream - An async iterable of server-sent event data strings.
-   * @returns An async iterable of AIKit stream chunks.
+   * Manages state and yields properly formatted chunks.
    */
-  async *processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
+  private async *processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let content = '';
     const toolCallStates: Record<string, { name: string; arguments: string }> = {};
 
     for await (const data of sseStream) {
-      try {
-        const event: AnthropicStreamEvent = JSON.parse(data);
+      const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
+      if (!event) continue;
 
+      try {
         switch (event.type) {
           case 'content_block_start': {
             const startEvent = event as ContentBlockStartEvent;
@@ -468,7 +234,7 @@ class AnthropicStreamProcessor {
             if (deltaEvent.delta.type === 'text_delta') {
               const delta = deltaEvent.delta.text;
               content += delta;
-              yield { content, delta };
+              yield MessageTransformer.createStreamChunk(content, delta);
             } else if (deltaEvent.delta.type === 'input_json_delta') {
               // Find the tool call this delta belongs to and append the arguments.
               const toolCallId = Object.keys(toolCallStates).find(id => toolCallStates[id].name);
@@ -483,7 +249,7 @@ class AnthropicStreamProcessor {
             const deltaEvent = event as MessageDeltaEvent;
             const finishReason = this.mapFinishReason(deltaEvent.delta.stop_reason);
             const toolCalls = this.finalizeToolCalls(toolCallStates);
-            yield { content, delta: '', finishReason, toolCalls };
+            yield MessageTransformer.createStreamChunk(content, '', toolCalls, finishReason);
             break;
           }
 
@@ -507,10 +273,152 @@ class AnthropicStreamProcessor {
   }
 
   /**
+   * Transforms AIKit messages to Anthropic format.
+   * Separates system messages from conversation messages.
+   */
+  private transformMessages(messages: Message[]): {
+    systemMessage: string;
+    anthropicMessages: AnthropicMessageParam[];
+  } {
+    let systemMessage = '';
+    const anthropicMessages: AnthropicMessageParam[] = [];
+
+    for (const msg of messages) {
+      if (msg.role === 'system') {
+        systemMessage = MessageTransformer.extractTextContent(msg.content);
+        continue;
+      }
+
+      const transformed = this.transformMessage(msg);
+      if (transformed) {
+        if (Array.isArray(transformed)) {
+          anthropicMessages.push(...transformed);
+        } else {
+          anthropicMessages.push(transformed);
+        }
+      }
+    }
+
+    // Anthropic requires a user message to start the conversation.
+    if (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
+      anthropicMessages.unshift({ role: 'user', content: [] });
+    }
+
+    return { systemMessage, anthropicMessages };
+  }
+
+  /**
+   * Transforms a single message to Anthropic format.
+   */
+  private transformMessage(msg: Message): AnthropicMessageParam | AnthropicMessageParam[] | null {
+    switch (msg.role) {
+      case 'system':
+        return null;
+      case 'tool':
+        return this.transformToolMessage(msg);
+      case 'user':
+      case 'assistant':
+        return this.transformUserOrAssistantMessage(msg);
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Transforms tool result messages.
+   */
+  private transformToolMessage(msg: Message): AnthropicMessageParam[] {
+    const toolResults = (msg.content as ToolResultContent[]).map(c => ({
+      type: 'tool_result' as const,
+      tool_use_id: c.toolCallId,
+      content: c.result,
+    }));
+
+    if (toolResults.length === 0) {
+      return [];
+    }
+
+    return [{ role: 'user', content: toolResults }];
+  }
+
+  /**
+   * Transforms user or assistant messages.
+   */
+  private transformUserOrAssistantMessage(msg: Message): AnthropicMessageParam {
+    return {
+      role: msg.role as 'user' | 'assistant',
+      content: this.buildContentBlocks(msg),
+    };
+  }
+
+  /**
+   * Builds content blocks for a message.
+   */
+  private buildContentBlocks(msg: Message): AnthropicContentBlock[] {
+    const blocks: AnthropicContentBlock[] = [];
+
+    // Add text or image content
+    for (const content of msg.content) {
+      if (content.type === 'text') {
+        blocks.push({ type: 'text', text: content.text });
+      } else if (content.type === 'image') {
+        blocks.push({
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: MessageTransformer.detectImageMimeType(content.image) as
+              | 'image/jpeg'
+              | 'image/png'
+              | 'image/gif'
+              | 'image/webp',
+            data: MessageTransformer.extractBase64Data(content.image),
+          },
+        });
+      }
+    }
+
+    // Add tool calls for assistant messages
+    if (msg.role === 'assistant' && msg.toolCalls) {
+      for (const toolCall of msg.toolCalls) {
+        blocks.push({
+          type: 'tool_use',
+          id: toolCall.id,
+          name: toolCall.name,
+          input: toolCall.arguments,
+        });
+      }
+    }
+
+    return blocks;
+  }
+
+  /**
+   * Formats tools for Anthropic API.
+   */
+  private formatTools(tools: Tool[]): AnthropicTool[] {
+    return tools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      input_schema: tool.parameters,
+    }));
+  }
+
+  /**
+   * Formats tool choice for Anthropic API.
+   */
+  private formatToolChoice(
+    toolChoice: AnthropicGenerationOptions['toolChoice']
+  ): AnthropicToolChoice {
+    if (toolChoice === 'required') return { type: 'any' };
+    if (toolChoice === 'auto') return { type: 'auto' };
+    if (typeof toolChoice === 'object') {
+      return { type: 'tool', name: toolChoice.name };
+    }
+    return { type: 'auto' };
+  }
+
+  /**
    * Converts the internal tool call states into the final AIKit ToolCall objects.
-   * It also handles the tricky business of parsing the JSON arguments.
-   * @param toolCallStates - The current state of tool calls.
-   * @returns An array of finalized tool calls, or undefined if there are none.
    */
   private finalizeToolCalls(
     toolCallStates: Record<string, { name: string; arguments: string }>
@@ -518,30 +426,14 @@ class AnthropicStreamProcessor {
     const calls = Object.entries(toolCallStates).map(([id, state]) => ({
       id,
       name: state.name,
-      arguments: this.parseToolArguments(state.arguments) || {},
+      arguments: MessageTransformer.parseJson(state.arguments, {}) || {},
     }));
 
     return calls.length > 0 ? calls : undefined;
   }
 
   /**
-   * Safely parses the JSON arguments for a tool call.
-   * @param args - The JSON string of arguments.
-   * @returns The parsed arguments object, or null if parsing fails.
-   */
-  private parseToolArguments(args: string): Record<string, unknown> | null {
-    try {
-      return JSON.parse(args);
-    } catch {
-      // If parsing fails, it's probably because the stream isn't finished yet.
-      return null;
-    }
-  }
-
-  /**
-   * Maps Anthropic's finish reasons to our own internal ones.
-   * @param reason - The finish reason from Anthropic.
-   * @returns The corresponding AIKit finish reason.
+   * Maps Anthropic's finish reasons to AIKit format.
    */
   private mapFinishReason(reason?: string): 'stop' | 'length' | 'tool_use' | undefined {
     switch (reason) {
