@@ -1,4 +1,10 @@
-import { createOpenAI, createAnthropic, createGoogle, createProvider } from '../src/factory';
+import {
+  createOpenAI,
+  createAnthropic,
+  createGoogle,
+  createProvider,
+  getAvailableProvider,
+} from '../src/factory';
 import { OpenAIProvider } from '../src/providers/openai';
 import { AnthropicProvider } from '../src/providers/anthropic';
 import { GoogleGeminiProvider } from '../src/providers/google';
@@ -59,6 +65,82 @@ describe('Factory Functions', () => {
         // @ts-expect-error Testing invalid type
         createProvider('unknown', {});
       }).toThrow('Unknown provider type: unknown');
+    });
+  });
+
+  describe('getAvailableProvider', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.resetModules();
+      process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+      process.env = originalEnv;
+    });
+
+    it('should return OpenAI provider when OPENAI_API_KEY is available', () => {
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      process.env.ANTHROPIC_API_KEY = '';
+      process.env.GOOGLE_API_KEY = '';
+
+      const result = getAvailableProvider();
+
+      expect(result.provider).toBeInstanceOf(OpenAIProvider);
+      expect(result.type).toBe('openai');
+      expect(result.name).toBe('OpenAI');
+    });
+
+    it('should return Anthropic provider when only ANTHROPIC_API_KEY is available', () => {
+      process.env.OPENAI_API_KEY = '';
+      process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+      process.env.GOOGLE_API_KEY = '';
+
+      const result = getAvailableProvider();
+
+      expect(result.provider).toBeInstanceOf(AnthropicProvider);
+      expect(result.type).toBe('anthropic');
+      expect(result.name).toBe('Anthropic');
+    });
+
+    it('should return Google provider when only GOOGLE_API_KEY is available', () => {
+      process.env.OPENAI_API_KEY = '';
+      process.env.ANTHROPIC_API_KEY = '';
+      process.env.GOOGLE_API_KEY = 'test-google-key';
+
+      const result = getAvailableProvider();
+
+      expect(result.provider).toBeInstanceOf(GoogleGeminiProvider);
+      expect(result.type).toBe('google');
+      expect(result.name).toBe('Google');
+    });
+
+    it('should return OpenAI provider when multiple API keys are available (priority order)', () => {
+      process.env.OPENAI_API_KEY = 'test-openai-key';
+      process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+      process.env.GOOGLE_API_KEY = 'test-google-key';
+
+      const result = getAvailableProvider();
+
+      expect(result.provider).toBeInstanceOf(OpenAIProvider);
+      expect(result.type).toBe('openai');
+      expect(result.name).toBe('OpenAI');
+    });
+
+    it('should return null when no API keys are available', () => {
+      process.env.OPENAI_API_KEY = '';
+      process.env.ANTHROPIC_API_KEY = '';
+      process.env.GOOGLE_API_KEY = '';
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.ANTHROPIC_API_KEY;
+      delete process.env.GOOGLE_API_KEY;
+
+      const result = getAvailableProvider();
+
+      expect(result.provider).toBeNull();
+      expect(result.type).toBeNull();
+      expect(result.name).toBeNull();
     });
   });
 });

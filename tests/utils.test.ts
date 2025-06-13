@@ -19,6 +19,8 @@ import {
   filterStream,
   mapStream,
   toReadableStream,
+  generate,
+  executeToolCall,
 } from '../src/utils';
 import type { Content, StreamChunk } from '../src/types';
 
@@ -200,6 +202,25 @@ describe('Utils', () => {
       expect(messages1).toEqual(messages2);
       expect(messages1).not.toBe(messages2);
     });
+
+    it('should add user message with image', () => {
+      const messages = builder
+        .userWithImage('Describe this', 'data:image/png;base64,abc123')
+        .build();
+      expect(messages[0].role).toBe('user');
+      expect(messages[0].content).toHaveLength(2);
+      expect(messages[0].content[0].type).toBe('text');
+      expect(messages[0].content[1].type).toBe('image');
+    });
+
+    it('should add custom message', () => {
+      const customMessage = {
+        role: 'user' as const,
+        content: [{ type: 'text' as const, text: 'Custom message' }],
+      };
+      const messages = builder.addMessage(customMessage).build();
+      expect(messages[0]).toEqual(customMessage);
+    });
   });
 
   describe('Conversation Factory', () => {
@@ -297,6 +318,27 @@ describe('Stream Utilities', () => {
       expect(result.content).toBe('Hello world!');
       expect(result.finishReason).toBe('stop');
     });
+
+    it('should handle tool calls in deltas', async () => {
+      const toolCalls = [{ id: 'call_123', name: 'test', arguments: {} }];
+      const stream = createMockStream([
+        { delta: 'Hello' },
+        { delta: ' world', toolCalls, finishReason: 'tool_use' },
+      ]);
+
+      const result = await collectDeltas(stream);
+      expect(result.content).toBe('Hello world');
+      expect(result.toolCalls).toEqual(toolCalls);
+      expect(result.finishReason).toBe('tool_use');
+    });
+
+    it('should handle empty stream', async () => {
+      const stream = createMockStream([]);
+      const result = await collectDeltas(stream);
+      expect(result.content).toBe('');
+      expect(result.finishReason).toBeUndefined();
+      expect(result.toolCalls).toBeUndefined();
+    });
   });
 
   describe('processStream', () => {
@@ -375,6 +417,158 @@ describe('Stream Utilities', () => {
 
       const chunk3 = await reader.read();
       expect(chunk3.done).toBe(true);
+    });
+
+    it('should handle errors in ReadableStream', async () => {
+      const errorStream = {
+        async *[Symbol.asyncIterator]() {
+          yield { delta: 'hello', content: 'hello' } as StreamChunk;
+          throw new Error('Stream error');
+        },
+      };
+
+      const readableStream = toReadableStream(errorStream);
+      const reader = readableStream.getReader();
+
+      const chunk1 = await reader.read();
+      expect(chunk1.done).toBe(false);
+
+      await expect(reader.read()).rejects.toThrow('Stream error');
+    });
+  });
+
+  describe('processStream edge cases', () => {
+    it('should handle stream with tool calls and all handlers', async () => {
+      const toolCalls = [{ id: 'call_123', name: 'test', arguments: {} }];
+      const handlers = {
+        onDelta: jest.fn(),
+        onContent: jest.fn(),
+        onToolCalls: jest.fn(),
+        onFinish: jest.fn(),
+        onChunk: jest.fn(),
+      };
+
+      const stream = createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: 'Hello world', toolCalls, finishReason: 'tool_use' },
+      ]);
+
+      const result = await processStream(stream, handlers);
+
+      expect(handlers.onToolCalls).toHaveBeenCalledWith(toolCalls);
+      expect(result.toolCalls).toEqual(toolCalls);
+      expect(result.finishReason).toBe('tool_use');
+    });
+
+    it('should handle empty stream', async () => {
+      const stream = createMockStream([]);
+      const result = await processStream(stream);
+
+      expect(result.content).toBe('');
+      expect(result.finishReason).toBeUndefined();
+      expect(result.toolCalls).toBeUndefined();
+    });
+
+    it('should handle stream with only content updates', async () => {
+      const handlers = {
+        onContent: jest.fn(),
+      };
+
+      const stream = createMockStream([{ content: 'Hello' }, { content: 'Hello world' }]);
+
+      const result = await processStream(stream, handlers);
+
+      expect(handlers.onContent).toHaveBeenCalledWith('Hello');
+      expect(handlers.onContent).toHaveBeenCalledWith('Hello world');
+      expect(result.content).toBe('Hello world');
+    });
+  });
+
+  describe('generate function', () => {
+    it('should call provider generate and return stream result', async () => {
+      const mockStream = createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: 'Hello world', finishReason: 'stop' },
+      ]);
+
+      const mockProvider = {
+        generate: jest.fn().mockReturnValue(mockStream),
+      };
+
+      const messages = [userText('Hello')];
+      const options = { temperature: 0.7 };
+
+      const result = await generate(mockProvider as any, messages, options);
+
+      expect(mockProvider.generate).toHaveBeenCalledWith(messages, options);
+      expect(result.content).toBe('Hello world');
+      expect(result.finishReason).toBe('stop');
+    });
+
+    it('should work with empty options', async () => {
+      const mockStream = createMockStream([
+        { delta: 'Hello', content: 'Hello', finishReason: 'stop' },
+      ]);
+
+      const mockProvider = {
+        generate: jest.fn().mockReturnValue(mockStream),
+      };
+
+      const messages = [userText('Hello')];
+
+      const result = await generate(mockProvider as any, messages);
+
+      expect(mockProvider.generate).toHaveBeenCalledWith(messages, {});
+      expect(result.content).toBe('Hello');
+    });
+  });
+
+  describe('executeToolCall function', () => {
+    it('should execute tool call and return stringified result', () => {
+      const toolCall = {
+        id: 'call_123',
+        name: 'testService',
+        arguments: { param: 'value' },
+      };
+
+      const services = {
+        testService: jest.fn().mockReturnValue({ result: 'success' }),
+      };
+
+      const result = executeToolCall(toolCall, services);
+
+      expect(services.testService).toHaveBeenCalledWith('value');
+      expect(result).toBe('{"result":"success"}');
+    });
+
+    it('should handle service that returns primitive values', () => {
+      const toolCall = {
+        id: 'call_123',
+        name: 'simpleService',
+        arguments: {},
+      };
+
+      const services = {
+        simpleService: jest.fn().mockReturnValue('simple result'),
+      };
+
+      const result = executeToolCall(toolCall, services);
+
+      expect(result).toBe('"simple result"');
+    });
+
+    it('should handle missing service', () => {
+      const toolCall = {
+        id: 'call_123',
+        name: 'nonExistentService',
+        arguments: {},
+      };
+
+      const services = {
+        testService: jest.fn().mockReturnValue('result'),
+      };
+
+      expect(() => executeToolCall(toolCall, services)).toThrow();
     });
   });
 });
