@@ -1,4 +1,4 @@
-  /**
+/**
  * AI Tools & Function Calling
  *
  * This example demonstrates how to use AI tools (function calling) with AIKit.

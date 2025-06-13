@@ -6,7 +6,7 @@
 
 # Class: GoogleGeminiProvider
 
-Defined in: [providers/google.ts:117](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L117)
+Defined in: [providers/google.ts:70](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L70)
 
 Your gateway to the world of Google's Gemini models.
 This class is the master translator, converting AIKit's standard format
@@ -23,7 +23,7 @@ personal interpreter for one of the most powerful AIs on the planet.
 
 > **new GoogleGeminiProvider**(`config`): `GoogleGeminiProvider`
 
-Defined in: [providers/google.ts:161](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L161)
+Defined in: [providers/google.ts:78](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L78)
 
 Initializes the Google Gemini provider.
 
@@ -45,7 +45,7 @@ Your Google API credentials.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/google.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L178)
+Defined in: [providers/google.ts:94](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L94)
 
 Kicks off the generation process with the Gemini API.
 It transforms the request, makes the call, and processes the stream of
@@ -74,19 +74,3 @@ An async iterable of stream chunks.
 #### Implementation of
 
 [`AIProvider`](../interfaces/AIProvider.md).[`generate`](../interfaces/AIProvider.md#generate)
-
-## Properties
-
-### models
-
-> `readonly` **models**: `string`[]
-
-Defined in: [providers/google.ts:127](https://github.com/chinmaymk/aikit/blob/main/src/providers/google.ts#L127)
-
-A handy list of Gemini models we've tested.
-This isn't an exhaustive list, so feel free to venture off the beaten path.
-Just don't be surprised if you encounter a grue.
-
-#### Implementation of
-
-[`AIProvider`](../interfaces/AIProvider.md).[`models`](../interfaces/AIProvider.md#models)

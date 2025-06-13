@@ -6,7 +6,7 @@
 
 # Interface: OpenAIConfig
 
-Defined in: [types.ts:207](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L207)
+Defined in: [types.ts:282](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L282)
 
 Configuration for the OpenAI provider.
 This is how you tell AIKit where to find your OpenAI API key and other secrets.
@@ -17,7 +17,7 @@ This is how you tell AIKit where to find your OpenAI API key and other secrets.
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:209](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L209)
+Defined in: [types.ts:284](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L284)
 
 Your OpenAI API key. Keep it secret, keep it safe.
 
@@ -27,7 +27,7 @@ Your OpenAI API key. Keep it secret, keep it safe.
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:211](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L211)
+Defined in: [types.ts:286](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L286)
 
 A custom base URL for the API. For proxies and other fun stuff.
 
@@ -37,7 +37,7 @@ A custom base URL for the API. For proxies and other fun stuff.
 
 > `optional` **organization**: `string`
 
-Defined in: [types.ts:213](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L213)
+Defined in: [types.ts:288](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L288)
 
 Your OpenAI organization ID. For when you're part of a fancy club.
 
@@ -47,7 +47,7 @@ Your OpenAI organization ID. For when you're part of a fancy club.
 
 > `optional` **project**: `string`
 
-Defined in: [types.ts:215](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L215)
+Defined in: [types.ts:290](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L290)
 
 Your OpenAI project ID. For even fancier clubs.
 
@@ -57,7 +57,7 @@ Your OpenAI project ID. For even fancier clubs.
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:217](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L217)
+Defined in: [types.ts:292](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L292)
 
 How long to wait for a response before giving up, in milliseconds.
 
@@ -67,6 +67,6 @@ How long to wait for a response before giving up, in milliseconds.
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:219](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L219)
+Defined in: [types.ts:294](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L294)
 
 How many times to retry a failed request. Because sometimes the internet blinks.

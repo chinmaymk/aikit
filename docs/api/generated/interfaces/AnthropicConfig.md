@@ -6,7 +6,7 @@
 
 # Interface: AnthropicConfig
 
-Defined in: [types.ts:227](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L227)
+Defined in: [types.ts:302](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L302)
 
 Configuration for the Anthropic provider.
 All the deets AIKit needs to talk to Claude.
@@ -17,7 +17,7 @@ All the deets AIKit needs to talk to Claude.
 
 > **apiKey**: `string`
 
-Defined in: [types.ts:229](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L229)
+Defined in: [types.ts:304](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L304)
 
 Your Anthropic API key. Don't tell anyone.
 
@@ -27,7 +27,7 @@ Your Anthropic API key. Don't tell anyone.
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:231](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L231)
+Defined in: [types.ts:306](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L306)
 
 A custom base URL for the API. You know the drill.
 
@@ -37,7 +37,7 @@ A custom base URL for the API. You know the drill.
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:233](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L233)
+Defined in: [types.ts:308](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L308)
 
 How long to wait for a response before your patience wears out, in milliseconds.
 
@@ -47,7 +47,7 @@ How long to wait for a response before your patience wears out, in milliseconds.
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:235](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L235)
+Defined in: [types.ts:310](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L310)
 
 How many times to try again. Third time's the charm?
 
@@ -57,6 +57,6 @@ How many times to try again. Third time's the charm?
 
 > `optional` **beta**: `string`[]
 
-Defined in: [types.ts:237](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L237)
+Defined in: [types.ts:312](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L312)
 
 For enabling beta features. Live on the edge.

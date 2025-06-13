@@ -6,7 +6,7 @@
 
 # Interface: GoogleGenerationOptions
 
-Defined in: [types.ts:180](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L180)
+Defined in: [types.ts:255](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L255)
 
 Google Gemini-specific settings. The secret sauce for Gemini models.
 Because Google likes to do things their own way.
@@ -21,7 +21,7 @@ Because Google likes to do things their own way.
 
 > **model**: `string`
 
-Defined in: [types.ts:124](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L124)
+Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
 
 The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-20240620'.
 
@@ -35,7 +35,7 @@ The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-2024062
 
 > `optional` **maxTokens**: `number`
 
-Defined in: [types.ts:126](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L126)
+Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
 
 The maximum number of tokens to generate. Don't want it to ramble on forever, do you?
 
@@ -49,7 +49,7 @@ The maximum number of tokens to generate. Don't want it to ramble on forever, do
 
 > `optional` **temperature**: `number`
 
-Defined in: [types.ts:132](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L132)
+Defined in: [types.ts:152](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L152)
 
 The sampling temperature. Higher values (e.g., 0.8) make the output more random,
 while lower values (e.g., 0.2) make it more focused and deterministic.
@@ -65,7 +65,7 @@ A bit like adjusting the chaos knob.
 
 > `optional` **topP**: `number`
 
-Defined in: [types.ts:137](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L137)
+Defined in: [types.ts:157](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L157)
 
 Top-p sampling. It's a way to control the randomness of the output by only considering
 the most likely tokens. It's like telling the AI to only pick from the top of the deck.
@@ -80,7 +80,7 @@ the most likely tokens. It's like telling the AI to only pick from the top of th
 
 > `optional` **stopSequences**: `string`[]
 
-Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
+Defined in: [types.ts:164](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L164)
 
 A list of sequences that will stop the generation. A safe word, if you will.
 
@@ -94,7 +94,7 @@ A list of sequences that will stop the generation. A safe word, if you will.
 
 > `optional` **tools**: [`Tool`](Tool.md)[]
 
-Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
+Defined in: [types.ts:166](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L166)
 
 The list of tools you're making available to the model.
 
@@ -108,7 +108,7 @@ The list of tools you're making available to the model.
 
 > `optional` **toolChoice**: \{ `name`: `string`; \} \| `"auto"` \| `"required"` \| `"none"`
 
-Defined in: [types.ts:154](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L154)
+Defined in: [types.ts:174](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L174)
 
 How the model should choose which tool to use.
 'auto': The model decides.
@@ -126,7 +126,7 @@ How the model should choose which tool to use.
 
 > `optional` **topK**: `number`
 
-Defined in: [types.ts:185](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L185)
+Defined in: [types.ts:260](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L260)
 
 Top-k sampling. See `GenerationOptions` for the details.
 It's here because Google supports it.
@@ -141,6 +141,6 @@ It's here because Google supports it.
 
 > `optional` **candidateCount**: `number`
 
-Defined in: [types.ts:187](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L187)
+Defined in: [types.ts:262](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L262)
 
 How many different responses to generate. More candidates, more problems.

@@ -6,12 +6,12 @@
 
 # Class: OpenAIProvider
 
-Defined in: [providers/openai.ts:22](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L22)
+Defined in: [providers/openai.ts:55](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L55)
 
 The powerhouse behind OpenAI integration.
-This class translates AIKit's generic requests into OpenAI's specific dialect
+This class translates AIKit's generic requests into OpenAI's Responses API dialect
 and handles the response, whether it's a stream of tokens or a tool call.
-It's like a universal translator, but for AI.
+It's like a universal translator, but for AI - now with improved state management.
 
 ## Implements
 
@@ -23,7 +23,7 @@ It's like a universal translator, but for AI.
 
 > **new OpenAIProvider**(`config`): `OpenAIProvider`
 
-Defined in: [providers/openai.ts:47](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L47)
+Defined in: [providers/openai.ts:62](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L62)
 
 Sets up the OpenAI provider with your configuration.
 
@@ -45,9 +45,9 @@ Your OpenAI API credentials and settings.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/openai.ts:81](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L81)
+Defined in: [providers/openai.ts:90](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L90)
 
-Kicks off the generation process.
+Kicks off the generation process using the Responses API.
 It builds the request, sends it to OpenAI, and then processes the
 response stream, yielding chunks as they come in.
 
@@ -74,19 +74,3 @@ An async iterable of stream chunks.
 #### Implementation of
 
 [`AIProvider`](../interfaces/AIProvider.md).[`generate`](../interfaces/AIProvider.md#generate)
-
-## Properties
-
-### models
-
-> `readonly` **models**: `string`[]
-
-Defined in: [providers/openai.ts:32](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L32)
-
-A list of models that this provider officially supports.
-It's not exhaustive, but it's a good starting point.
-Feel free to try other models, but no promises.
-
-#### Implementation of
-
-[`AIProvider`](../interfaces/AIProvider.md).[`models`](../interfaces/AIProvider.md#models)

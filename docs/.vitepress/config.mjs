@@ -11,12 +11,19 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'API', link: '/api/generated/README' },
       { text: 'Examples', link: '/examples/README' },
+      { text: 'FAQ', link: '/faq' },
     ],
     sidebar: {
       '/guide/': [
         {
           text: 'Guide',
-          items: [{ text: 'Getting Started', link: '/guide/getting-started' }],
+          items: [
+            { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'Streaming', link: '/guide/streaming' },
+            { text: 'Multimodal', link: '/guide/multimodal' },
+            { text: 'Function Calling', link: '/guide/tools' },
+            { text: 'Conversations', link: '/guide/conversations' },
+          ],
         },
       ],
       '/api/': [

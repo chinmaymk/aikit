@@ -8,7 +8,7 @@
 
 > **createOpenAI**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:23](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L23)
+Defined in: [factory.ts:41](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L41)
 
 Summons an AIProvider that speaks fluent OpenAI.
 Just give it your credentials and it'll be ready to chat.

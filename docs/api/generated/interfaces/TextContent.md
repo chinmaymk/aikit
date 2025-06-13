@@ -6,7 +6,7 @@
 
 # Interface: TextContent
 
-Defined in: [types.ts:18](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L18)
+Defined in: [types.ts:24](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L24)
 
 Just good old-fashioned text. The bread and butter of language models.
 
@@ -16,7 +16,7 @@ Just good old-fashioned text. The bread and butter of language models.
 
 > **type**: `"text"`
 
-Defined in: [types.ts:20](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L20)
+Defined in: [types.ts:26](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L26)
 
 It's text. What did you expect?
 
@@ -26,6 +26,6 @@ It's text. What did you expect?
 
 > **text**: `string`
 
-Defined in: [types.ts:22](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L22)
+Defined in: [types.ts:28](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L28)
 
 The actual, you know, text.

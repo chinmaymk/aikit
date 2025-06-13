@@ -6,7 +6,7 @@
 
 # Interface: AIProvider\<GenOpts\>
 
-Defined in: [types.ts:255](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L255)
+Defined in: [types.ts:330](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L330)
 
 The core interface that all AI providers must implement.
 It's the social contract that holds this whole library together.
@@ -23,7 +23,7 @@ It's the social contract that holds this whole library together.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](StreamChunk.md)\>
 
-Defined in: [types.ts:266](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L266)
+Defined in: [types.ts:338](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L338)
 
 The main event. This is where the magic happens.
 Give it a list of messages and some options, and it'll give you back a stream of consciousness.
@@ -47,13 +47,3 @@ The rules of the game. How you want the AI to behave.
 `AsyncIterable`\<[`StreamChunk`](StreamChunk.md)\>
 
 An async iterable of stream chunks. Data, glorious data!
-
-## Properties
-
-### models
-
-> `readonly` **models**: `string`[]
-
-Defined in: [types.ts:257](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L257)
-
-A list of the models this provider supports. A handy little cheat sheet.

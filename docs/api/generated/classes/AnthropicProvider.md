@@ -6,7 +6,7 @@
 
 # Class: AnthropicProvider
 
-Defined in: [providers/anthropic.ts:157](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L157)
+Defined in: [providers/anthropic.ts:131](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L131)
 
 The bridge to Anthropic's world of Claude.
 This class translates AIKit's universal language into Anthropic's specific API dialect.
@@ -22,7 +22,7 @@ It's the kind of diplomat who is fluent in both cultures and always knows the ri
 
 > **new AnthropicProvider**(`config`): `AnthropicProvider`
 
-Defined in: [providers/anthropic.ts:178](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L178)
+Defined in: [providers/anthropic.ts:138](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L138)
 
 Initializes the Anthropic provider.
 
@@ -44,7 +44,7 @@ Your Anthropic API credentials and settings.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/anthropic.ts:204](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L204)
+Defined in: [providers/anthropic.ts:162](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L162)
 
 Orchestrates the generation process with Anthropic's API.
 It transforms the request, makes the call, and then processes the
@@ -73,18 +73,3 @@ An async iterable of stream chunks.
 #### Implementation of
 
 [`AIProvider`](../interfaces/AIProvider.md).[`generate`](../interfaces/AIProvider.md#generate)
-
-## Properties
-
-### models
-
-> `readonly` **models**: `string`[]
-
-Defined in: [providers/anthropic.ts:166](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L166)
-
-A curated list of Anthropic models this provider is cozy with.
-You can try others, but these are the ones we've formally introduced.
-
-#### Implementation of
-
-[`AIProvider`](../interfaces/AIProvider.md).[`models`](../interfaces/AIProvider.md#models)
