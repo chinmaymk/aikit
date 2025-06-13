@@ -27,7 +27,7 @@ AIKit provides access to AI model reasoning processes, allowing you to see how m
 ### Anthropic Claude 4
 
 ```ts
-import { createProvider, userText, collectDeltas } from 'aikit';
+import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
 
 const anthropic = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -92,7 +92,7 @@ console.log('Reasoning:', result.reasoning);
 Access reasoning as it happens:
 
 ```ts
-import { processStream } from 'aikit';
+import { processStream } from '@chinmaymk/aikit';
 
 await processStream(
   anthropic.generate([userText('Explain quantum physics')], {

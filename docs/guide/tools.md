@@ -19,7 +19,7 @@ Pure text generation is useful, but sometimes you need your AI to _do_ things: f
 Let's start with a basic calculator tool:
 
 ```typescript
-import { createProvider, createTool, userText, executeToolCall } from 'aikit';
+import { createProvider, createTool, userText, executeToolCall } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -112,7 +112,7 @@ import {
   assistantWithToolCalls,
   toolResult,
   conversation,
-} from 'aikit';
+} from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -200,7 +200,7 @@ if (result.toolCalls && result.toolCalls.length > 0) {
 Your AI can use multiple tools in a single conversation:
 
 ```typescript
-import { createProvider, createTool, userText } from 'aikit';
+import { createProvider, createTool, userText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -278,7 +278,7 @@ if (result.toolCalls) {
 Sometimes you want to force the AI to use a specific tool, or prevent tool use entirely:
 
 ```typescript
-import { createProvider, createTool, userText } from 'aikit';
+import { createProvider, createTool, userText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -318,7 +318,7 @@ const noToolsResult = await provider.generate([userText('What is 2 + 2?')], {
 Tools can fail. Handle errors gracefully:
 
 ```typescript
-import { createProvider, createTool, userText, executeToolCall } from 'aikit';
+import { createProvider, createTool, userText, executeToolCall } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -385,7 +385,7 @@ if (result.toolCalls) {
 Tools work with streaming too, though tool calls typically complete before streaming the final response:
 
 ```typescript
-import { createProvider, createTool, userText, processStream } from 'aikit';
+import { createProvider, createTool, userText, processStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 

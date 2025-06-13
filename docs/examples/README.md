@@ -153,7 +153,7 @@ All the helper functions you see in these examples (`userText`, `systemText`, `u
 ### Provider Switching
 
 ```typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 // Same code, different AI
 const question = [userText('Explain quantum computing in simple terms.')];
@@ -198,7 +198,7 @@ import {
   conversation,
   printStream,
   collectDeltas,
-} from 'aikit';
+} from '@chinmaymk/aikit';
 
 // Build messages easily
 const messages = conversation().system('You are a helpful assistant').user('Hello!').build();
@@ -253,7 +253,7 @@ for await (const chunk of mockProvider.generate(messages, options)) {
 ### Custom Stream Processing
 
 ```typescript
-import { processStream } from 'aikit';
+import { processStream } from '@chinmaymk/aikit';
 
 let wordCount = 0;
 try {
@@ -299,7 +299,7 @@ class ChatManager {
 ### Tool Integration
 
 ```typescript
-import { createTool, executeToolCall } from 'aikit';
+import { createTool, executeToolCall } from '@chinmaymk/aikit';
 
 const weatherTool = createTool('get_weather', 'Get weather for a location', {
   type: 'object',
@@ -336,7 +336,7 @@ if (result.toolCalls) {
 ### Chat with Image
 
 ```typescript
-import { createProvider, userImage, printStream } from 'aikit';
+import { createProvider, userImage, printStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const message = userImage('Describe this image', 'data:image/jpeg;base64,...');
@@ -347,7 +347,7 @@ await printStream(provider.generate([message], { model: 'gpt-4o' }));
 ### Streaming Tool Use
 
 ```typescript
-import { createProvider, createTool, processStream } from 'aikit';
+import { createProvider, createTool, processStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const tool = createTool('calculator', 'Do math', {

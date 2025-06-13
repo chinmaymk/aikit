@@ -30,7 +30,7 @@ const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
 The easiest way to add vision to your AI conversations:
 
 ```typescript
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -73,7 +73,7 @@ console.log(result.content);
 For more control, build content manually using helper functions:
 
 ```typescript
-import { createProvider, userContent, textContent, imageContent } from 'aikit';
+import { createProvider, userContent, textContent, imageContent } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -97,7 +97,7 @@ console.log(result.content);
 Compare several images at once—perfect for before/after shots, A/B testing, or style analysis.
 
 ```typescript
-import { createProvider, userMultipleImages } from 'aikit';
+import { createProvider, userMultipleImages } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -119,7 +119,7 @@ console.log(result.content);
 Keep images in context throughout a conversation. The AI remembers what it saw.
 
 ```typescript
-import { createProvider, conversation, userImage, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userImage, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -156,7 +156,7 @@ console.log('AI:', response3.content);
 Here's how to load images from your file system:
 
 ```typescript
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 import { readFileSync } from 'node:fs';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
@@ -193,7 +193,7 @@ console.log(result.content);
 Images work perfectly with streaming responses too:
 
 ```typescript
-import { createProvider, userImage, printStream } from 'aikit';
+import { createProvider, userImage, printStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -265,7 +265,7 @@ const message = userImage(
 Each provider has slightly different image capabilities:
 
 ```typescript
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 
 const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
 const question = 'What programming language is shown in this code screenshot?';
@@ -296,7 +296,7 @@ console.log('Google:', googleResult.content);
 Images can fail for various reasons. Handle them gracefully:
 
 ```typescript
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 

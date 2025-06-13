@@ -30,12 +30,18 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 
 ---
 
+## Installation
+
+```bash
+npm install @chinmaymk/aikit
+```
+
 ## Quick Start
 
 ### Text Generation
 
 ```ts
-import { createProvider, userText, printStream } from 'aikit';
+import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
@@ -55,7 +61,7 @@ for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
 ### Embeddings
 
 ```ts
-import { createOpenAIEmbeddings } from 'aikit';
+import { createOpenAIEmbeddings } from '@chinmaymk/aikit';
 
 const embeddings = createOpenAIEmbeddings({
   apiKey: process.env.OPENAI_API_KEY!,

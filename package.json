@@ -1,5 +1,5 @@
 {
-  "name": "aikit",
+  "name": "@chinmaymk/aikit",
   "version": "0.0.1",
   "description": "Lightweight generation abstraction for OpenAI, Anthropic and Google Gemini",
   "main": "dist/index.js",
@@ -19,7 +19,9 @@
     "lint": "eslint src scripts examples --ext .ts,.js",
     "lint:fix": "eslint src scripts examples --ext .ts,.js --fix",
     "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test",
+    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test && npm run compile",
+    "compile": "tsc --build",
+    "prepublishOnly": "npm run build",
     "docs:generate": "typedoc",
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run docs:generate && vitepress build docs",
@@ -33,8 +35,16 @@
     "ai",
     "llm"
   ],
-  "author": "",
+  "author": "Chinmay Kulkarni",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^20.11.0",
@@ -56,5 +66,17 @@
     "typescript": "^5.8.3",
     "vitepress": "^1.0.0"
   },
-  "dependencies": {}
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chinmaymk/aikit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chinmaymk/aikit/issues"
+  },
+  "homepage": "https://chinmaymk.github.io/aikit/"
 }

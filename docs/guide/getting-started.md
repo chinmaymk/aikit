@@ -9,15 +9,15 @@ First things first, let's get this thing installed. Open your terminal and chant
 ::: code-group
 
 ```bash [npm]
-npm install aikit
+npm install @chinmaymk/aikit
 ```
 
 ```bash [yarn]
-yarn add aikit
+yarn add @chinmaymk/aikit
 ```
 
 ```bash [pnpm]
-pnpm add aikit
+pnpm add @chinmaymk/aikit
 ```
 
 :::
@@ -43,7 +43,7 @@ Don't have them yet? No problem. Here are the secret passages:
 Alright, let's make the magic happen. Here's how to get a simple response from a model.
 
 ```typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 // Create your provider
 const provider = createProvider('openai', {
@@ -82,7 +82,7 @@ console.log(result.content);
 Who has time to wait for a full response? Let's stream it like it's hot.
 
 ```typescript
-import { createProvider, userText, printStream } from 'aikit';
+import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -133,7 +133,7 @@ const result2 = await provider.generate([userText('Be creative!')], {
 The beauty of AIKit? Same code, different AI. Switch providers with one line.
 
 ```typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 // Define once, use anywhere
 const question = [userText('Explain TypeScript in one sentence.')];
@@ -172,7 +172,7 @@ const googleResult = await google.generate(question, {
 **AIKit doesn't restrict which models you can use**—pass any model string that the provider API accepts. This gives you access to new models, custom fine-tuned models, or beta releases without waiting for library updates.
 
 ```typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -198,7 +198,7 @@ _AIKit includes a reference list of available models per provider for informatio
 Modern AI models can see. Let's show them something.
 
 ```typescript
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -212,7 +212,7 @@ const result = await provider.generate([message], { model: 'gpt-4o' });
 console.log(result.content);
 
 // Multiple images
-import { userMultipleImages } from 'aikit';
+import { userMultipleImages } from '@chinmaymk/aikit';
 
 const multiMessage = userMultipleImages('Compare these images. What are the differences?', [
   imageData1,
@@ -229,7 +229,7 @@ console.log(comparison.content);
 Let your AI call functions. It's like giving it superpowers, but with more TypeScript.
 
 ```typescript
-import { createProvider, createTool, userText, executeToolCall } from 'aikit';
+import { createProvider, createTool, userText, executeToolCall } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -275,7 +275,7 @@ if (result.toolCalls) {
 Keep context across multiple exchanges. Because good conversations need memory.
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -319,7 +319,7 @@ const result = await provider.generate(messages, options);
 Sometimes things go sideways. Here's how to catch them gracefully.
 
 ```typescript
-import { createProvider, userText, collectDeltas } from 'aikit';
+import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 

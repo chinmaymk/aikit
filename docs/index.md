@@ -41,7 +41,7 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 ## Quick Start
 
 ```ts
-import { createProvider, userText, printStream } from 'aikit';
+import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 // Create your AI provider
 const openai = createProvider('openai', {
@@ -72,7 +72,7 @@ for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
 Stream tokens as they're generated for real-time UX. AIKit exposes a simple async iterator for streaming, so you can build responsive apps without extra plumbing.
 
 ```ts
-import { createProvider, userText, processStream } from 'aikit';
+import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -97,7 +97,7 @@ await processStream(stream, {
 Send images and text together to models like GPT-4o and Claude 3.5 Sonnet. AIKit's API is designed for completeness—if the model supports it, so do we.
 
 ```ts
-import { createProvider, userImage } from 'aikit';
+import { createProvider, userImage } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -120,7 +120,7 @@ console.log(result.content);
 Define tools (function calling) and let the model invoke them as needed. AIKit exposes all provider options, so you can build advanced, automated workflows with minimal code.
 
 ```ts
-import { createProvider, createTool, executeToolCall } from 'aikit';
+import { createProvider, createTool, executeToolCall } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -165,7 +165,7 @@ if (result.toolCalls) {
 Access the reasoning process of models that support it, like Claude (Anthropic) and o-series models (OpenAI). See how the model thinks through problems in real-time.
 
 ```ts
-import { createProvider, userText, collectDeltas, processStream } from 'aikit';
+import { createProvider, userText, collectDeltas, processStream } from '@chinmaymk/aikit';
 
 // Anthropic Claude reasoning
 const anthropic = createProvider('anthropic', {
@@ -228,7 +228,7 @@ console.log('Reasoning:', o1Result.reasoning);
 Switch between providers with a single line change. Same API, different AI behind the scenes.
 
 ```ts
-import { createProvider } from 'aikit';
+import { createProvider } from '@chinmaymk/aikit';
 
 // Pick your AI provider
 const openai = createProvider('openai', {

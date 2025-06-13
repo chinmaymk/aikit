@@ -11,7 +11,7 @@ Single-shot AI interactions are like speed dating—quick, but shallow. Real con
 Every conversation has a beginning. Let's start simple and build up:
 
 ````typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -79,7 +79,7 @@ console.log('AI:', response3.content);
 The AI should remember what you've talked about. Here's how to maintain context effectively:
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -120,7 +120,7 @@ console.log('AI:', response3.content);
 Long conversations can exceed token limits. Here's how to manage memory intelligently:
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -198,7 +198,7 @@ console.log(`AI: ${finalResponse}`);
 Build conversations with specific patterns and purposes:
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -292,7 +292,7 @@ await interview.handleAnswer(provider, 'What technologies does your team use?');
 Handle multiple conversation threads or topics:
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -377,7 +377,7 @@ console.log('AI:', response);
 Give your AI consistent personality traits across conversations:
 
 ```typescript
-import { createProvider, conversation, userText, assistantText } from 'aikit';
+import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 

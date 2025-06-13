@@ -11,7 +11,7 @@ Streaming provides immediate feedback to users instead of making them wait for c
 The simplest way to stream is with `printStream()`. It handles everything and outputs directly to the console.
 
 ````typescript
-import { createProvider, userText, printStream } from 'aikit';
+import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -55,7 +55,7 @@ console.log(`\nCompleted: ${result.finishReason}`);
 For more control, handle the stream manually. Perfect for custom UIs or specific output formatting.
 
 ```typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -79,7 +79,7 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxOutp
 Use `processStream()` for custom handlers and progress tracking. It's like having a personal assistant for your streams.
 
 ```typescript
-import { createProvider, userText, processStream } from 'aikit';
+import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -117,7 +117,7 @@ console.log(`\nFinal result: ${result.content.length} characters`);
 Sometimes you want to stream for responsiveness but still need the complete response. Use `collectDeltas()` to get both.
 
 ```typescript
-import { createProvider, userText, collectDeltas } from 'aikit';
+import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -140,7 +140,7 @@ console.log(`Finish reason: ${result.finishReason}`);
 All providers support streaming the same way. Here's how to stream with each:
 
 ```typescript
-import { createProvider, userText, printStream } from 'aikit';
+import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 const question = [userText('What is machine learning?')];
 
@@ -167,7 +167,7 @@ await printStream(google.generate(question, { model: 'gemini-1.5-pro', maxOutput
 Streams can fail at any point. Here's how to handle errors gracefully:
 
 ```typescript
-import { createProvider, userText, processStream } from 'aikit';
+import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -194,7 +194,7 @@ try {
 Here's how streaming compares to collecting full responses:
 
 ```typescript
-import { createProvider, userText, printStream, collectDeltas } from 'aikit';
+import { createProvider, userText, printStream, collectDeltas } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const messages = [userText('Write a paragraph about TypeScript benefits.')];
@@ -226,7 +226,7 @@ console.log('\nTakeaway: Streaming provides better UX even when total time is si
 Build your own stream processing functions for specific use cases:
 
 ````typescript
-import { createProvider, userText } from 'aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
 // Custom markdown processor
 async function streamMarkdown(stream: AsyncIterable<any>) {

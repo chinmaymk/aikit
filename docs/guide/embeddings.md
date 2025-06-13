@@ -5,7 +5,7 @@ Turn your text into numbers. Math-savvy vectors that know which words are friend
 ## Quick Start
 
 ```typescript
-import { createOpenAIEmbeddings } from 'aikit';
+import { createOpenAIEmbeddings } from '@chinmaymk/aikit';
 
 const embeddings = createOpenAIEmbeddings({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -34,7 +34,7 @@ const results = await embeddings.embed([
 ### OpenAI (The Obvious Choice)
 
 ```typescript
-import { createOpenAIEmbeddings } from 'aikit';
+import { createOpenAIEmbeddings } from '@chinmaymk/aikit';
 
 const embeddings = createOpenAIEmbeddings({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -52,7 +52,7 @@ const embeddings = createOpenAIEmbeddings({
 ### Google (Task-Specific)
 
 ```typescript
-import { createGoogleEmbeddings } from 'aikit';
+import { createGoogleEmbeddings } from '@chinmaymk/aikit';
 
 const embeddings = createGoogleEmbeddings({
   apiKey: process.env.GOOGLE_API_KEY!,
@@ -163,7 +163,7 @@ await embeddings.embed(['find something'], {
 Because consistency is nice:
 
 ```typescript
-import { createProvider } from 'aikit';
+import { createProvider } from '@chinmaymk/aikit';
 
 const openai = createProvider('openai_embeddings', {
   apiKey: process.env.OPENAI_API_KEY!,
