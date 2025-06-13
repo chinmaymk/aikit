@@ -516,23 +516,22 @@ describe('AnthropicProvider', () => {
     });
 
     it('should handle unknown message roles', async () => {
-      const messageWithUnknownRole: Message[] = [
-        // @ts-expect-error - Testing unknown role
-        { role: 'unknown', content: [{ type: 'text', text: 'Test' }] },
-        userText('Hello'),
+      const messages = [
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
+        { role: 'developer' as any, content: [{ type: 'text' as const, text: 'Debug info' }] }, // Unknown role
       ];
 
-      const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider(messageWithUnknownRole, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scopeReq.isDone()).toBe(true);
-      // Should only have user message, unknown role should be filtered out
-      expect(chunks).toHaveLength(2);
-      expect(chunks[0].content).toBe('Response');
+      // Should throw error for unknown role
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider(messages, {
+          model: 'claude-3-5-sonnet-20241022',
+        })) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow(
+        "Unsupported message role 'developer' for Anthropic provider. Supported roles: user, assistant, system, tool"
+      );
     });
 
     it('should handle malformed JSON in tool arguments', async () => {
@@ -867,26 +866,6 @@ describe('AnthropicProvider', () => {
       const messages = [
         { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
         { role: 'tool' as const, content: [] }, // Empty tool results
-      ];
-
-      const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider(messages, {
-        model: 'claude-3-5-sonnet-20241022',
-      })) {
-        chunks.push(chunk);
-      }
-
-      expect(scopeReq.isDone()).toBe(true);
-      expect(chunks).toHaveLength(2); // Text chunk + final chunk
-      expect(chunks[0].content).toBe('Response');
-    });
-
-    it('should handle unknown message roles', async () => {
-      const messages = [
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
-        { role: 'developer' as any, content: [{ type: 'text' as const, text: 'Debug info' }] }, // Unknown role
       ];
 
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});

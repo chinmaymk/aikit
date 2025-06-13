@@ -503,22 +503,15 @@ describe('GoogleProvider', () => {
         userText('Hello'),
       ];
 
-      let requestBody: any;
-      const scope = mockGoogleGeneration(
-        'gemini-1.5-pro',
-        [googleTextChunk('Response'), googleStopChunk()],
-        body => (requestBody = body)
+      // Should throw error for unknown role
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider(messagesWithUnknownRole, mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow(
+        "Unsupported message role 'unknown' for Google provider. Supported roles: user, assistant, system, tool"
       );
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider(messagesWithUnknownRole, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scope.isDone()).toBe(true);
-      // Should filter out unknown role and only include user message
-      expect(requestBody.contents).toHaveLength(1);
-      expect(requestBody.contents[0].role).toBe('user');
     });
 
     it('should handle tool choice edge cases', async () => {
@@ -581,7 +574,7 @@ describe('GoogleProvider', () => {
 
     it('should fallback to image/jpeg for unknown image MIME types', async () => {
       const messagesWithUnknownImage: Message[] = [
-        userImage('Check image', 'data:application/octet-stream;base64,abc123'),
+        userImage('Check image', 'data:image/unknown-format;base64,abc123'),
       ];
 
       let requestBody: any;

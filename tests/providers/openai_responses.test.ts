@@ -435,14 +435,15 @@ describe('OpenAIResponsesProvider', () => {
         content: [{ type: 'text', text: 'Unknown role' }],
       };
 
-      const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scope.isDone()).toBe(true);
+      // Should throw error for unknown role
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow(
+        "Unsupported message role 'unknown' for OpenAI Responses provider. Supported roles: user, assistant, system, tool"
+      );
     });
 
     it('should handle malformed JSON in tool arguments', async () => {

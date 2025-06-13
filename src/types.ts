@@ -482,6 +482,58 @@ export interface OpenAIOptions extends ProviderOptions {
   reasoning?: {
     effort?: 'low' | 'medium' | 'high';
   };
+  /**
+   * Output types that you would like the model to generate. Most models are capable of generating text, which is the default.
+   * The gpt-4o-audio-preview model can also be used to generate audio.
+   */
+  modalities?: ('text' | 'audio')[];
+  /**
+   * Parameters for audio output. Required when audio output is requested with modalities: ["audio"].
+   */
+  audio?: {
+    /** Specifies the output audio format. Must be one of wav, mp3, flac, opus, or pcm16. */
+    format: 'wav' | 'mp3' | 'flac' | 'opus' | 'pcm16';
+    /** The voice the model uses to respond. */
+    voice:
+      | 'alloy'
+      | 'ash'
+      | 'ballad'
+      | 'coral'
+      | 'echo'
+      | 'fable'
+      | 'nova'
+      | 'onyx'
+      | 'sage'
+      | 'shimmer';
+  };
+  /**
+   * The maximum number of tokens that can be generated in the chat completion, including visible output tokens and reasoning tokens.
+   * This replaces the deprecated max_tokens parameter.
+   */
+  maxCompletionTokens?: number;
+  /**
+   * Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time.
+   */
+  prediction?: {
+    /** The type of predicted content. Currently only 'content' is supported. */
+    type: 'content';
+    /** The content that should be matched when generating a model response. */
+    content: string | Array<{ type: 'text'; text: string }>;
+  };
+  /**
+   * Web search tool configuration for searching the web for relevant results to use in a response.
+   */
+  webSearchOptions?: {
+    /** High level guidance for the amount of context window space to use for the search. */
+    searchContextSize?: 'low' | 'medium' | 'high';
+    /** Approximate location parameters for the search. */
+    userLocation?: {
+      /** The type of location approximation. Always 'approximate'. */
+      type: 'approximate';
+      /** Approximate location parameters for the search. */
+      approximate: Record<string, unknown>;
+    };
+  };
 }
 
 /**

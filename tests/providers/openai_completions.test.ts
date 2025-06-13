@@ -153,33 +153,6 @@ describe('OpenAIProvider', () => {
       ]);
     });
 
-    it('should transform developer messages correctly', async () => {
-      const messagesWithDeveloper: Message[] = [
-        { role: 'developer', content: [{ type: 'text', text: 'Follow these instructions' }] },
-        ...mockMessages,
-      ];
-
-      let requestBody: any;
-      const scope = mockChatCompletion(
-        [chatTextChunk('Understood!', 'stop')],
-        body => (requestBody = body)
-      );
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider(messagesWithDeveloper, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scope.isDone()).toBe(true);
-      expect(requestBody.messages).toEqual([
-        { role: 'developer', content: 'Follow these instructions' },
-        {
-          role: 'user',
-          content: [{ type: 'text', text: 'Hello' }],
-        },
-      ]);
-    });
-
     it('should handle multimodal content with images', async () => {
       const messagesWithImage: Message[] = [
         userImage('What is in this image?', 'data:image/jpeg;base64,iVBORw0KGgo='),
@@ -603,19 +576,15 @@ describe('OpenAIProvider', () => {
         content: [{ type: 'text', text: 'Unknown role' }],
       };
 
-      let requestBody: any;
-      const scope = mockChatCompletion(
-        [chatTextChunk('Response', 'stop')],
-        body => (requestBody = body)
+      // Should throw error for unknown role
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow(
+        "Unsupported message role 'unknown' for OpenAI Chat provider. Supported roles: user, assistant, system, tool"
       );
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scope.isDone()).toBe(true);
-      expect(requestBody.messages).toEqual([]);
     });
 
     it('should handle malformed JSON in tool arguments', async () => {
@@ -724,22 +693,15 @@ describe('OpenAIProvider', () => {
         userText('Hello'),
       ];
 
-      let requestBody: any;
-      const scope = mockChatCompletion(
-        [chatTextChunk('Response', 'stop')],
-        body => (requestBody = body)
+      // Should throw error for developer role
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider(messagesWithDeveloper, mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow(
+        "Unsupported message role 'developer' for OpenAI Chat provider. Supported roles: user, assistant, system, tool"
       );
-
-      const chunks: StreamChunk[] = [];
-      for await (const chunk of provider(messagesWithDeveloper, mockOptions)) {
-        chunks.push(chunk);
-      }
-
-      expect(scope.isDone()).toBe(true);
-      expect(requestBody.messages[0]).toEqual({
-        role: 'developer',
-        content: 'Developer instruction',
-      });
     });
 
     it('should handle missing model at construction time', async () => {

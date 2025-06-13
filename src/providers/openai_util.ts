@@ -7,6 +7,7 @@ import type {
   OpenAIEmbeddingOptions,
   EmbeddingResponse,
   EmbeddingResult,
+  Content,
 } from '../types';
 import { MessageTransformer, StreamUtils, StreamState, ResponseProcessor } from './utils';
 import { APIClient } from './api';
@@ -81,15 +82,7 @@ export class OpenAIMessageTransformer {
         return [
           {
             role: 'system',
-            content: MessageTransformer.extractTextContent(msg.content),
-          },
-        ];
-
-      case 'developer':
-        return [
-          {
-            role: 'developer',
-            content: MessageTransformer.extractTextContent(msg.content),
+            content: this.extractAllTextContent(msg.content),
           },
         ];
 
@@ -113,7 +106,7 @@ export class OpenAIMessageTransformer {
       case 'assistant': {
         const assistantMsg: OpenAI.Chat.MessageParam = {
           role: 'assistant',
-          content: MessageTransformer.extractTextContent(msg.content),
+          content: this.extractAllTextContent(msg.content),
           ...(msg.toolCalls && {
             tool_calls: msg.toolCalls.map(tc => ({
               id: tc.id,
@@ -130,7 +123,10 @@ export class OpenAIMessageTransformer {
       }
 
       default:
-        return [];
+        // Throw error for unknown/unsupported roles
+        throw new Error(
+          `Unsupported message role '${msg.role}' for OpenAI Chat provider. Supported roles: user, assistant, system, tool`
+        );
     }
   }
 
@@ -143,7 +139,7 @@ export class OpenAIMessageTransformer {
             content: [
               {
                 type: 'input_text',
-                text: MessageTransformer.extractTextContent(msg.content),
+                text: this.extractAllTextContent(msg.content),
               },
             ],
           },
@@ -183,8 +179,16 @@ export class OpenAIMessageTransformer {
         ];
 
       default:
-        return [];
+        // Throw error for unknown/unsupported roles
+        throw new Error(
+          `Unsupported message role '${msg.role}' for OpenAI Responses provider. Supported roles: user, assistant, system, tool`
+        );
     }
+  }
+
+  private static extractAllTextContent(content: Content[]): string {
+    const { text } = MessageTransformer.groupContentByType(content);
+    return text.length > 0 ? text.map(t => t.text).join('\n') : '';
   }
 
   private static buildChatContentParts(content: Message['content']): OpenAI.Chat.ContentPart[] {
@@ -297,6 +301,16 @@ export class OpenAIRequestBuilder {
       additionalParams.response_format = options.responseFormat;
     if (options.logitBias !== undefined) additionalParams.logit_bias = options.logitBias;
     if (options.n !== undefined) additionalParams.n = options.n;
+
+    // Handle newer parameters that may not be in the official TypeScript definitions yet
+    const extendedParams = additionalParams as Record<string, unknown>;
+    if (options.modalities !== undefined) extendedParams.modalities = options.modalities;
+    if (options.audio !== undefined) extendedParams.audio = options.audio;
+    if (options.maxCompletionTokens !== undefined)
+      extendedParams.max_completion_tokens = options.maxCompletionTokens;
+    if (options.prediction !== undefined) extendedParams.prediction = options.prediction;
+    if (options.webSearchOptions !== undefined)
+      extendedParams.web_search_options = options.webSearchOptions;
 
     if (options.streamOptions) {
       additionalParams.stream_options = {

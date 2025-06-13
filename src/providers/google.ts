@@ -19,6 +19,7 @@ import {
   FunctionDeclaration,
   GoogleFunctionCallingMode,
 } from './google.d';
+import { ValidationUtils } from './utils';
 
 /**
  * Creates a Google Gemini generation function with pre-configured defaults.
@@ -188,7 +189,7 @@ function transformMessages(messages: Message[]): {
   systemInstruction: string;
   googleMessages: GoogleContent[];
 } {
-  let systemInstruction = '';
+  const systemInstructions: string[] = [];
   const googleMessages: GoogleContent[] = [];
   const toolCallIdToName = new Map<string, string>();
 
@@ -204,7 +205,10 @@ function transformMessages(messages: Message[]): {
   // Second pass: transform messages
   for (const msg of messages) {
     if (msg.role === 'system') {
-      systemInstruction = MessageTransformer.extractTextContent(msg.content);
+      const systemText = MessageTransformer.extractTextContent(msg.content);
+      if (systemText) {
+        systemInstructions.push(systemText);
+      }
       continue;
     }
 
@@ -218,7 +222,10 @@ function transformMessages(messages: Message[]): {
     }
   }
 
-  return { systemInstruction, googleMessages };
+  return {
+    systemInstruction: systemInstructions.join('\n\n'),
+    googleMessages,
+  };
 }
 
 function mapMessage(
@@ -234,7 +241,10 @@ function mapMessage(
     case 'assistant':
       return standardMessageToContent(msg);
     default:
-      return null;
+      // Throw error for unknown/unsupported roles
+      throw new Error(
+        `Unsupported message role '${msg.role}' for Google provider. Supported roles: user, assistant, system, tool`
+      );
   }
 }
 
@@ -257,22 +267,30 @@ function toolResultToContent(msg: Message, toolCallIdToName: Map<string, string>
 function standardMessageToContent(msg: Message): GoogleContent {
   const parts: GooglePart[] = [];
 
-  // Add text content
-  const textContent = MessageTransformer.extractTextContent(msg.content);
-  if (textContent) {
-    parts.push({ text: textContent });
+  // Add all text content, not just the first one
+  const { text, images } = MessageTransformer.groupContentByType(msg.content);
+  if (text.length > 0) {
+    const combinedText = text.map(t => t.text).join('\n');
+    if (combinedText.trim()) {
+      parts.push({ text: combinedText });
+    }
   }
 
-  // Add image content
-  const { images } = MessageTransformer.groupContentByType(msg.content);
+  // Add image content with proper validation
   for (const imageContent of images) {
-    if (imageContent.image.startsWith('data:')) {
+    if (ValidationUtils.isValidDataUrl(imageContent.image)) {
       const [mimeTypePart, data] = imageContent.image.split(',');
       let mimeType = mimeTypePart.replace('data:', '').replace(';base64', '');
 
       // Fallback to image/jpeg for unknown MIME types
       if (!mimeType.startsWith('image/')) {
         mimeType = 'image/jpeg';
+      } else {
+        // Check if it's a known image format, otherwise fallback to jpeg
+        const knownFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        if (!knownFormats.includes(mimeType)) {
+          mimeType = 'image/jpeg';
+        }
       }
 
       parts.push({

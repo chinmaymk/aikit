@@ -166,7 +166,19 @@ function buildRequestParams(messages: Message[], options: AnthropicOptions): Ant
     stop_sequences: options.stopSequences,
   };
 
-  if (systemMessage) params.system = systemMessage;
+  // Handle system prompt from options or messages
+  if (options.system) {
+    // System from options takes precedence
+    if (typeof options.system === 'string') {
+      params.system = options.system;
+    } else {
+      // Array of text blocks
+      params.system = options.system.map(block => block.text).join('\n');
+    }
+  } else if (systemMessage) {
+    params.system = systemMessage;
+  }
+
   if (options.tools) {
     params.tools = options.tools.map(tool => ({
       name: tool.name,
@@ -311,12 +323,15 @@ function transformMessages(messages: Message[]): {
   systemMessage: string;
   anthropicMessages: AnthropicMessage[];
 } {
-  let systemMessage = '';
+  const systemMessages: string[] = [];
   const anthropicMessages: AnthropicMessage[] = [];
 
   for (const msg of messages) {
     if (msg.role === 'system') {
-      systemMessage = MessageTransformer.extractTextContent(msg.content);
+      const systemText = MessageTransformer.extractTextContent(msg.content);
+      if (systemText) {
+        systemMessages.push(systemText);
+      }
       continue;
     }
 
@@ -330,7 +345,10 @@ function transformMessages(messages: Message[]): {
     }
   }
 
-  return { systemMessage, anthropicMessages };
+  return {
+    systemMessage: systemMessages.join('\n\n'),
+    anthropicMessages,
+  };
 }
 
 function transformMessage(msg: Message): AnthropicMessage | AnthropicMessage[] | null {
@@ -345,22 +363,33 @@ function transformMessage(msg: Message): AnthropicMessage | AnthropicMessage[] |
   }
 
   if (msg.role === 'user' || msg.role === 'assistant') {
-    return { role: msg.role, content: buildContentBlocks(msg) };
+    const contentBlocks = buildContentBlocks(msg);
+    if (contentBlocks.length === 0) {
+      // Skip empty messages
+      return null;
+    }
+    return { role: msg.role, content: contentBlocks };
   }
 
-  return null;
+  // Throw error for unknown/unsupported roles
+  throw new Error(
+    `Unsupported message role '${msg.role}' for Anthropic provider. Supported roles: user, assistant, system, tool`
+  );
 }
 
 function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
   const blocks: AnthropicContentBlock[] = [];
   const { text, images } = MessageTransformer.groupContentByType(msg.content);
 
-  // Add text content
+  // Add all text content, not just the first one
   if (text.length > 0) {
-    blocks.push({ type: 'text', text: text[0].text });
+    const combinedText = text.map(t => t.text).join('\n');
+    if (combinedText.trim()) {
+      blocks.push({ type: 'text', text: combinedText });
+    }
   }
 
-  // Add image content
+  // Add image content with proper validation
   for (const imageContent of images) {
     if (ValidationUtils.isValidDataUrl(imageContent.image)) {
       blocks.push({
