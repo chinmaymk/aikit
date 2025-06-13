@@ -22,6 +22,7 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 | **Multimodal**          | Text and images get equal treatment.                                   |
 | **Embeddings Included** | Vectors are first-class citizens.                                      |
 | **Tool-Friendly**       | Utilities for tool and function calls, ready to go.                    |
+| **Reasoning Support**   | Access model reasoning for Claude and OpenAI o-series models.          |
 | **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.                        |
 | **Type-Safe**           | Exhaustive TypeScript types for requests & responses.                  |
 | **Streaming**           | `for await` over tokens or deltas.                                     |

@@ -119,6 +119,13 @@ export interface StreamChunk {
   finishReason?: FinishReason;
   /** Any tool calls that came through in this chunk. The plot thickens. */
   toolCalls?: ToolCall[];
+  /** Reasoning content when available. The model's internal reasoning process. */
+  reasoning?: {
+    /** The full reasoning content so far. Cumulative like content. */
+    content: string;
+    /** The new bit of reasoning content that just arrived in this chunk. */
+    delta: string;
+  };
 }
 
 /**
@@ -133,6 +140,8 @@ export interface StreamResult {
   finishReason?: FinishReason;
   /** Any tool calls that were made during generation. */
   toolCalls?: ToolCall[];
+  /** Complete reasoning content if available. The model's internal reasoning process. */
+  reasoning?: string;
 }
 
 /**
@@ -358,6 +367,14 @@ export interface OpenAIOptions extends ProviderOptions {
    * Whether to allow the model to run tool calls in parallel.
    */
   parallelToolCalls?: boolean;
+  /**
+   * Configuration options for reasoning models (o-series models only).
+   * Controls the reasoning effort level for enhanced problem-solving capabilities.
+   * When enabled, the reasoning process is included in the response.
+   */
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high';
+  };
 }
 
 /**

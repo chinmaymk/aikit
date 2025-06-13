@@ -111,15 +111,17 @@ export class MessageTransformer {
    * @param delta - The new bit of content.
    * @param toolCalls - Any tool calls in this chunk.
    * @param finishReason - Why the generation stopped, if it did.
+   * @param reasoning - Reasoning content for this chunk.
    * @returns A properly formed StreamChunk.
    */
   static createStreamChunk(
     content: string,
     delta: string,
     toolCalls?: ToolCall[],
-    finishReason?: FinishReason
+    finishReason?: FinishReason,
+    reasoning?: { content: string; delta: string }
   ): StreamChunk {
-    return { content, delta, toolCalls, finishReason };
+    return { content, delta, toolCalls, finishReason, reasoning };
   }
 }
 

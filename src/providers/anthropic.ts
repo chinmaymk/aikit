@@ -288,7 +288,9 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
    */
   private async *processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let content = '';
+    let reasoningContent = '';
     const toolCallStates: Record<string, { name: string; arguments: string }> = {};
+    const indexToToolCallId: Record<number, string> = {};
 
     for await (const data of sseStream) {
       const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
@@ -299,10 +301,12 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
           case 'content_block_start': {
             const startEvent = event as ContentBlockStartEvent;
             if (startEvent.content_block.type === 'tool_use') {
-              toolCallStates[startEvent.content_block.id] = {
+              const toolCallId = startEvent.content_block.id;
+              toolCallStates[toolCallId] = {
                 name: startEvent.content_block.name,
                 arguments: '',
               };
+              indexToToolCallId[startEvent.index] = toolCallId;
             }
             break;
           }
@@ -312,18 +316,29 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
             if (deltaEvent.delta.type === 'text_delta') {
               const delta = deltaEvent.delta.text;
               content += delta;
-              yield MessageTransformer.createStreamChunk(content, delta);
+              yield MessageTransformer.createStreamChunk(
+                content,
+                delta,
+                undefined,
+                undefined,
+                reasoningContent ? { content: reasoningContent, delta: '' } : undefined
+              );
             } else if (deltaEvent.delta.type === 'input_json_delta') {
-              // Find the tool call this delta belongs to and append the arguments.
-              const toolCallId = Object.keys(toolCallStates).find(id => toolCallStates[id].name);
-              if (toolCallId) {
+              // Find the tool call this delta belongs to using the index.
+              const toolCallId = indexToToolCallId[deltaEvent.index];
+              if (toolCallId && toolCallStates[toolCallId]) {
                 toolCallStates[toolCallId].arguments += deltaEvent.delta.partial_json;
               }
             } else if (deltaEvent.delta.type === 'thinking_delta') {
-              // Handle thinking deltas - for now we don't expose thinking content
-              // in the standard stream, but could be added as a feature in the future
+              // Handle thinking deltas - now we expose reasoning content
+              const reasoningDelta = deltaEvent.delta.thinking;
+              reasoningContent += reasoningDelta;
+              yield MessageTransformer.createStreamChunk(content, '', undefined, undefined, {
+                content: reasoningContent,
+                delta: reasoningDelta,
+              });
             } else if (deltaEvent.delta.type === 'signature_delta') {
-              // Handle signature deltas for thinking blocks
+              // Handle signature deltas for thinking blocks - could be useful for metadata
             }
             break;
           }
@@ -332,7 +347,13 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
             const deltaEvent = event as MessageDeltaEvent;
             const finishReason = this.mapFinishReason(deltaEvent.delta.stop_reason);
             const toolCalls = this.finalizeToolCalls(toolCallStates);
-            yield MessageTransformer.createStreamChunk(content, '', toolCalls, finishReason);
+            yield MessageTransformer.createStreamChunk(
+              content,
+              '',
+              toolCalls,
+              finishReason,
+              reasoningContent ? { content: reasoningContent, delta: '' } : undefined
+            );
             break;
           }
 

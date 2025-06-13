@@ -56,6 +56,15 @@ export const anthropicTextDeltaChunk = (content: string, index = 0) => ({
 });
 
 /**
+ * Build a reasoning delta chunk.
+ */
+export const anthropicReasoningDeltaChunk = (reasoning: string, index = 0) => ({
+  type: 'content_block_delta',
+  index,
+  delta: { type: 'thinking_delta', thinking: reasoning },
+});
+
+/**
  * Build a tool input JSON delta chunk.
  */
 export const anthropicToolInputDeltaChunk = (partialJson: string, index = 0) => ({
@@ -102,6 +111,23 @@ export const anthropicErrorChunk = (errorType: string, message: string) => ({
 export const anthropicTextResponse = (text: string, finishReason: AnthropicFinish = 'end_turn') => [
   anthropicMessageStartChunk(),
   anthropicContentBlockStartChunk(0, 'text'),
+  anthropicTextDeltaChunk(text),
+  anthropicContentBlockStopChunk(0),
+  anthropicMessageDeltaChunk(finishReason),
+  anthropicMessageStopChunk(),
+];
+
+/**
+ * Helper to build a complete response with reasoning content.
+ */
+export const anthropicTextResponseWithReasoning = (
+  text: string,
+  reasoning: string,
+  finishReason: AnthropicFinish = 'end_turn'
+) => [
+  anthropicMessageStartChunk(),
+  anthropicContentBlockStartChunk(0, 'text'),
+  anthropicReasoningDeltaChunk(reasoning),
   anthropicTextDeltaChunk(text),
   anthropicContentBlockStopChunk(0),
   anthropicMessageDeltaChunk(finishReason),

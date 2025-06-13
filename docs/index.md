@@ -31,6 +31,7 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 | **Multimodal**          | Text and images get equal treatment.                                   |
 | **Embeddings Included** | Vectors are first-class citizens.                                      |
 | **Tool-Friendly**       | Utilities for tool and function calls, ready to go.                    |
+| **Reasoning Support**   | Access model reasoning for Claude and OpenAI o-series models.          |
 | **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.                        |
 | **Type-Safe**           | Exhaustive TypeScript types for requests & responses.                  |
 | **Streaming**           | `for await` over tokens or deltas.                                     |
@@ -123,6 +124,56 @@ if (result.toolCalls) {
     console.log('Tool result:', toolResult);
   }
 }
+```
+
+## Reasoning Models, Transparently
+
+Access the reasoning process of models that support it, like Claude (Anthropic) and o-series models (OpenAI). See how the model thinks through problems in real-time.
+
+```ts
+import { createProvider, userText, collectDeltas, processStream } from 'aikit';
+
+// Anthropic Claude reasoning
+const anthropic = createProvider('anthropic', { apiKey: '...' });
+
+const result = await collectDeltas(
+  anthropic.generate([userText('Solve this math problem step by step: 2x + 5 = 15')], {
+    model: 'claude-3-5-sonnet-20241022',
+    thinking: { type: 'enabled', budget_tokens: 1024 },
+  })
+);
+
+console.log('Answer:', result.content);
+console.log('Reasoning:', result.reasoning); // Access the model's thinking process
+
+// Stream reasoning in real-time
+await processStream(
+  anthropic.generate([userText('Explain quantum entanglement')], {
+    model: 'claude-3-5-sonnet-20241022',
+    thinking: { type: 'enabled', budget_tokens: 1024 },
+  }),
+  {
+    onReasoning: reasoning => {
+      if (reasoning.delta) {
+        console.log('[THINKING]:', reasoning.delta);
+      }
+    },
+    onDelta: delta => process.stdout.write(delta),
+  }
+);
+
+// OpenAI o-series reasoning
+const openai = createProvider('openai', { apiKey: '...' });
+
+const o1Result = await collectDeltas(
+  openai.generate([userText('Design a simple algorithm for sorting')], {
+    model: 'o1-mini',
+    reasoning: { effort: 'medium' },
+  })
+);
+
+console.log('Answer:', o1Result.content);
+console.log('Reasoning:', o1Result.reasoning);
 ```
 
 ## Provider Flexibility

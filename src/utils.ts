@@ -266,11 +266,15 @@ export const createTool = (
  */
 export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise<StreamResult> {
   let content = '';
+  let reasoning = '';
   let finishReason: StreamChunk['finishReason'];
   let toolCalls: StreamChunk['toolCalls'];
 
   for await (const chunk of stream) {
     content += chunk.delta;
+    if (chunk.reasoning) {
+      reasoning += chunk.reasoning.delta;
+    }
     if (chunk.finishReason) {
       finishReason = chunk.finishReason;
     }
@@ -279,7 +283,12 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
     }
   }
 
-  return { content, finishReason, toolCalls };
+  return {
+    content,
+    finishReason,
+    toolCalls,
+    reasoning: reasoning || undefined,
+  };
 }
 
 /**
@@ -306,9 +315,11 @@ export async function processStream(
     onToolCalls?: (toolCalls: StreamChunk['toolCalls']) => void;
     onFinish?: (finishReason: StreamChunk['finishReason']) => void;
     onChunk?: (chunk: StreamChunk) => void;
+    onReasoning?: (reasoning: { content: string; delta: string }) => void;
   } = {}
 ): Promise<StreamResult> {
   let content = '';
+  let reasoning = '';
   let finishReason: StreamChunk['finishReason'];
   let toolCalls: StreamChunk['toolCalls'];
 
@@ -319,6 +330,11 @@ export async function processStream(
 
     if (handlers.onDelta && chunk.delta) {
       handlers.onDelta(chunk.delta);
+    }
+
+    if (handlers.onReasoning && chunk.reasoning) {
+      reasoning += chunk.reasoning.delta;
+      handlers.onReasoning({ content: reasoning, delta: chunk.reasoning.delta });
     }
 
     content = chunk.content;
@@ -341,7 +357,12 @@ export async function processStream(
     }
   }
 
-  return { content, finishReason, toolCalls };
+  return {
+    content,
+    finishReason,
+    toolCalls,
+    reasoning: reasoning || undefined,
+  };
 }
 
 /**

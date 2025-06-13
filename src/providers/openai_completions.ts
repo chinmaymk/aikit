@@ -108,6 +108,11 @@ export class OpenAIProvider implements AIProvider<OpenAIOptions> {
     this.addOptionalParams(params, options);
     this.addToolParams(params, options);
 
+    // Add reasoning configuration for o-series models
+    if (options.reasoning) {
+      params.reasoning = options.reasoning;
+    }
+
     return params;
   }
 
@@ -275,7 +280,12 @@ export class OpenAIProvider implements AIProvider<OpenAIOptions> {
 
     const choice = chunk.choices[0];
     const delta = choice.delta?.content || '';
+    const reasoningDelta = choice.delta?.reasoning || '';
+
     state.content += delta;
+    if (reasoningDelta) {
+      state.reasoningContent += reasoningDelta;
+    }
 
     // Process tool calls
     this.processToolCallDeltas(choice.delta?.tool_calls ?? [], state);
@@ -284,12 +294,17 @@ export class OpenAIProvider implements AIProvider<OpenAIOptions> {
       ? this.mapFinishReason(choice.finish_reason)
       : undefined;
 
+    const reasoning = state.reasoningContent
+      ? { content: state.reasoningContent, delta: reasoningDelta }
+      : undefined;
+
     return {
       content: state.content,
       delta,
       finishReason,
       toolCalls:
         Object.keys(state.toolCalls).length > 0 ? Object.values(state.toolCalls) : undefined,
+      reasoning,
     };
   }
 
@@ -346,6 +361,7 @@ export class OpenAIProvider implements AIProvider<OpenAIOptions> {
  */
 class StreamState {
   content = '';
+  reasoningContent = '';
   toolCalls: Record<number, ToolCall> = {};
   argumentsBuffer: Record<number, string> = {};
 }
@@ -383,6 +399,9 @@ type ChatCompletionCreateParams = {
   tools?: ChatCompletionTool[];
   tool_choice?: 'auto' | 'required' | 'none' | { type: 'function'; function: { name: string } };
   parallel_tool_calls?: boolean;
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high';
+  };
 };
 
 type ChatCompletionMessageParam = {
@@ -419,9 +438,15 @@ type ChatCompletionChunk = {
     delta: {
       content?: string;
       tool_calls?: OpenAIToolCallDelta[];
+      reasoning?: string;
     };
     finish_reason?: string;
   }[];
+  usage?: {
+    completion_tokens_details?: {
+      reasoning_tokens?: number;
+    };
+  };
 };
 
 interface OpenAIToolCallDelta {

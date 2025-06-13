@@ -292,3 +292,55 @@ describe('extractDataLines', () => {
     expect(dataLines).toEqual(['actual data', 'more data']);
   });
 });
+
+describe('extractDataLines - Edge Cases', () => {
+  async function* createAsyncIterable(lines: string[]): AsyncIterable<string> {
+    for (const line of lines) {
+      yield line;
+    }
+  }
+
+  it('should handle lines without data prefix', async () => {
+    const lines = ['event: start', 'data: {"test": true}', 'invalid line', 'data: {"test": false}'];
+    const result: string[] = [];
+    for await (const data of extractDataLines(createAsyncIterable(lines))) {
+      result.push(data);
+    }
+    expect(result).toEqual(['{"test": true}', '{"test": false}']);
+  });
+
+  it('should handle empty lines array', async () => {
+    const result: string[] = [];
+    for await (const data of extractDataLines(createAsyncIterable([]))) {
+      result.push(data);
+    }
+    expect(result).toEqual([]);
+  });
+
+  it('should handle lines with only whitespace', async () => {
+    const lines = ['   ', 'data: content', '\t\n', 'data: more'];
+    const result: string[] = [];
+    for await (const data of extractDataLines(createAsyncIterable(lines))) {
+      result.push(data);
+    }
+    expect(result).toEqual(['content', 'more']);
+  });
+
+  it('should handle data lines with colons in content', async () => {
+    const lines = ['data: {"url": "https://example.com", "time": "12:34:56"}'];
+    const result: string[] = [];
+    for await (const data of extractDataLines(createAsyncIterable(lines))) {
+      result.push(data);
+    }
+    expect(result).toEqual(['{"url": "https://example.com", "time": "12:34:56"}']);
+  });
+
+  it('should skip [DONE] markers', async () => {
+    const lines = ['data: {"test": true}', 'data: [DONE]', 'data: {"test": false}'];
+    const result: string[] = [];
+    for await (const data of extractDataLines(createAsyncIterable(lines))) {
+      result.push(data);
+    }
+    expect(result).toEqual(['{"test": true}', '{"test": false}']);
+  });
+});
