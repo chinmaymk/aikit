@@ -8,8 +8,17 @@ import type {
   StreamingGenerateFunction,
 } from '../types';
 
-import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
+import { MessageTransformer, StreamUtils } from './utils';
 import { APIClient } from './api';
+import {
+  GenerateContentRequestBody,
+  StreamGenerateContentChunk,
+  GoogleContent,
+  GooglePart,
+  ModelConfig,
+  FunctionDeclaration,
+  GoogleFunctionCallingMode,
+} from './google.d';
 
 /**
  * Creates a Google Gemini generation function with pre-configured defaults.
@@ -70,66 +79,6 @@ export async function* google(
 ): AsyncIterable<StreamChunk> {
   const provider = createGoogle(config);
   yield* provider(messages);
-}
-
-// Local replacement for the Google SDK `FunctionCallingMode` enum
-type GoogleFunctionCallingMode = 'AUTO' | 'NONE' | 'ANY';
-
-/**
- * Utility types for request/response payloads (minimal subset)
- */
-type GooglePart =
-  | { text: string }
-  | { inlineData: { mimeType: string; data: string } }
-  | { functionCall: { name: string; args: DynamicParams } }
-  | { functionResponse: { name: string; response: DynamicParams } };
-
-interface GoogleContent {
-  role: 'user' | 'model' | 'function';
-  parts: GooglePart[];
-}
-
-interface FunctionDeclaration {
-  name: string;
-  description: string;
-  parameters: DynamicParams;
-}
-
-interface ModelConfig {
-  generationConfig?: {
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    maxOutputTokens?: number;
-    stopSequences?: string[];
-    candidateCount?: number;
-    presencePenalty?: number;
-    frequencyPenalty?: number;
-    responseMimeType?: string;
-    responseSchema?: Record<string, unknown>;
-    seed?: number;
-    responseLogprobs?: boolean;
-    logprobs?: number;
-    audioTimestamp?: boolean;
-  };
-  systemInstruction?: { parts: GooglePart[] };
-  tools?: Array<{ functionDeclarations: FunctionDeclaration[] }>;
-  toolConfig?: DynamicParams;
-  safetySettings?: Array<{
-    category: string;
-    threshold: string;
-  }>;
-}
-
-interface GenerateContentRequestBody extends ModelConfig {
-  contents: GoogleContent[];
-}
-
-interface StreamGenerateContentChunk {
-  candidates?: Array<{
-    content?: GoogleContent;
-    finishReason?: string;
-  }>;
 }
 
 // Helper functions for functional API

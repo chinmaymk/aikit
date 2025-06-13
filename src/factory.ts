@@ -29,6 +29,26 @@ import { createGoogleEmbeddings as createGoogleEmbeddingsProvider } from './prov
 // Re-export types for external use
 export type { GenerationProviderType, EmbeddingProviderType };
 
+// Provider factory mappings
+const generationProviders = {
+  openai: createOpenAIProvider,
+  anthropic: createAnthropicProvider,
+  google: createGoogleProvider,
+  openai_responses: createOpenAIResponsesProvider,
+} as const;
+
+const embeddingProviders = {
+  openai_embeddings: createOpenAIEmbeddingsProvider,
+  google_embeddings: createGoogleEmbeddingsProvider,
+} as const;
+
+// Environment variable mappings for provider discovery
+const providerEnvKeys = [
+  { keys: ['OPENAI_API_KEY'], type: 'openai' as const, name: 'OpenAI' },
+  { keys: ['ANTHROPIC_API_KEY'], type: 'anthropic' as const, name: 'Anthropic' },
+  { keys: ['GOOGLE_API_KEY', 'GEMINI_API_KEY'], type: 'google' as const, name: 'Google' },
+] as const;
+
 /**
  * Creates an OpenAI provider using the Chat Completions API.
  *
@@ -189,14 +209,11 @@ export function createEmbeddingsProvider(
   type: EmbeddingProviderType,
   options: WithApiKey<OpenAIEmbeddingOptions | GoogleEmbeddingOptions>
 ): AnyEmbeddingProvider {
-  switch (type) {
-    case 'openai_embeddings':
-      return createOpenAIEmbeddings(options as WithApiKey<OpenAIEmbeddingOptions>);
-    case 'google_embeddings':
-      return createGoogleEmbeddings(options as WithApiKey<GoogleEmbeddingOptions>);
-    default:
-      throw new Error(`Unknown embedding provider type: ${type}`);
+  const factory = embeddingProviders[type];
+  if (!factory) {
+    throw new Error(`Unknown embedding provider type: ${type}`);
   }
+  return factory(options as any);
 }
 
 /**
@@ -242,23 +259,16 @@ export function createProvider(
   type: GenerationProviderType,
   options: WithApiKey<OpenAIOptions | AnthropicOptions | GoogleOptions | OpenAIResponsesOptions>
 ): AnyGenerationProvider {
-  switch (type) {
-    case 'openai':
-      return createOpenAI(options as WithApiKey<OpenAIOptions>);
-    case 'anthropic':
-      return createAnthropic(options as WithApiKey<AnthropicOptions>);
-    case 'google':
-      return createGoogle(options as WithApiKey<GoogleOptions>);
-    case 'openai_responses':
-      return createOpenAIResponses(options as WithApiKey<OpenAIResponsesOptions>);
-    default:
-      throw new Error(`Unknown generation provider type: ${type}`);
+  const factory = generationProviders[type];
+  if (!factory) {
+    throw new Error(`Unknown generation provider type: ${type}`);
   }
+  return factory(options as any);
 }
 
 /**
  * Checks for available generation providers based on environment variables.
- * Returns a properly typed provider based on what's available.
+ * Returns the first available provider based on priority order.
  *
  * @example
  * ```typescript
@@ -269,40 +279,17 @@ export function createProvider(
  * }
  * ```
  */
-
-// Function overloads for precise type narrowing based on available providers
 export function getAvailableProvider(): AvailableProviderResult {
-  const envKeys = [
-    { keys: ['OPENAI_API_KEY'], type: 'openai' as const, name: 'OpenAI' },
-    { keys: ['ANTHROPIC_API_KEY'], type: 'anthropic' as const, name: 'Anthropic' },
-    { keys: ['GOOGLE_API_KEY', 'GEMINI_API_KEY'], type: 'google' as const, name: 'Google' },
-  ];
-
-  for (const { keys, type, name } of envKeys) {
-    const apiKey = keys.find(key => process.env[key]);
-    if (apiKey && process.env[apiKey]) {
+  for (const { keys, type, name } of providerEnvKeys) {
+    const availableKey = keys.find(key => process.env[key]);
+    if (availableKey && process.env[availableKey]) {
       try {
-        switch (type) {
-          case 'openai': {
-            const provider = createProvider('openai', { apiKey: process.env[apiKey]! });
-            return { provider, type, name } as AvailableProviderResult<'openai'>;
-          }
-          case 'anthropic': {
-            const provider = createProvider('anthropic', { apiKey: process.env[apiKey]! });
-            return { provider, type, name } as AvailableProviderResult<'anthropic'>;
-          }
-          case 'google': {
-            const provider = createProvider('google', { apiKey: process.env[apiKey]! });
-            return { provider, type, name } as AvailableProviderResult<'google'>;
-          }
-          default:
-            continue;
-        }
+        const provider = createProvider(type, { apiKey: process.env[availableKey]! });
+        return { provider, type, name } as AvailableProviderResult;
       } catch {
         continue;
       }
     }
   }
-
   return {};
 }

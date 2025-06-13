@@ -2,14 +2,18 @@ import type {
   Message,
   StreamChunk,
   FinishReason,
-  Tool,
-  ToolCall,
   AnthropicOptions,
   WithApiKey,
   StreamingGenerateFunction,
 } from '../types';
 
-import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
+import {
+  MessageTransformer,
+  StreamUtils,
+  ValidationUtils,
+  StreamState,
+  DynamicParams,
+} from './utils';
 import { APIClient } from './api';
 import { extractDataLines } from './api';
 
@@ -51,7 +55,7 @@ export function createAnthropic(
     'anthropic-version': anthropicVersion,
   };
 
-  if (beta && beta.length > 0) {
+  if (beta?.length) {
     headers['anthropic-beta'] = beta.join(',');
   }
 
@@ -90,67 +94,29 @@ export async function* anthropic(
   yield* provider(messages);
 }
 
-// Anthropic API types
-interface AnthropicTextBlockParam {
-  type: 'text';
-  text: string;
-}
-
-interface AnthropicImageBlockParam {
-  type: 'image';
-  source: {
-    type: 'base64';
-    media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
-    data: string;
-  };
-}
-
-interface AnthropicToolUseBlockParam {
-  type: 'tool_use';
-  id: string;
-  name: string;
-  input: DynamicParams;
-}
-
-interface AnthropicToolResultBlockParam {
-  type: 'tool_result';
-  tool_use_id: string;
-  content: string;
-}
-
+// Consolidated Anthropic API types for better maintainability
 type AnthropicContentBlock =
-  | AnthropicTextBlockParam
-  | AnthropicImageBlockParam
-  | AnthropicToolUseBlockParam
-  | AnthropicToolResultBlockParam;
+  | { type: 'text'; text: string }
+  | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+  | { type: 'tool_use'; id: string; name: string; input: DynamicParams }
+  | { type: 'tool_result'; tool_use_id: string; content: string };
 
-interface AnthropicMessageParam {
+interface AnthropicMessage {
   role: 'user' | 'assistant';
   content: AnthropicContentBlock[];
 }
 
-interface AnthropicTool {
-  name: string;
-  description: string;
-  input_schema: DynamicParams;
-}
-
-interface AnthropicToolChoice {
-  type: 'auto' | 'any' | 'tool';
-  name?: string;
-}
-
-interface AnthropicCreateMessageRequest {
+interface AnthropicRequest {
   model: string;
-  messages: AnthropicMessageParam[];
+  messages: AnthropicMessage[];
   max_tokens: number;
-  system?: string | Array<{ type: 'text'; text: string }>;
+  system?: string;
   temperature?: number;
   top_p?: number;
   top_k?: number;
   stop_sequences?: string[];
-  tools?: AnthropicTool[];
-  tool_choice?: AnthropicToolChoice;
+  tools?: Array<{ name: string; description: string; input_schema: DynamicParams }>;
+  tool_choice?: { type: 'auto' | 'any' | 'tool'; name?: string };
   stream: true;
   container?: string;
   mcp_servers?: Array<{
@@ -158,82 +124,38 @@ interface AnthropicCreateMessageRequest {
     type: 'url';
     url: string;
     authorization_token?: string;
-    tool_configuration?: {
-      enabled?: boolean;
-      allowed_tools?: string[];
-    };
+    tool_configuration?: { enabled?: boolean; allowed_tools?: string[] };
   }>;
-  metadata?: {
-    user_id?: string;
-  };
+  metadata?: { user_id?: string };
   service_tier?: 'auto' | 'standard_only';
-  thinking?:
-    | {
-        type: 'enabled';
-        budget_tokens: number;
-      }
-    | {
-        type: 'disabled';
-      };
+  thinking?: { type: 'enabled'; budget_tokens: number } | { type: 'disabled' };
 }
 
-// Streaming event types
-interface AnthropicStreamEvent {
-  type: string;
-  [key: string]: unknown;
-}
-
-interface ContentBlockStartEvent extends AnthropicStreamEvent {
-  type: 'content_block_start';
-  index: number;
-  content_block:
-    | { type: 'text'; text: string }
-    | { type: 'tool_use'; id: string; name: string; input: DynamicParams };
-}
-
-interface ContentBlockDeltaEvent extends AnthropicStreamEvent {
-  type: 'content_block_delta';
-  index: number;
-  delta:
-    | { type: 'text_delta'; text: string }
-    | { type: 'input_json_delta'; partial_json: string }
-    | { type: 'thinking_delta'; thinking: string }
-    | { type: 'signature_delta'; signature: string };
-}
-
-interface MessageDeltaEvent extends AnthropicStreamEvent {
-  type: 'message_delta';
-  delta: {
-    stop_reason?:
-      | 'end_turn'
-      | 'max_tokens'
-      | 'stop_sequence'
-      | 'tool_use'
-      | 'pause_turn'
-      | 'refusal';
-    stop_sequence?: string | null;
-  };
-  usage?: {
-    output_tokens: number;
-  };
-}
-
-interface ErrorEvent extends AnthropicStreamEvent {
-  type: 'error';
-  error: {
-    type: string;
-    message: string;
-  };
-}
+// Consolidated streaming event types
+type AnthropicStreamEvent =
+  | { type: 'content_block_start'; index: number; content_block: AnthropicContentBlock }
+  | {
+      type: 'content_block_delta';
+      index: number;
+      delta:
+        | { type: 'text_delta'; text: string }
+        | { type: 'input_json_delta'; partial_json: string }
+        | { type: 'thinking_delta'; thinking: string }
+        | { type: 'signature_delta'; signature: string };
+    }
+  | {
+      type: 'message_delta';
+      delta: { stop_reason?: string; stop_sequence?: string | null };
+      usage?: { output_tokens: number };
+    }
+  | { type: 'error'; error: { type: string; message: string } }
+  | { type: string; [key: string]: unknown };
 
 // Helper functions for functional API
-function buildRequestParams(
-  messages: Message[],
-  options: AnthropicOptions
-): AnthropicCreateMessageRequest {
+function buildRequestParams(messages: Message[], options: AnthropicOptions): AnthropicRequest {
   const { systemMessage, anthropicMessages } = transformMessages(messages);
 
-  const params: AnthropicCreateMessageRequest = {
+  const params: AnthropicRequest = {
     model: options.model!,
     messages: anthropicMessages,
     max_tokens: options.maxOutputTokens || 4096,
@@ -244,147 +166,153 @@ function buildRequestParams(
     stop_sequences: options.stopSequences,
   };
 
-  if (systemMessage) {
-    params.system = systemMessage;
-  }
-
+  if (systemMessage) params.system = systemMessage;
   if (options.tools) {
-    params.tools = formatTools(options.tools);
+    params.tools = options.tools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      input_schema: tool.parameters,
+    }));
     if (options.toolChoice) {
       params.tool_choice = formatToolChoice(options.toolChoice);
     }
   }
-
-  if (options.container) {
-    params.container = options.container;
-  }
-
+  if (options.container) params.container = options.container;
   if (options.mcpServers) {
-    params.mcp_servers = options.mcpServers.map(server => ({
-      ...server,
-      type: 'url' as const,
-    }));
+    params.mcp_servers = options.mcpServers.map(server => ({ ...server, type: 'url' as const }));
   }
-
-  if (options.metadata) {
-    params.metadata = options.metadata;
-  }
-
-  if (options.serviceTier) {
-    params.service_tier = options.serviceTier;
-  }
-
-  if (options.thinking) {
-    params.thinking = options.thinking;
-  }
+  if (options.metadata) params.metadata = options.metadata;
+  if (options.serviceTier) params.service_tier = options.serviceTier;
+  if (options.thinking) params.thinking = options.thinking;
 
   return params;
 }
 
 async function* processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-  let content = '';
-  let thinking = '';
-  const toolCallStates: Record<string, { name: string; arguments: string }> = {};
+  const state = new StreamState();
 
   for await (const data of extractDataLines(sseStream)) {
-    if (data.trim() === 'data: [DONE]' || data.trim() === '[DONE]') {
-      break;
-    }
+    if (StreamUtils.isStreamDone(data) || data.trim() === 'data: [DONE]') break;
 
     const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
     if (!event) continue;
 
-    switch (event.type) {
-      case 'content_block_start': {
-        const startEvent = event as ContentBlockStartEvent;
-        if (startEvent.content_block.type === 'tool_use') {
-          const toolBlock = startEvent.content_block as {
-            type: 'tool_use';
-            id: string;
-            name: string;
-            input: DynamicParams;
-          };
-          toolCallStates[toolBlock.id] = {
-            name: toolBlock.name,
-            arguments: '',
-          };
-        }
-        break;
-      }
+    const chunk = handleStreamEvent(event, state);
+    if (chunk) yield chunk;
+  }
+}
 
-      case 'content_block_delta': {
-        const deltaEvent = event as ContentBlockDeltaEvent;
-
-        if (deltaEvent.delta.type === 'text_delta') {
-          const textDelta = deltaEvent.delta.text;
-          content += textDelta;
-          yield {
-            delta: textDelta,
-            content,
-          };
-        } else if (deltaEvent.delta.type === 'input_json_delta') {
-          // Handle tool call argument accumulation
-          const partialJson = deltaEvent.delta.partial_json;
-          const toolCallId =
-            Object.keys(toolCallStates)[deltaEvent.index] || Object.keys(toolCallStates)[0];
-
-          if (toolCallId && toolCallStates[toolCallId]) {
-            toolCallStates[toolCallId].arguments += partialJson;
-          }
-        } else if (deltaEvent.delta.type === 'thinking_delta') {
-          const thinkingDelta = deltaEvent.delta.thinking;
-          thinking += thinkingDelta;
-
-          yield {
-            delta: '',
-            content,
-            reasoning: {
-              delta: thinkingDelta,
-              content: thinking,
-            },
-          };
-        }
-        break;
-      }
-
-      case 'message_delta': {
-        const messageDelta = event as MessageDeltaEvent;
-        if (messageDelta.delta.stop_reason) {
-          const finishReason = mapFinishReason(messageDelta.delta.stop_reason);
-          const toolCalls = finalizeToolCalls(toolCallStates);
-
-          yield {
-            delta: '',
-            content,
-            finishReason,
-            ...(toolCalls && { toolCalls }),
-            ...(thinking && {
-              reasoning: {
-                delta: '',
-                content: thinking,
-              },
-            }),
-          };
-        }
-        break;
-      }
-
-      case 'error': {
-        const errorEvent = event as ErrorEvent;
-        throw new Error(
-          `Anthropic API error: ${errorEvent.error.type} - ${errorEvent.error.message}`
+function handleStreamEvent(event: AnthropicStreamEvent, state: StreamState): StreamChunk | null {
+  switch (event.type) {
+    case 'content_block_start':
+      if ('content_block' in event && 'index' in event) {
+        return handleContentBlockStart(
+          event as Extract<AnthropicStreamEvent, { type: 'content_block_start' }>,
+          state
         );
       }
-    }
+      return null;
+    case 'content_block_delta':
+      if ('delta' in event && 'index' in event) {
+        return handleContentBlockDelta(
+          event as Extract<AnthropicStreamEvent, { type: 'content_block_delta' }>,
+          state
+        );
+      }
+      return null;
+    case 'message_delta':
+      if ('delta' in event) {
+        return handleMessageDelta(
+          event as Extract<AnthropicStreamEvent, { type: 'message_delta' }>,
+          state
+        );
+      }
+      return null;
+    case 'error':
+      if (
+        'error' in event &&
+        event.error &&
+        typeof event.error === 'object' &&
+        'type' in event.error &&
+        'message' in event.error
+      ) {
+        throw new Error(`Anthropic API error: ${event.error.type} - ${event.error.message}`);
+      }
+      return null;
+    default:
+      return null;
   }
+}
+
+function handleContentBlockStart(
+  event: Extract<AnthropicStreamEvent, { type: 'content_block_start' }>,
+  state: StreamState
+): null {
+  if (event.content_block.type === 'tool_use') {
+    const toolBlock = event.content_block as {
+      type: 'tool_use';
+      id: string;
+      name: string;
+      input: DynamicParams;
+    };
+    state.initToolCall(toolBlock.id, toolBlock.name);
+  }
+  return null;
+}
+
+function handleContentBlockDelta(
+  event: Extract<AnthropicStreamEvent, { type: 'content_block_delta' }>,
+  state: StreamState
+): StreamChunk | null {
+  const { delta } = event;
+
+  if (delta.type === 'text_delta') {
+    state.addContentDelta(delta.text);
+    return MessageTransformer.createStreamChunk(state.content, delta.text);
+  }
+
+  if (delta.type === 'input_json_delta') {
+    const toolCallId =
+      Object.keys(state.toolCallStates)[event.index] || Object.keys(state.toolCallStates)[0];
+    if (toolCallId) {
+      state.addToolCallArgs(toolCallId, delta.partial_json);
+    }
+    return null;
+  }
+
+  if (delta.type === 'thinking_delta') {
+    const reasoning = state.addReasoningDelta(delta.thinking);
+    return MessageTransformer.createStreamChunk(state.content, '', undefined, undefined, reasoning);
+  }
+
+  return null;
+}
+
+function handleMessageDelta(
+  event: Extract<AnthropicStreamEvent, { type: 'message_delta' }>,
+  state: StreamState
+): StreamChunk | null {
+  if (!event.delta.stop_reason) return null;
+
+  const finishReason = mapFinishReason(event.delta.stop_reason);
+  const toolCalls = state.finalizeToolCalls();
+  const reasoning = state.getFinalReasoning();
+
+  return MessageTransformer.createStreamChunk(
+    state.content,
+    '',
+    toolCalls,
+    finishReason,
+    reasoning
+  );
 }
 
 function transformMessages(messages: Message[]): {
   systemMessage: string;
-  anthropicMessages: AnthropicMessageParam[];
+  anthropicMessages: AnthropicMessage[];
 } {
   let systemMessage = '';
-  const anthropicMessages: AnthropicMessageParam[] = [];
+  const anthropicMessages: AnthropicMessage[] = [];
 
   for (const msg of messages) {
     if (msg.role === 'system') {
@@ -392,12 +320,12 @@ function transformMessages(messages: Message[]): {
       continue;
     }
 
-    const transformedMessage = transformMessage(msg);
-    if (transformedMessage) {
-      if (Array.isArray(transformedMessage)) {
-        anthropicMessages.push(...transformedMessage);
+    const transformed = transformMessage(msg);
+    if (transformed) {
+      if (Array.isArray(transformed)) {
+        anthropicMessages.push(...transformed);
       } else {
-        anthropicMessages.push(transformedMessage);
+        anthropicMessages.push(transformed);
       }
     }
   }
@@ -405,147 +333,79 @@ function transformMessages(messages: Message[]): {
   return { systemMessage, anthropicMessages };
 }
 
-function transformMessage(msg: Message): AnthropicMessageParam | AnthropicMessageParam[] | null {
-  switch (msg.role) {
-    case 'tool':
-      return transformToolMessage(msg);
-    case 'user':
-    case 'assistant':
-      return transformUserOrAssistantMessage(msg);
-    default:
-      return null;
+function transformMessage(msg: Message): AnthropicMessage | AnthropicMessage[] | null {
+  if (msg.role === 'tool') {
+    const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+    return toolResults.map(toolResult => ({
+      role: 'user' as const,
+      content: [
+        { type: 'tool_result', tool_use_id: toolResult.toolCallId, content: toolResult.result },
+      ],
+    }));
   }
-}
 
-function transformToolMessage(msg: Message): AnthropicMessageParam[] {
-  const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+  if (msg.role === 'user' || msg.role === 'assistant') {
+    return { role: msg.role, content: buildContentBlocks(msg) };
+  }
 
-  return toolResults.map(toolResult => ({
-    role: 'user' as const,
-    content: [
-      {
-        type: 'tool_result',
-        tool_use_id: toolResult.toolCallId,
-        content: toolResult.result,
-      },
-    ],
-  }));
-}
-
-function transformUserOrAssistantMessage(msg: Message): AnthropicMessageParam {
-  return {
-    role: msg.role as 'user' | 'assistant',
-    content: buildContentBlocks(msg),
-  };
+  return null;
 }
 
 function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
   const blocks: AnthropicContentBlock[] = [];
+  const { text, images } = MessageTransformer.groupContentByType(msg.content);
 
   // Add text content
-  const textContent = MessageTransformer.extractTextContent(msg.content);
-  if (textContent) {
-    blocks.push({
-      type: 'text',
-      text: textContent,
-    });
+  if (text.length > 0) {
+    blocks.push({ type: 'text', text: text[0].text });
   }
 
   // Add image content
-  const { images } = MessageTransformer.groupContentByType(msg.content);
   for (const imageContent of images) {
-    if (imageContent.image.startsWith('data:')) {
-      const [header, data] = imageContent.image.split(',');
-      const mediaType = header.match(/data:([^;]+)/)?.[1] as
-        | 'image/jpeg'
-        | 'image/png'
-        | 'image/gif'
-        | 'image/webp';
-
-      if (mediaType && ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mediaType)) {
-        blocks.push({
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: mediaType,
-            data,
-          },
-        });
-      }
+    if (ValidationUtils.isValidDataUrl(imageContent.image)) {
+      blocks.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: MessageTransformer.detectImageMimeType(imageContent.image),
+          data: MessageTransformer.extractBase64Data(imageContent.image),
+        },
+      });
     }
   }
 
   // Add tool use blocks for assistant messages
   if (msg.role === 'assistant' && msg.toolCalls) {
-    for (const toolCall of msg.toolCalls) {
-      blocks.push({
-        type: 'tool_use',
+    blocks.push(
+      ...msg.toolCalls.map(toolCall => ({
+        type: 'tool_use' as const,
         id: toolCall.id,
         name: toolCall.name,
         input: toolCall.arguments,
-      });
-    }
+      }))
+    );
   }
 
   return blocks;
 }
 
-function formatTools(tools: Tool[]): AnthropicTool[] {
-  return tools.map(tool => ({
-    name: tool.name,
-    description: tool.description,
-    input_schema: tool.parameters,
-  }));
-}
-
-function formatToolChoice(toolChoice: AnthropicOptions['toolChoice']): AnthropicToolChoice {
+function formatToolChoice(toolChoice: AnthropicOptions['toolChoice']): {
+  type: 'auto' | 'any' | 'tool';
+  name?: string;
+} {
   if (!toolChoice) return { type: 'auto' };
-  if (typeof toolChoice === 'object') {
-    return { type: 'tool', name: toolChoice.name };
-  }
+  if (typeof toolChoice === 'object') return { type: 'tool', name: toolChoice.name };
   return { type: toolChoice as 'auto' | 'any' };
 }
 
-function finalizeToolCalls(
-  toolCallStates: Record<string, { name: string; arguments: string }>
-): ToolCall[] | undefined {
-  const entries = Object.entries(toolCallStates);
-  if (entries.length === 0) return undefined;
-
-  return entries.map(([id, state]) => {
-    try {
-      return {
-        id,
-        name: state.name,
-        arguments: JSON.parse(state.arguments),
-      };
-    } catch {
-      return {
-        id,
-        name: state.name,
-        arguments: {},
-      };
-    }
-  });
-}
-
 function mapFinishReason(reason?: string): FinishReason | undefined {
-  if (!reason) return undefined;
-
-  switch (reason) {
-    case 'end_turn':
-      return 'stop';
-    case 'max_tokens':
-      return 'length';
-    case 'stop_sequence':
-      return 'stop';
-    case 'tool_use':
-      return 'tool_use';
-    case 'pause_turn':
-      return 'stop';
-    case 'refusal':
-      return 'error';
-    default:
-      return undefined;
-  }
+  const reasonMap: Record<string, FinishReason> = {
+    end_turn: 'stop',
+    max_tokens: 'length',
+    stop_sequence: 'stop',
+    tool_use: 'tool_use',
+    pause_turn: 'stop',
+    refusal: 'error',
+  };
+  return reason ? reasonMap[reason] : undefined;
 }

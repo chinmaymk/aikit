@@ -6,6 +6,7 @@ import type {
   ToolCall,
   StreamChunk,
   FinishReason,
+  Tool,
 } from '../types';
 
 /**
@@ -154,6 +155,101 @@ export class StreamUtils {
 }
 
 /**
+ * Stream processing state management class.
+ * Handles common stream state operations across all providers.
+ * @internal
+ */
+export class StreamState {
+  content = '';
+  reasoning: string | null = null;
+  toolCallStates: Record<string, { name: string; arguments: string }> = {};
+  accumulatingArgs: Record<string, string> = {};
+  outputIndexToCallId: Record<number, string> = {};
+  hasToolCalls = false;
+
+  /**
+   * Add content delta to the stream state.
+   * @param delta - The new content to add.
+   */
+  addContentDelta(delta: string): void {
+    this.content += delta;
+  }
+
+  /**
+   * Add reasoning delta and return reasoning object for streaming.
+   * @param delta - The reasoning delta to add.
+   * @returns Reasoning object with delta and full content.
+   */
+  addReasoningDelta(delta: string): { delta: string; content: string } {
+    this.reasoning = this.reasoning === null ? delta : this.reasoning + delta;
+    return { delta, content: this.reasoning };
+  }
+
+  /**
+   * Get final reasoning state for completion chunks.
+   * @returns Reasoning object or undefined if no reasoning content.
+   */
+  getFinalReasoning(): { delta: string; content: string } | undefined {
+    return this.reasoning !== null ? { delta: '', content: this.reasoning } : undefined;
+  }
+
+  /**
+   * Initialize or update a tool call state.
+   * @param id - Tool call ID.
+   * @param name - Tool call name.
+   */
+  initToolCall(id: string, name: string): void {
+    this.toolCallStates[id] = { name, arguments: '' };
+    this.hasToolCalls = true;
+  }
+
+  /**
+   * Add arguments to an existing tool call.
+   * @param id - Tool call ID.
+   * @param args - Partial arguments to add.
+   */
+  addToolCallArgs(id: string, args: string): void {
+    if (this.toolCallStates[id]) {
+      this.toolCallStates[id].arguments += args;
+    }
+  }
+
+  /**
+   * Finalize all tool calls and return them as ToolCall objects.
+   * @returns Array of finalized tool calls or undefined if none.
+   */
+  finalizeToolCalls(): ToolCall[] | undefined {
+    const entries = Object.entries(this.toolCallStates);
+    if (entries.length === 0) return undefined;
+
+    return entries.map(([id, state]) => ({
+      id,
+      name: state.name,
+      arguments: MessageTransformer.parseJson(state.arguments, {}),
+    }));
+  }
+
+  /**
+   * Create a stream chunk with current state.
+   * @param delta - Content delta for this chunk.
+   * @param finishReason - Finish reason if applicable.
+   * @returns Properly formed stream chunk.
+   */
+  createChunk(delta: string, finishReason?: FinishReason): StreamChunk {
+    const toolCalls = finishReason ? this.finalizeToolCalls() : undefined;
+    const reasoning = finishReason ? this.getFinalReasoning() : undefined;
+
+    return MessageTransformer.createStreamChunk(
+      this.content,
+      delta,
+      toolCalls,
+      finishReason,
+      reasoning
+    );
+  }
+}
+
+/**
  * Validation utilities for common data types.
  * The quality control department.
  * @internal
@@ -184,5 +280,114 @@ export class ValidationUtils {
       typeof (toolCall as StringKeyedObject).id === 'string' &&
       typeof (toolCall as StringKeyedObject).name === 'string'
     );
+  }
+}
+
+/**
+ * Common utilities for building API requests across providers.
+ * @internal
+ */
+export class RequestBuilder {
+  /**
+   * Add optional parameters to request object if they exist.
+   * @param params - The request parameters object to modify.
+   * @param options - The options object containing potential values.
+   * @param mappings - Object mapping option keys to param keys.
+   */
+  static addOptionalParams<T extends Record<string, unknown>, U extends Record<string, unknown>>(
+    params: T,
+    options: U,
+    mappings: Record<keyof U, keyof T>
+  ): void {
+    for (const [optionKey, paramKey] of Object.entries(mappings)) {
+      const value = options[optionKey as keyof U];
+      if (value !== undefined) {
+        (params as Record<string, unknown>)[paramKey as string] = value;
+      }
+    }
+  }
+
+  /**
+   * Format tools for API requests.
+   * @param tools - The tools to format.
+   * @param formatType - The format type ('openai' or 'responses').
+   * @returns Formatted tools array.
+   */
+  static formatTools(tools: Tool[], formatType: 'openai' | 'responses'): unknown[] {
+    if (formatType === 'openai') {
+      return tools.map(tool => ({
+        type: 'function',
+        function: {
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+        },
+      }));
+    }
+
+    return tools.map(tool => ({
+      type: 'function',
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.parameters,
+    }));
+  }
+
+  /**
+   * Format tool choice for API requests.
+   * @param toolChoice - The tool choice configuration.
+   * @param formatType - The format type ('openai' or 'responses').
+   * @returns Formatted tool choice.
+   */
+  static formatToolChoice(
+    toolChoice: string | { name: string } | undefined,
+    formatType: 'openai' | 'responses'
+  ): unknown {
+    if (!toolChoice) return 'auto';
+
+    if (typeof toolChoice === 'string') {
+      if (formatType === 'openai') {
+        return toolChoice === 'none' ? 'none' : toolChoice;
+      }
+      return toolChoice === 'none' ? 'auto' : toolChoice;
+    }
+
+    if (formatType === 'openai') {
+      return { type: 'function', function: { name: toolChoice.name } };
+    }
+
+    return { type: 'function', name: toolChoice.name };
+  }
+}
+
+/**
+ * Common utilities for processing API responses.
+ * @internal
+ */
+export class ResponseProcessor {
+  /**
+   * Map finish reasons from provider-specific values to standard FinishReason.
+   * @param reason - The provider-specific finish reason.
+   * @param mapping - Mapping object from provider reasons to standard reasons.
+   * @returns Standard FinishReason.
+   */
+  static mapFinishReason(reason: string, mapping: Record<string, FinishReason>): FinishReason {
+    return mapping[reason] || 'stop';
+  }
+
+  /**
+   * Process stream lines to extract data events.
+   * @param lineStream - Stream of lines from the API.
+   * @param extractFn - Function to extract data from each line.
+   * @returns Async iterable of extracted data.
+   */
+  static async *processStreamLines<T>(
+    lineStream: AsyncIterable<string>,
+    extractFn: (line: string) => T | null
+  ): AsyncIterable<T> {
+    for await (const line of lineStream) {
+      const data = extractFn(line);
+      if (data !== null) yield data;
+    }
   }
 }

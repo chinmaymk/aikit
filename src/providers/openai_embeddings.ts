@@ -1,11 +1,11 @@
 import type {
   EmbeddingResponse,
-  EmbeddingResult,
   OpenAIEmbeddingOptions,
   WithApiKey,
   EmbedFunction,
 } from '../types';
-import { APIClient } from './api';
+import { OpenAIClientFactory, OpenAIRequestBuilder, OpenAIEmbeddingUtils } from './openai_util';
+import { OpenAI } from './openai';
 
 /**
  * Creates an OpenAI embeddings function with pre-configured defaults.
@@ -29,30 +29,14 @@ export function createOpenAIEmbeddings(
     throw new Error('OpenAI API key is required');
   }
 
-  const {
-    apiKey,
-    baseURL = 'https://api.openai.com/v1',
-    organization,
-    project,
-    timeout,
-    maxRetries,
-    ...defaultEmbeddingOptions
-  } = config;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${apiKey}`,
-  };
-  if (organization) headers['OpenAI-Organization'] = organization;
-  if (project) headers['OpenAI-Project'] = project;
-
-  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const client = OpenAIClientFactory.createClient(config);
+  const { apiKey, ...defaultEmbeddingOptions } = config;
   const defaultOptions = { apiKey, ...defaultEmbeddingOptions };
 
   return async function openaiEmbeddings(
     texts: string[],
     options: Partial<OpenAIEmbeddingOptions> = {}
-  ) {
+  ): Promise<EmbeddingResponse> {
     const mergedOptions = { ...defaultOptions, ...options };
 
     if (!mergedOptions.model) {
@@ -86,47 +70,14 @@ export async function openaiEmbeddings(
  * Generate embeddings for the provided texts using OpenAI's embedding models.
  */
 async function embed(
-  client: APIClient,
+  client: ReturnType<typeof OpenAIClientFactory.createClient>,
   texts: string[],
   options: OpenAIEmbeddingOptions
 ): Promise<EmbeddingResponse> {
-  validateTexts(texts);
+  OpenAIEmbeddingUtils.validateRequest(texts);
 
-  if (texts.length > 2048) {
-    throw new Error('OpenAI embedding API supports up to 2048 texts per request');
-  }
+  const requestBody = OpenAIRequestBuilder.buildEmbeddingParams(texts, options);
+  const response = (await client.post('/embeddings', requestBody)) as OpenAI.Embeddings.APIResponse;
 
-  const requestBody = { model: options.model!, input: texts } as Record<string, unknown>;
-
-  if (options.dimensions) requestBody.dimensions = options.dimensions;
-  if (options.encodingFormat) requestBody.encoding_format = options.encodingFormat;
-  if (options.user) requestBody.user = options.user;
-
-  const response = (await client.post('/embeddings', requestBody)) as {
-    data: Array<{ embedding: number[] }>;
-    model: string;
-    usage?: { prompt_tokens: number; total_tokens: number };
-  };
-
-  const embeddings: EmbeddingResult[] = response.data.map((item, index) => ({
-    values: item.embedding,
-    index,
-  }));
-
-  return {
-    embeddings,
-    model: response.model,
-    usage: response.usage
-      ? {
-          inputTokens: response.usage.prompt_tokens,
-          totalTokens: response.usage.total_tokens,
-        }
-      : undefined,
-  };
-}
-
-function validateTexts(texts: string[]): void {
-  if (texts.length === 0) {
-    throw new Error('At least one text must be provided');
-  }
+  return OpenAIEmbeddingUtils.transformResponse(response);
 }
