@@ -6,15 +6,15 @@
 
 # Interface: OpenAIOptions
 
-Defined in: [types.ts:182](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L182)
+Defined in: [types.ts:279](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L279)
 
-OpenAI-specific configuration and generation options.
+OpenAI Chat Completions API configuration and generation options (default OpenAI implementation).
 These can be provided at construction time or generation time.
 Generation time options will override construction time options.
 
 ## Extends
 
-- [`GenerationOptions`](GenerationOptions.md)
+- [`ProviderOptions`](ProviderOptions.md)
 
 ## Properties
 
@@ -28,21 +28,21 @@ The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-2024062
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`model`](GenerationOptions.md#model)
+[`ProviderOptions`](ProviderOptions.md).[`model`](ProviderOptions.md#model)
 
 ---
 
-### maxTokens?
+### maxOutputTokens?
 
-> `optional` **maxTokens**: `number`
+> `optional` **maxOutputTokens**: `number`
 
 Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
 
-The maximum number of tokens to generate. Don't want it to ramble on forever, do you?
+The maximum number of output tokens to generate. Don't want it to ramble on forever, do you?
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`maxTokens`](GenerationOptions.md#maxtokens)
+[`ProviderOptions`](ProviderOptions.md).[`maxOutputTokens`](ProviderOptions.md#maxoutputtokens)
 
 ---
 
@@ -58,7 +58,7 @@ A bit like adjusting the chaos knob.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`temperature`](GenerationOptions.md#temperature)
+[`ProviderOptions`](ProviderOptions.md).[`temperature`](ProviderOptions.md#temperature)
 
 ---
 
@@ -73,7 +73,7 @@ the most likely tokens. It's like telling the AI to only pick from the top of th
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`topP`](GenerationOptions.md#topp)
+[`ProviderOptions`](ProviderOptions.md).[`topP`](ProviderOptions.md#topp)
 
 ---
 
@@ -88,7 +88,7 @@ Not all providers support this, because life isn't fair.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`topK`](GenerationOptions.md#topk)
+[`ProviderOptions`](ProviderOptions.md).[`topK`](ProviderOptions.md#topk)
 
 ---
 
@@ -102,7 +102,7 @@ A list of sequences that will stop the generation. A safe word, if you will.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`stopSequences`](GenerationOptions.md#stopsequences)
+[`ProviderOptions`](ProviderOptions.md).[`stopSequences`](ProviderOptions.md#stopsequences)
 
 ---
 
@@ -116,7 +116,7 @@ The list of tools you're making available to the model.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`tools`](GenerationOptions.md#tools)
+[`ProviderOptions`](ProviderOptions.md).[`tools`](ProviderOptions.md#tools)
 
 ---
 
@@ -134,7 +134,7 @@ How the model should choose which tool to use.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`toolChoice`](GenerationOptions.md#toolchoice)
+[`ProviderOptions`](ProviderOptions.md).[`toolChoice`](ProviderOptions.md#toolchoice)
 
 ---
 
@@ -142,9 +142,13 @@ How the model should choose which tool to use.
 
 > `optional` **apiKey**: `string`
 
-Defined in: [types.ts:184](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L184)
+Defined in: [types.ts:183](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L183)
 
-Your OpenAI API key. Keep it secret, keep it safe.
+API key for authentication with the provider.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`apiKey`](ProviderOptions.md#apikey)
 
 ---
 
@@ -152,9 +156,41 @@ Your OpenAI API key. Keep it secret, keep it safe.
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:186](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L186)
+Defined in: [types.ts:185](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L185)
 
-A custom base URL for the API. For proxies and other fun stuff.
+Custom base URL for the API endpoint.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`baseURL`](ProviderOptions.md#baseurl)
+
+---
+
+### timeout?
+
+> `optional` **timeout**: `number`
+
+Defined in: [types.ts:187](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L187)
+
+Request timeout in milliseconds.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`timeout`](ProviderOptions.md#timeout)
+
+---
+
+### maxRetries?
+
+> `optional` **maxRetries**: `number`
+
+Defined in: [types.ts:189](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L189)
+
+Maximum number of retry attempts for failed requests.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`maxRetries`](ProviderOptions.md#maxretries)
 
 ---
 
@@ -162,7 +198,7 @@ A custom base URL for the API. For proxies and other fun stuff.
 
 > `optional` **organization**: `string`
 
-Defined in: [types.ts:188](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L188)
+Defined in: [types.ts:281](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L281)
 
 Your OpenAI organization ID. For when you're part of a fancy club.
 
@@ -172,29 +208,9 @@ Your OpenAI organization ID. For when you're part of a fancy club.
 
 > `optional` **project**: `string`
 
-Defined in: [types.ts:190](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L190)
+Defined in: [types.ts:283](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L283)
 
 Your OpenAI project ID. For even fancier clubs.
-
----
-
-### timeout?
-
-> `optional` **timeout**: `number`
-
-Defined in: [types.ts:192](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L192)
-
-How long to wait for a response before giving up, in milliseconds.
-
----
-
-### maxRetries?
-
-> `optional` **maxRetries**: `number`
-
-Defined in: [types.ts:194](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L194)
-
-How many times to retry a failed request. Because sometimes the internet blinks.
 
 ---
 
@@ -202,7 +218,7 @@ How many times to retry a failed request. Because sometimes the internet blinks.
 
 > `optional` **presencePenalty**: `number`
 
-Defined in: [types.ts:200](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L200)
+Defined in: [types.ts:289](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L289)
 
 Presence penalty. Positive values penalize new tokens based on whether they
 appear in the text so far, increasing the model's likelihood to talk about new topics.
@@ -214,7 +230,7 @@ Basically, it discourages repetition.
 
 > `optional` **frequencyPenalty**: `number`
 
-Defined in: [types.ts:206](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L206)
+Defined in: [types.ts:295](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L295)
 
 Frequency penalty. Positive values penalize new tokens based on their
 existing frequency in the text so far, decreasing the model's likelihood to
@@ -222,43 +238,130 @@ repeat the same line verbatim. Stop me if you've heard this one before.
 
 ---
 
-### background?
+### user?
 
-> `optional` **background**: `boolean`
+> `optional` **user**: `string`
 
-Defined in: [types.ts:210](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L210)
+Defined in: [types.ts:299](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L299)
 
-Whether to run the model response in the background.
-
----
-
-### include?
-
-> `optional` **include**: `string`[]
-
-Defined in: [types.ts:214](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L214)
-
-Specify additional output data to include in the model response.
+A stable identifier for your end-users.
 
 ---
 
-### instructions?
+### logprobs?
 
-> `optional` **instructions**: `string`
+> `optional` **logprobs**: `boolean`
 
-Defined in: [types.ts:218](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L218)
+Defined in: [types.ts:305](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L305)
 
-Inserts a system (or developer) message as the first item in the model's context.
+Whether to return log probabilities of the output tokens or not.
+If true, returns the log probabilities of each output token returned in the content of message.
+This feature is available on gpt-4.1, gpt-4o, gpt-4o-mini, gpt-3.5-turbo, and other supported models.
 
 ---
 
-### metadata?
+### topLogprobs?
 
-> `optional` **metadata**: `Record`\<`string`, `string`\>
+> `optional` **topLogprobs**: `number`
 
-Defined in: [types.ts:222](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L222)
+Defined in: [types.ts:310](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L310)
 
-Set of key-value pairs that can be attached to an object.
+An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
+each with an associated log probability. logprobs must be set to true if this parameter is used.
+
+---
+
+### seed?
+
+> `optional` **seed**: `number`
+
+Defined in: [types.ts:317](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L317)
+
+This feature is in Beta. If specified, our system will make a best effort to sample deterministically,
+such that repeated requests with the same seed and parameters should return the same result.
+Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter
+to monitor changes in the backend.
+
+---
+
+### responseFormat?
+
+> `optional` **responseFormat**: `object`
+
+Defined in: [types.ts:327](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L327)
+
+An object specifying the format that the model must output.
+Compatible with GPT-4.1, GPT-4o, GPT-4o-mini, GPT-3.5 Turbo, and all GPT-4 Turbo models newer than gpt-4-turbo-2024-04-09.
+Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
+Important: when using JSON mode, you must also instruct the model to produce JSON yourself via a system or user message.
+Without this, the model may generate an unending stream of whitespace until the generation reaches the token limit,
+resulting in a long-running and seemingly "stuck" request. Also note that the message content may be partially cut off
+if finish_reason="length", which indicates the generation exceeded max_tokens or the conversation exceeded the max context length.
+
+#### type
+
+> **type**: `"text"` \| `"json_object"` \| `"json_schema"`
+
+#### json_schema?
+
+> `optional` **json_schema**: `object`
+
+##### json_schema.name
+
+> **name**: `string`
+
+##### json_schema.description?
+
+> `optional` **description**: `string`
+
+##### json_schema.schema?
+
+> `optional` **schema**: `Record`\<`string`, `unknown`\>
+
+##### json_schema.strict?
+
+> `optional` **strict**: `boolean`
+
+---
+
+### logitBias?
+
+> `optional` **logitBias**: `Record`\<`string`, `number`\>
+
+Defined in: [types.ts:343](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L343)
+
+Modify the likelihood of specified tokens appearing in the completion.
+Accepts a JSON object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
+Mathematically, the bias is added to the logits generated by the model prior to sampling.
+The exact effect will vary per model, but values between -1 and 1 should decrease or increase likelihood of selection;
+values like -100 or 100 should result in a ban or exclusive selection of the relevant token.
+
+---
+
+### n?
+
+> `optional` **n**: `number`
+
+Defined in: [types.ts:349](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L349)
+
+How many chat completion choices to generate for each input message.
+Note that you will be charged based on the number of generated tokens across all of the choices.
+Keep n as 1 to minimize costs.
+
+---
+
+### streamOptions?
+
+> `optional` **streamOptions**: `object`
+
+Defined in: [types.ts:354](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L354)
+
+Options for streaming response. Only set this when you set stream: true.
+When streaming, the stream will include usage data.
+
+#### includeUsage?
+
+> `optional` **includeUsage**: `boolean`
 
 ---
 
@@ -266,92 +369,6 @@ Set of key-value pairs that can be attached to an object.
 
 > `optional` **parallelToolCalls**: `boolean`
 
-Defined in: [types.ts:226](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L226)
+Defined in: [types.ts:360](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L360)
 
 Whether to allow the model to run tool calls in parallel.
-
----
-
-### previousResponseId?
-
-> `optional` **previousResponseId**: `string`
-
-Defined in: [types.ts:230](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L230)
-
-The unique ID of the previous response to the model for multi-turn conversations.
-
----
-
-### reasoning?
-
-> `optional` **reasoning**: `object`
-
-Defined in: [types.ts:234](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L234)
-
-Configuration options for reasoning models (o-series models only).
-
-#### effort?
-
-> `optional` **effort**: `"low"` \| `"medium"` \| `"high"`
-
----
-
-### serviceTier?
-
-> `optional` **serviceTier**: `"auto"` \| `"default"` \| `"flex"`
-
-Defined in: [types.ts:240](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L240)
-
-Specifies the latency tier to use for processing the request.
-
----
-
-### store?
-
-> `optional` **store**: `boolean`
-
-Defined in: [types.ts:244](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L244)
-
-Whether to store the generated model response for later retrieval via API.
-
----
-
-### text?
-
-> `optional` **text**: `object`
-
-Defined in: [types.ts:248](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L248)
-
-Configuration options for a text response from the model.
-
-#### format?
-
-> `optional` **format**: `object`
-
-##### format.type
-
-> **type**: `"text"` \| `"json_object"` \| `"json_schema"`
-
-##### format.json_schema?
-
-> `optional` **json_schema**: `Record`\<`string`, `unknown`\>
-
----
-
-### truncation?
-
-> `optional` **truncation**: `"auto"` \| `"disabled"`
-
-Defined in: [types.ts:257](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L257)
-
-The truncation strategy to use for the model response.
-
----
-
-### user?
-
-> `optional` **user**: `string`
-
-Defined in: [types.ts:261](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L261)
-
-A stable identifier for your end-users.

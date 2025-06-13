@@ -14,11 +14,11 @@ A single message in a conversation. It's a bit like a text message, but with mor
 
 ### role
 
-> **role**: `"user"` \| `"assistant"` \| `"system"` \| `"tool"`
+> **role**: `"user"` \| `"assistant"` \| `"system"` \| `"developer"` \| `"tool"`
 
 Defined in: [types.ts:98](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L98)
 
-Who's talking? A user, the assistant, the system, or a tool.
+Who's talking? A user, the assistant, the system, a developer, or a tool.
 
 ---
 

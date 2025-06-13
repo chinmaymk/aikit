@@ -8,7 +8,7 @@
 
 > **createAnthropic**(`options`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:65](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L65)
+Defined in: [factory.ts:96](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L96)
 
 Whips up an AIProvider that communicates with Anthropic's Claude.
 It's thoughtful, helpful, and probably won't start a robot uprising.

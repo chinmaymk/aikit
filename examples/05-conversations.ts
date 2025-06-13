@@ -37,7 +37,7 @@ async function basicConversationExample() {
   // First response
   const response1 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 200,
+    maxOutputTokens: 200,
     temperature: 0.7,
   });
 
@@ -51,7 +51,7 @@ async function basicConversationExample() {
 
   const response2 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 250,
+    maxOutputTokens: 250,
     temperature: 0.7,
   });
 
@@ -65,7 +65,7 @@ async function basicConversationExample() {
 
   const response3 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 150,
+    maxOutputTokens: 150,
     temperature: 0.5,
   });
 
@@ -94,7 +94,7 @@ async function contextPreservationExample() {
 
   const response1 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.6,
   });
 
@@ -108,7 +108,7 @@ async function contextPreservationExample() {
 
   const response2 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 200,
+    maxOutputTokens: 200,
     temperature: 0.6,
   });
 
@@ -122,7 +122,7 @@ async function contextPreservationExample() {
 
   const response3 = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.3,
   });
 
@@ -174,7 +174,7 @@ async function conversationWithMemoryLimitsExample() {
 
     const response = await generate(provider!, messages, {
       model: modelName,
-      maxTokens: 120,
+      maxOutputTokens: 120,
       temperature: 0.6,
     });
 
@@ -188,7 +188,7 @@ async function conversationWithMemoryLimitsExample() {
 
   const finalResponse = await generate(provider!, messages, {
     model: modelName,
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.3,
   });
 
@@ -226,7 +226,7 @@ async function structuredConversationExample() {
 
     const response = await generate(provider!, messages, {
       model: modelName,
-      maxTokens: 150,
+      maxOutputTokens: 150,
       temperature: 0.7,
     });
 

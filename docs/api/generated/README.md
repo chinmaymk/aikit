@@ -7,6 +7,7 @@
 ## Factory Functions
 
 - [createOpenAI](functions/createOpenAI.md)
+- [createOpenAIResponses](functions/createOpenAIResponses.md)
 - [createAnthropic](functions/createAnthropic.md)
 - [createGoogle](functions/createGoogle.md)
 - [createProvider](functions/createProvider.md)
@@ -27,6 +28,8 @@
 ## Interfaces
 
 - [GenerationOptions](interfaces/GenerationOptions.md)
+- [ProviderOptions](interfaces/ProviderOptions.md)
+- [OpenAIResponsesOptions](interfaces/OpenAIResponsesOptions.md)
 - [OpenAIOptions](interfaces/OpenAIOptions.md)
 - [GoogleOptions](interfaces/GoogleOptions.md)
 - [AnthropicOptions](interfaces/AnthropicOptions.md)
@@ -63,6 +66,7 @@
 - [AnthropicProvider](classes/AnthropicProvider.md)
 - [GoogleGeminiProvider](classes/GoogleGeminiProvider.md)
 - [OpenAIProvider](classes/OpenAIProvider.md)
+- [OpenAIResponsesProvider](classes/OpenAIResponsesProvider.md)
 
 ## Stream Helpers
 

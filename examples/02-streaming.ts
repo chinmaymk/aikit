@@ -32,7 +32,7 @@ async function step1_BasicStreaming() {
 
   const stream = provider.generate(messages, {
     model: getModelName(type!),
-    maxTokens: 200,
+    maxOutputTokens: 200,
     temperature: 0.8,
   });
 
@@ -53,7 +53,7 @@ async function step2_CustomStreamHandlers() {
 
   const stream = provider.generate(messages, {
     model: getModelName(type!),
-    maxTokens: 300,
+    maxOutputTokens: 300,
     temperature: 0.3,
   });
 
@@ -90,7 +90,7 @@ async function step3_CollectingDeltas() {
 
   const stream = provider.generate(messages, {
     model: getModelName(type!),
-    maxTokens: 250,
+    maxOutputTokens: 250,
     temperature: 0.4,
   });
 
@@ -115,7 +115,7 @@ async function step4_StreamingComparison() {
 
   const stream = provider.generate(messages, {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.7,
   });
 
@@ -128,7 +128,7 @@ async function step4_StreamingComparison() {
 
   const collectStream = provider.generate(messages, {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.7,
   });
 

@@ -149,7 +149,7 @@ async function basicToolExample() {
     const result = await generate(provider!, messages, {
       model: modelName,
       tools: [calculatorTool],
-      maxTokens: 300,
+      maxOutputTokens: 300,
       temperature: 0.1,
     });
 
@@ -177,7 +177,7 @@ async function basicToolExample() {
       // Generate final response with tool results
       const finalResult = await generate(provider!, messages, {
         model: modelName,
-        maxTokens: 200,
+        maxOutputTokens: 200,
         temperature: 0.3,
       });
 
@@ -273,7 +273,7 @@ async function multipleToolsExample() {
       const result = await generate(provider!, messages, {
         model: modelName,
         tools,
-        maxTokens: 500,
+        maxOutputTokens: 500,
         temperature: 0.3,
       });
 
@@ -351,7 +351,7 @@ async function toolChoiceExample() {
     model: modelName,
     tools: [calculatorTool],
     toolChoice: 'auto',
-    maxTokens: 150,
+    maxOutputTokens: 150,
   });
 
   console.log('Assistant:', autoResult.content);
@@ -368,7 +368,7 @@ async function toolChoiceExample() {
       model: modelName,
       tools: [calculatorTool],
       toolChoice: 'required',
-      maxTokens: 200,
+      maxOutputTokens: 200,
     });
 
     console.log('Assistant:', requiredResult.content);
@@ -420,7 +420,7 @@ async function toolErrorHandlingExample() {
     const result = await generate(provider!, messages, {
       model: modelName,
       tools: [calculatorTool],
-      maxTokens: 300,
+      maxOutputTokens: 300,
       temperature: 0.1,
     });
 
@@ -442,7 +442,7 @@ async function toolErrorHandlingExample() {
 
       const finalResult = await generate(provider!, messages, {
         model: modelName,
-        maxTokens: 200,
+        maxOutputTokens: 200,
         temperature: 0.3,
       });
 

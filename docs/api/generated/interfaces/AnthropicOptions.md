@@ -6,7 +6,7 @@
 
 # Interface: AnthropicOptions
 
-Defined in: [types.ts:286](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L286)
+Defined in: [types.ts:439](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L439)
 
 Anthropic-specific configuration and generation options.
 These can be provided at construction time or generation time.
@@ -14,7 +14,7 @@ Generation time options will override construction time options.
 
 ## Extends
 
-- [`GenerationOptions`](GenerationOptions.md)
+- [`ProviderOptions`](ProviderOptions.md)
 
 ## Properties
 
@@ -28,21 +28,21 @@ The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-2024062
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`model`](GenerationOptions.md#model)
+[`ProviderOptions`](ProviderOptions.md).[`model`](ProviderOptions.md#model)
 
 ---
 
-### maxTokens?
+### maxOutputTokens?
 
-> `optional` **maxTokens**: `number`
+> `optional` **maxOutputTokens**: `number`
 
 Defined in: [types.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L146)
 
-The maximum number of tokens to generate. Don't want it to ramble on forever, do you?
+The maximum number of output tokens to generate. Don't want it to ramble on forever, do you?
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`maxTokens`](GenerationOptions.md#maxtokens)
+[`ProviderOptions`](ProviderOptions.md).[`maxOutputTokens`](ProviderOptions.md#maxoutputtokens)
 
 ---
 
@@ -58,7 +58,7 @@ A bit like adjusting the chaos knob.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`temperature`](GenerationOptions.md#temperature)
+[`ProviderOptions`](ProviderOptions.md).[`temperature`](ProviderOptions.md#temperature)
 
 ---
 
@@ -73,7 +73,7 @@ the most likely tokens. It's like telling the AI to only pick from the top of th
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`topP`](GenerationOptions.md#topp)
+[`ProviderOptions`](ProviderOptions.md).[`topP`](ProviderOptions.md#topp)
 
 ---
 
@@ -87,7 +87,7 @@ A list of sequences that will stop the generation. A safe word, if you will.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`stopSequences`](GenerationOptions.md#stopsequences)
+[`ProviderOptions`](ProviderOptions.md).[`stopSequences`](ProviderOptions.md#stopsequences)
 
 ---
 
@@ -101,7 +101,7 @@ The list of tools you're making available to the model.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`tools`](GenerationOptions.md#tools)
+[`ProviderOptions`](ProviderOptions.md).[`tools`](ProviderOptions.md#tools)
 
 ---
 
@@ -119,7 +119,7 @@ How the model should choose which tool to use.
 
 #### Inherited from
 
-[`GenerationOptions`](GenerationOptions.md).[`toolChoice`](GenerationOptions.md#toolchoice)
+[`ProviderOptions`](ProviderOptions.md).[`toolChoice`](ProviderOptions.md#toolchoice)
 
 ---
 
@@ -127,9 +127,13 @@ How the model should choose which tool to use.
 
 > `optional` **apiKey**: `string`
 
-Defined in: [types.ts:288](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L288)
+Defined in: [types.ts:183](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L183)
 
-Your Anthropic API key. Don't tell anyone.
+API key for authentication with the provider.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`apiKey`](ProviderOptions.md#apikey)
 
 ---
 
@@ -137,9 +141,13 @@ Your Anthropic API key. Don't tell anyone.
 
 > `optional` **baseURL**: `string`
 
-Defined in: [types.ts:290](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L290)
+Defined in: [types.ts:185](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L185)
 
-A custom base URL for the API. You know the drill.
+Custom base URL for the API endpoint.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`baseURL`](ProviderOptions.md#baseurl)
 
 ---
 
@@ -147,9 +155,13 @@ A custom base URL for the API. You know the drill.
 
 > `optional` **timeout**: `number`
 
-Defined in: [types.ts:292](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L292)
+Defined in: [types.ts:187](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L187)
 
-How long to wait for a response before your patience wears out, in milliseconds.
+Request timeout in milliseconds.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`timeout`](ProviderOptions.md#timeout)
 
 ---
 
@@ -157,9 +169,13 @@ How long to wait for a response before your patience wears out, in milliseconds.
 
 > `optional` **maxRetries**: `number`
 
-Defined in: [types.ts:294](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L294)
+Defined in: [types.ts:189](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L189)
 
-How many times to try again. Third time's the charm?
+Maximum number of retry attempts for failed requests.
+
+#### Inherited from
+
+[`ProviderOptions`](ProviderOptions.md).[`maxRetries`](ProviderOptions.md#maxretries)
 
 ---
 
@@ -167,7 +183,7 @@ How many times to try again. Third time's the charm?
 
 > `optional` **beta**: `string`[]
 
-Defined in: [types.ts:296](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L296)
+Defined in: [types.ts:441](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L441)
 
 For enabling beta features. Live on the edge.
 
@@ -177,14 +193,14 @@ For enabling beta features. Live on the edge.
 
 > `optional` **topK**: `number`
 
-Defined in: [types.ts:301](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L301)
+Defined in: [types.ts:446](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L446)
 
 Top-k sampling. See `GenerationOptions` for the juicy gossip.
 It's here because Anthropic supports it too.
 
 #### Overrides
 
-[`GenerationOptions`](GenerationOptions.md).[`topK`](GenerationOptions.md#topk)
+[`ProviderOptions`](ProviderOptions.md).[`topK`](ProviderOptions.md#topk)
 
 ---
 
@@ -192,7 +208,7 @@ It's here because Anthropic supports it too.
 
 > `optional` **container**: `string`
 
-Defined in: [types.ts:303](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L303)
+Defined in: [types.ts:448](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L448)
 
 Container identifier for reuse across requests.
 
@@ -202,7 +218,7 @@ Container identifier for reuse across requests.
 
 > `optional` **mcpServers**: `object`[]
 
-Defined in: [types.ts:305](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L305)
+Defined in: [types.ts:450](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L450)
 
 MCP servers to be utilized in this request.
 
@@ -236,7 +252,7 @@ MCP servers to be utilized in this request.
 
 > `optional` **metadata**: `object`
 
-Defined in: [types.ts:315](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L315)
+Defined in: [types.ts:460](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L460)
 
 An object describing metadata about the request.
 
@@ -250,7 +266,7 @@ An object describing metadata about the request.
 
 > `optional` **serviceTier**: `"auto"` \| `"standard_only"`
 
-Defined in: [types.ts:322](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L322)
+Defined in: [types.ts:467](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L467)
 
 Determines whether to use priority capacity (if available) or standard capacity for this request.
 'auto' | 'standard_only'
@@ -261,10 +277,11 @@ Determines whether to use priority capacity (if available) or standard capacity 
 
 > `optional` **thinking**: \{ `type`: `"enabled"`; `budget_tokens`: `number`; \} \| \{ `type`: `"disabled"`; \}
 
-Defined in: [types.ts:327](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L327)
+Defined in: [types.ts:473](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L473)
 
 Configuration for enabling Claude's extended thinking.
 When enabled, responses include thinking content blocks showing Claude's thinking process.
+Requires a minimum budget of 1,024 tokens.
 
 ---
 
@@ -272,6 +289,19 @@ When enabled, responses include thinking content blocks showing Claude's thinkin
 
 > `optional` **anthropicVersion**: `string`
 
-Defined in: [types.ts:336](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L336)
+Defined in: [types.ts:485](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L485)
 
 The version of the Anthropic API you want to use.
+Read more about versioning and version history at https://docs.anthropic.com/en/api/versioning
+
+---
+
+### system?
+
+> `optional` **system**: `string` \| `object`[]
+
+Defined in: [types.ts:491](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L491)
+
+System prompt content. Can be a string or an array of text blocks.
+Provides context and instructions to Claude, such as specifying a particular goal or role.
+See the guide to system prompts: https://docs.anthropic.com/en/docs/system-prompts

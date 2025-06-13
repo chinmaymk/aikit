@@ -8,9 +8,9 @@
 
 > **createOpenAI**(`options`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:43](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L43)
+Defined in: [factory.ts:52](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L52)
 
-Summons an AIProvider that speaks fluent OpenAI.
+Summons an AIProvider that speaks fluent OpenAI using the Chat Completions API (default).
 Just give it your credentials and it'll be ready to chat.
 
 ## Parameters
@@ -19,7 +19,7 @@ Just give it your credentials and it'll be ready to chat.
 
 [`OpenAIOptions`](../interfaces/OpenAIOptions.md)
 
-The configuration and default generation options for the OpenAI API.
+The configuration and default generation options for the OpenAI Chat Completions API.
 
 ## Returns
 

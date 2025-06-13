@@ -8,7 +8,7 @@
 
 > **createProvider**\<`T`\>(`type`, `options`): `ProviderMap`\[`T`\]
 
-Defined in: [factory.ts:115](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L115)
+Defined in: [factory.ts:146](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L146)
 
 The one function to rule them all.
 A generic way to create any provider with type safety.

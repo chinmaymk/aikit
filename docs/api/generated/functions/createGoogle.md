@@ -8,7 +8,7 @@
 
 > **createGoogle**(`options`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:87](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L87)
+Defined in: [factory.ts:118](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L118)
 
 Assembles an AIProvider for Google's Gemini.
 Get ready for some of that Google magic.

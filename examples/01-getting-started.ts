@@ -22,7 +22,7 @@ async function step1_SimpleGeneration() {
   const result = await generate(
     provider,
     [userText('What is TypeScript? Answer in one sentence.')],
-    { model: getModelName(type!), maxTokens: 100 }
+    { model: getModelName(type!), maxOutputTokens: 100 }
   );
 
   console.log('Simple generation:');
@@ -40,7 +40,7 @@ async function step2_ConfigurationOptions() {
     [userText('What is TypeScript? Answer in one sentence.')],
     {
       model: getModelName(type!),
-      maxTokens: 100,
+      maxOutputTokens: 100,
       temperature: 0.2, // Lower temperature for more focused response
     }
   );
@@ -57,7 +57,7 @@ async function step3_SystemMessages() {
 
   const basic = await generate(provider, [userText('Explain variables in JavaScript')], {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
   });
 
   const withSystem = await generate(
@@ -66,7 +66,7 @@ async function step3_SystemMessages() {
       systemText('You are a patient coding tutor. Explain concepts simply with examples.'),
       userText('Explain variables in JavaScript'),
     ],
-    { model: getModelName(type!), maxTokens: 100 }
+    { model: getModelName(type!), maxOutputTokens: 100 }
   );
 
   console.log('Without system message:');
@@ -89,7 +89,7 @@ async function step4_ConversationBuilder() {
 
   const result = await generate(provider, messages, {
     model: getModelName(type!),
-    maxTokens: 150,
+    maxOutputTokens: 150,
   });
 
   console.log('Conversation builder:');
@@ -122,7 +122,7 @@ async function step5_MultipleProviders() {
 
       const result = await generate(provider, [userText(question)], {
         model: getModelName(providerInfo.type),
-        maxTokens: 100,
+        maxOutputTokens: 100,
         temperature: 0.3,
       });
 

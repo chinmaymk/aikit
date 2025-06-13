@@ -34,7 +34,7 @@ async function step1_SingleImageAnalysis() {
 
   const result = await generate(provider!, [message], {
     model: getModelName(type!),
-    maxTokens: 150,
+    maxOutputTokens: 150,
     temperature: 0.3,
   });
 
@@ -58,7 +58,7 @@ async function step2_ManualContentCreation() {
 
   const detailedResult = await generate(provider!, [detailedMessage], {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.1,
   });
 
@@ -67,7 +67,7 @@ async function step2_ManualContentCreation() {
 
   const simpleResult = await generate(provider!, [simpleMessage], {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.1,
   });
 
@@ -95,7 +95,7 @@ async function step3_MultipleImages() {
 
   const result = await generate(provider!, [message], {
     model: getModelName(type!),
-    maxTokens: 200,
+    maxOutputTokens: 200,
     temperature: 0.4,
   });
 
@@ -117,7 +117,7 @@ async function step4_ImagesInConversation() {
 
   const response1 = await generate(provider!, messages, {
     model: getModelName(type!),
-    maxTokens: 100,
+    maxOutputTokens: 100,
     temperature: 0.3,
   });
 
@@ -130,7 +130,7 @@ async function step4_ImagesInConversation() {
 
   const response2 = await generate(provider!, messages, {
     model: getModelName(type!),
-    maxTokens: 150,
+    maxOutputTokens: 150,
     temperature: 0.5,
   });
 

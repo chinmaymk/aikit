@@ -27,7 +27,7 @@ async function pattern1_BasicConfiguration() {
   const result = await generate(provider, [userText('Explain TypeScript in one sentence.')], {
     model: 'gpt-4o',
     temperature: 0.7,
-    maxTokens: 100,
+    maxOutputTokens: 100,
   });
 
   console.log('Basic pattern result:');
@@ -42,7 +42,7 @@ async function pattern2_DefaultsAtConstruction() {
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
     temperature: 0.5,
-    maxTokens: 150,
+    maxOutputTokens: 150,
   });
 
   // Use defaults
@@ -61,12 +61,12 @@ async function pattern2_DefaultsAtConstruction() {
     [userText('What is machine learning? Be very creative.')],
     {
       temperature: 0.9, // Override temperature
-      maxTokens: 50, // Override maxTokens
+      maxOutputTokens: 50, // Override maxOutputTokens
       // model: 'gpt-4o' (uses default from construction)
     }
   );
 
-  console.log('With overridden temperature and maxTokens:');
+  console.log('With overridden temperature and maxOutputTokens:');
   console.log(overrideResult.content + '\n');
 }
 
@@ -78,7 +78,7 @@ async function pattern3_AdvancedOpenAIConfiguration() {
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
     temperature: 0.7,
-    maxTokens: 200,
+    maxOutputTokens: 200,
 
     // Advanced OpenAI-specific options (fully type-checked)
     presencePenalty: 0.1,
@@ -116,13 +116,19 @@ async function pattern4_AnthropicConfiguration() {
     apiKey: process.env.ANTHROPIC_API_KEY!,
     model: 'claude-3-5-sonnet-20241022',
     temperature: 0.6,
-    maxTokens: 100,
+    maxOutputTokens: 100,
     topK: 40,
 
     // Anthropic-specific options (type-checked)
     timeout: 60000,
     maxRetries: 2,
     beta: ['computer-use-2024-10-22'], // Enable beta features
+    system: 'You are a helpful assistant that explains complex topics clearly.',
+    thinking: {
+      type: 'enabled',
+      budget_tokens: 1024,
+    },
+    serviceTier: 'auto',
   };
 
   const provider = createProvider('anthropic', anthropicConfig);
@@ -133,7 +139,7 @@ async function pattern4_AnthropicConfiguration() {
     [userText('Explain quantum computing in simple terms.')],
     {
       temperature: 0.3, // More focused response
-      maxTokens: 150, // Longer response
+      maxOutputTokens: 150, // Longer response
     }
   );
 
@@ -154,7 +160,7 @@ async function pattern5_GoogleConfiguration() {
     apiKey: process.env.GOOGLE_API_KEY!,
     model: 'gemini-1.5-pro',
     temperature: 0.8,
-    maxTokens: 120,
+    maxOutputTokens: 120,
 
     // Google-specific options (type-checked)
     topK: 20,
@@ -247,7 +253,7 @@ async function pattern9_MultiProviderConsistency() {
   printSectionHeader('Pattern 9: Multi-Provider Consistency');
 
   const question = [userText('What is recursion?')];
-  const baseOptions = { temperature: 0.6, maxTokens: 50 };
+  const baseOptions = { temperature: 0.6, maxOutputTokens: 50 };
 
   const providers = [
     process.env.OPENAI_API_KEY && [
