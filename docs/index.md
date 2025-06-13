@@ -43,19 +43,28 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 ```ts
 import { createProvider, userText, printStream } from 'aikit';
 
+// Create your AI provider
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
+// Prepare your message
 const messages = [userText('Hello!')];
 
 // Simple approach - print directly to console
-await printStream(openai.generate(messages, { model: 'gpt-4o' }));
+await printStream(
+  openai.generate(messages, {
+    model: 'gpt-4o'
+  })
+);
 
 // Or use the classic streaming approach
 for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
+
+> **💡 Helper Functions are Optional**
+> AIKit provides helper functions like `userText()`, `systemText()`, and `userImage()` for convenience, but they're completely optional. You can always construct message objects manually or mix approaches as you prefer. The helpers just make common patterns more readable.
 ```
 
 ## Streaming, Natively
@@ -65,8 +74,15 @@ Stream tokens as they're generated for real-time UX. AIKit exposes a simple asyn
 ```ts
 import { createProvider, userText, processStream } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: '...' });
-const stream = provider.generate([userText('Tell me a story')], { model: 'gpt-4o' });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: '...',
+});
+
+// Start streaming generation
+const stream = provider.generate([userText('Tell me a story')], {
+  model: 'gpt-4o',
+});
 
 // Custom stream processing with progress tracking
 await processStream(stream, {
@@ -83,12 +99,19 @@ Send images and text together to models like GPT-4o and Claude 3.5 Sonnet. AIKit
 ```ts
 import { createProvider, userImage } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: '...' });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: '...',
+});
 
 // Simple helper for text + image
 const message = userImage('What is in this image?', 'data:image/jpeg;base64,...');
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+// Generate response
+const result = await provider.generate([message], {
+  model: 'gpt-4o',
+});
+
 console.log(result.content);
 ```
 
@@ -99,24 +122,35 @@ Define tools (function calling) and let the model invoke them as needed. AIKit e
 ```ts
 import { createProvider, createTool, executeToolCall } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: '...' });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: '...',
+});
 
+// Define a weather tool
 const weatherTool = createTool('get_weather', 'Get the weather for a location', {
   type: 'object',
   properties: {
-    location: { type: 'string', description: 'City name' },
-    unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
+    location: {
+      type: 'string',
+      description: 'City name',
+    },
+    unit: {
+      type: 'string',
+      enum: ['celsius', 'fahrenheit'],
+    },
   },
   required: ['location'],
 });
 
+// Generate with tools available
 const result = await provider.generate([userText("What's the weather in Tokyo?")], {
   model: 'gpt-4o',
   tools: [weatherTool],
 });
 
+// Execute tool calls if any were made
 if (result.toolCalls) {
-  // Execute the tool calls
   for (const toolCall of result.toolCalls) {
     const toolResult = executeToolCall(toolCall, {
       get_weather: (location, unit) => getWeatherData(location, unit),
@@ -134,12 +168,18 @@ Access the reasoning process of models that support it, like Claude (Anthropic) 
 import { createProvider, userText, collectDeltas, processStream } from 'aikit';
 
 // Anthropic Claude reasoning
-const anthropic = createProvider('anthropic', { apiKey: '...' });
+const anthropic = createProvider('anthropic', {
+  apiKey: '...',
+});
 
+// Generate with reasoning enabled
 const result = await collectDeltas(
   anthropic.generate([userText('Solve this math problem step by step: 2x + 5 = 15')], {
     model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 1024 },
+    thinking: {
+      type: 'enabled',
+      budget_tokens: 1024,
+    },
   })
 );
 
@@ -150,7 +190,10 @@ console.log('Reasoning:', result.reasoning); // Access the model's thinking proc
 await processStream(
   anthropic.generate([userText('Explain quantum entanglement')], {
     model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 1024 },
+    thinking: {
+      type: 'enabled',
+      budget_tokens: 1024,
+    },
   }),
   {
     onReasoning: reasoning => {
@@ -163,12 +206,16 @@ await processStream(
 );
 
 // OpenAI o-series reasoning
-const openai = createProvider('openai', { apiKey: '...' });
+const openai = createProvider('openai', {
+  apiKey: '...',
+});
 
 const o1Result = await collectDeltas(
   openai.generate([userText('Design a simple algorithm for sorting')], {
     model: 'o1-mini',
-    reasoning: { effort: 'medium' },
+    reasoning: {
+      effort: 'medium',
+    },
   })
 );
 
@@ -183,22 +230,30 @@ Switch between providers with a single line change. Same API, different AI behin
 ```ts
 import { createProvider } from 'aikit';
 
-// Pick your AI
-const openai = createProvider('openai', { apiKey: '...' });
-const anthropic = createProvider('anthropic', { apiKey: '...' });
-const google = createProvider('google', { apiKey: '...' });
+// Pick your AI provider
+const openai = createProvider('openai', {
+  apiKey: '...',
+});
+
+const anthropic = createProvider('anthropic', {
+  apiKey: '...',
+});
+
+const google = createProvider('google', {
+  apiKey: '...',
+});
 
 // Same interface for all
 const messages = [userText('Explain quantum computing')];
-const options = { temperature: 0.7, maxTokens: 200 };
+const options = { temperature: 0.7, maxOutputTokens: 200 };
 
 // They all work the same way
 const openaiResult = await openai.generate(messages, { ...options, model: 'gpt-4o' });
+
 const anthropicResult = await anthropic.generate(messages, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
-const googleResult = await google.generate(messages, { ...options, model: 'gemini-1.5-pro' });
 ```
 
 ## Model Support
