@@ -1,13 +1,14 @@
 import type {
-  AIProvider,
   Message,
-  OpenAIResponsesOptions,
   StreamChunk,
+  FinishReason,
   Tool,
   ToolCall,
-  FinishReason,
+  OpenAIResponsesOptions,
+  WithApiKey,
+  StreamingGenerateFunction,
 } from '../types';
-import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
+import { MessageTransformer, StreamUtils } from './utils';
 import { APIClient } from './api';
 import { extractDataLines } from './api';
 
@@ -44,407 +45,364 @@ interface CompletedEvent {
 }
 
 /**
- * The powerhouse behind OpenAI integration.
- * This class translates AIKit's generic requests into OpenAI's Responses API dialect
- * and handles the response, whether it's a stream of tokens or a tool call.
- * It's like a universal translator, but for AI - now with improved state management.
+ * Creates an OpenAI Responses API generation function with pre-configured defaults.
+ * Returns a simple function that takes messages and options.
  *
- * @group Providers
+ * @example
+ * ```typescript
+ * const openaiResponses = createOpenAIResponses({ apiKey: '...', model: 'gpt-4o' });
+ *
+ * // Use like any function
+ * const result = await collectDeltas(openaiResponses([userText('Hello')]));
+ *
+ * // Override options
+ * const creative = await collectDeltas(openaiResponses([userText('Be creative')], { temperature: 0.9 }));
+ * ```
  */
-export class OpenAIProvider implements AIProvider<OpenAIResponsesOptions> {
-  private client: APIClient;
-  private defaultOptions: OpenAIResponsesOptions;
-
-  /**
-   * Sets up the OpenAI provider with your configuration.
-   * @param options - Your OpenAI API credentials and default generation settings.
-   */
-  constructor(options: OpenAIResponsesOptions) {
-    if (!options.apiKey) {
-      throw new Error('OpenAI API key is required');
-    }
-
-    const {
-      apiKey,
-      baseURL = 'https://api.openai.com/v1',
-      organization,
-      project,
-      timeout,
-      maxRetries,
-      ...defaultGenerationOptions
-    } = options;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    };
-    if (organization) headers['OpenAI-Organization'] = organization;
-    if (project) headers['OpenAI-Project'] = project;
-
-    this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.defaultOptions = { apiKey, ...defaultGenerationOptions };
+export function createOpenAIResponses(
+  config: WithApiKey<OpenAIResponsesOptions>
+): StreamingGenerateFunction<Partial<OpenAIResponsesOptions>> {
+  if (!config.apiKey) {
+    throw new Error('OpenAI API key is required');
   }
 
-  /**
-   * Kicks off the generation process using the Responses API.
-   * It builds the request, sends it to OpenAI, and then processes the
-   * response stream, yielding chunks as they come in.
-   * @param messages - The conversation history.
-   * @param options - The generation options (optional, will use defaults from constructor).
-   * @returns An async iterable of stream chunks.
-   */
-  async *generate(
+  const {
+    apiKey,
+    baseURL = 'https://api.openai.com/v1',
+    organization,
+    project,
+    timeout,
+    maxRetries,
+    ...defaultGenerationOptions
+  } = config;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  };
+  if (organization) headers['OpenAI-Organization'] = organization;
+  if (project) headers['OpenAI-Project'] = project;
+
+  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const defaultOptions = { apiKey, ...defaultGenerationOptions };
+
+  return async function* openaiResponses(
     messages: Message[],
-    options: OpenAIResponsesOptions = {}
-  ): AsyncIterable<StreamChunk> {
-    const mergedOptions = this.mergeOptions(options);
+    options: Partial<OpenAIResponsesOptions> = {}
+  ) {
+    const mergedOptions = { ...defaultOptions, ...options };
 
     if (!mergedOptions.model) {
-      throw new Error('Model is required. Provide it at construction time or generation time.');
+      throw new Error('Model is required in config or options');
     }
 
-    const params = this.buildRequestParams(messages, mergedOptions);
-    const stream = await this.client.stream('/responses', params);
-    const lineStream = this.client.processStreamAsLines(stream);
-    yield* this.processStream(lineStream);
-  }
+    const params = buildRequestParams(messages, mergedOptions);
+    const stream = await client.stream('/responses', params);
+    const lineStream = client.processStreamAsLines(stream);
+    yield* processStream(lineStream);
+  };
+}
 
-  /**
-   * Merges default options with generation-time options.
-   * Generation-time options take precedence over construction-time options.
-   */
-  private mergeOptions(generationOptions: OpenAIResponsesOptions): OpenAIResponsesOptions {
-    return {
-      ...this.defaultOptions,
-      ...generationOptions,
-    };
-  }
+/**
+ * Direct OpenAI Responses function - no configuration step needed
+ *
+ * @example
+ * ```typescript
+ * const result = await collectDeltas(
+ *   openaiResponses({ apiKey: '...', model: 'gpt-4o' }, [userText('Hello')])
+ * );
+ * ```
+ */
+export async function* openaiResponses(
+  config: WithApiKey<OpenAIResponsesOptions>,
+  messages: Message[]
+): AsyncIterable<StreamChunk> {
+  const provider = createOpenAIResponses(config);
+  yield* provider(messages);
+}
 
-  /**
-   * Builds request parameters for the OpenAI Responses API.
-   * Handles message transformation, tool formatting, and optional parameters.
-   */
-  private buildRequestParams(
-    messages: Message[],
-    options: OpenAIResponsesOptions
-  ): ResponsesCreateParams {
-    const params: ResponsesCreateParams = {
-      model: options.model!,
-      input: this.transformMessages(messages),
-      stream: true,
-      max_output_tokens: options.maxOutputTokens,
-      temperature: options.temperature,
-      top_p: options.topP,
-    };
+/**
+ * Builds request parameters for the OpenAI Responses API.
+ * Handles message transformation, tool formatting, and optional parameters.
+ */
+function buildRequestParams(
+  messages: Message[],
+  options: OpenAIResponsesOptions
+): ResponsesCreateParams {
+  const params: ResponsesCreateParams = {
+    model: options.model!,
+    input: transformMessages(messages),
+    stream: true,
+    max_output_tokens: options.maxOutputTokens,
+    temperature: options.temperature,
+    top_p: options.topP,
+  };
 
-    this.addOptionalParams(params, options);
-    this.addToolParams(params, options);
+  addOptionalParams(params, options);
+  addToolParams(params, options);
 
-    return params;
-  }
+  return params;
+}
 
-  /**
-   * Processes the stream of responses from OpenAI.
-   * Manages state and yields properly formatted chunks.
-   */
-  private async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    const state = new StreamState();
+/**
+ * Processes the stream of responses from OpenAI.
+ * Manages state and yields properly formatted chunks.
+ */
+async function* processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
+  const state = new StreamState();
 
-    for await (const data of extractDataLines(lineStream)) {
-      if (data.trim() === '[DONE]') return;
+  for await (const data of extractDataLines(lineStream)) {
+    if (data.trim() === '[DONE]') return;
 
-      const event = StreamUtils.parseStreamEvent<ResponsesAPIStreamEvent>(data);
-      if (!event) continue;
+    const event = StreamUtils.parseStreamEvent<ResponsesAPIStreamEvent>(data);
+    if (!event) continue;
 
-      const chunk = this.processEvent(event, state);
-      if (chunk) yield chunk;
-    }
-  }
-
-  /**
-   * Transforms AIKit messages to OpenAI Responses API format.
-   */
-  private transformMessages(messages: Message[]): ResponsesAPIMessage[] {
-    return messages.flatMap(msg => this.mapMessage(msg));
-  }
-
-  /**
-   * Maps a single message to OpenAI format.
-   */
-  private mapMessage(msg: Message): ResponsesAPIMessage[] {
-    switch (msg.role) {
-      case 'system':
-        return [
-          {
-            role: 'system',
-            content: [
-              {
-                type: 'input_text',
-                text: MessageTransformer.extractTextContent(msg.content),
-              },
-            ],
-          },
-        ];
-      case 'tool': {
-        const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-        return toolResults.map(
-          content =>
-            ({
-              type: 'function_call_output',
-              call_id: content.toolCallId,
-              output: content.result,
-            }) as ResponsesAPIFunctionCallOutput
-        );
-      }
-      case 'user':
-        return [
-          {
-            role: 'user',
-            content: this.buildContentParts(msg.content),
-          },
-        ];
-      case 'assistant': {
-        const messages: ResponsesAPIMessage[] = [];
-        const textContent = MessageTransformer.extractTextContent(msg.content);
-        if (textContent) {
-          messages.push({
-            role: 'assistant',
-            content: [{ type: 'output_text', text: textContent }],
-          });
-        }
-        if (msg.toolCalls) {
-          msg.toolCalls.forEach(tc => {
-            messages.push({
-              type: 'function_call',
-              call_id: tc.id,
-              name: tc.name,
-              arguments: JSON.stringify(tc.arguments),
-            } as ResponsesAPIFunctionCall);
-          });
-        }
-        return messages;
-      }
-      default:
-        return [];
-    }
-  }
-
-  /**
-   * Builds content parts for user messages.
-   */
-  private buildContentParts(content: Message['content']): ResponsesAPIContentPart[] {
-    return content
-      .map(c => {
-        if (c.type === 'text') return { type: 'input_text' as const, text: c.text };
-        if (c.type === 'image') return { type: 'input_image' as const, image_url: c.image };
-        return null;
-      })
-      .filter(Boolean) as ResponsesAPIContentPart[];
-  }
-
-  /**
-   * Adds optional parameters to the request.
-   */
-  private addOptionalParams(params: ResponsesCreateParams, options: OpenAIResponsesOptions) {
-    const optionalFields = [
-      'background',
-      'include',
-      'instructions',
-      'metadata',
-      'parallelToolCalls',
-      'previousResponseId',
-      'reasoning',
-      'serviceTier',
-      'store',
-      'text',
-      'truncation',
-      'user',
-    ] as const;
-
-    optionalFields.forEach(field => {
-      const value = options[field];
-      if (value !== undefined) {
-        const paramKey = this.getParamKey(field);
-        (params as DynamicParams)[paramKey] = value;
-      }
-    });
-  }
-
-  /**
-   * Adds tool-related parameters to the request.
-   */
-  private addToolParams(params: ResponsesCreateParams, options: OpenAIResponsesOptions) {
-    if (options.tools) {
-      params.tools = this.formatTools(options.tools);
-      if (options.toolChoice) {
-        params.tool_choice = this.formatToolChoice(options.toolChoice);
-      }
-    }
-  }
-
-  /**
-   * Formats tools for OpenAI API.
-   */
-  private formatTools(tools: Tool[]): ResponsesAPITool[] {
-    return tools.map(tool => ({
-      type: 'function',
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-    }));
-  }
-
-  /**
-   * Formats tool choice for OpenAI API.
-   */
-  private formatToolChoice(
-    toolChoice: OpenAIResponsesOptions['toolChoice']
-  ): 'auto' | 'required' | { type: 'function'; name: string } {
-    if (!toolChoice) return 'auto';
-    if (typeof toolChoice === 'object') {
-      return { type: 'function', name: toolChoice.name };
-    }
-    return toolChoice === 'required' ? 'required' : 'auto';
-  }
-
-  /**
-   * Gets the parameter key for optional fields.
-   */
-  private getParamKey(field: string): string {
-    switch (field) {
-      case 'parallelToolCalls':
-        return 'parallel_tool_calls';
-      case 'previousResponseId':
-        return 'previous_response_id';
-      case 'serviceTier':
-        return 'service_tier';
-      default:
-        return field;
-    }
-  }
-
-  /**
-   * Processes a single stream event.
-   */
-  private processEvent(event: ResponsesAPIStreamEvent, state: StreamState): StreamChunk | null {
-    switch (event.type) {
-      case 'response.output_text.delta':
-        return this.handleTextDelta(event, state);
-      case 'response.output_item.added':
-        return this.handleOutputItemAdded(event, state);
-      case 'response.function_call_arguments.delta':
-        return this.handleArgsDelta(event, state);
-      case 'response.function_call_arguments.done':
-        return this.handleArgsDone(event, state);
-      case 'response.completed':
-        return this.handleCompleted(event, state);
-      default:
-        return null;
-    }
-  }
-
-  private handleTextDelta(event: TextDeltaEvent, state: StreamState): StreamChunk {
-    state.content += event.delta;
-    return MessageTransformer.createStreamChunk(
-      state.content,
-      event.delta,
-      state.hasToolCalls ? Object.values(state.toolCalls) : undefined
-    );
-  }
-
-  private handleOutputItemAdded(
-    event: OutputItemAddedEvent,
-    state: StreamState
-  ): StreamChunk | null {
-    if (event.item?.type === 'function_call') {
-      const callId = event.item.call_id;
-      state.toolCalls[callId] = {
-        id: callId,
-        name: event.item.name,
-        arguments: {},
-      };
-      state.hasToolCalls = true;
-      state.outputIndexToCallId[event.output_index] = callId;
-      state.accumulatingArgs[callId] = '';
-
-      return MessageTransformer.createStreamChunk(
-        state.content,
-        '',
-        Object.values(state.toolCalls)
-      );
-    }
-    return null;
-  }
-
-  private handleArgsDelta(event: ArgsDeltaEvent, state: StreamState): StreamChunk | null {
-    const deltaCallId = event.call_id || state.outputIndexToCallId[event.output_index];
-    if (deltaCallId && state.toolCalls[deltaCallId]) {
-      if (!state.accumulatingArgs[deltaCallId]) {
-        state.accumulatingArgs[deltaCallId] = '';
-      }
-      state.accumulatingArgs[deltaCallId] += event.delta;
-
-      return MessageTransformer.createStreamChunk(
-        state.content,
-        '',
-        Object.values(state.toolCalls)
-      );
-    }
-    return null;
-  }
-
-  private handleArgsDone(event: ArgsDoneEvent, state: StreamState): StreamChunk | null {
-    const doneCallId = event.call_id || state.outputIndexToCallId[event.output_index];
-    const completedToolCall = doneCallId ? state.toolCalls[doneCallId] : undefined;
-
-    if (completedToolCall && doneCallId) {
-      const argsString = state.accumulatingArgs[doneCallId] || event.arguments || '{}';
-      completedToolCall.arguments = MessageTransformer.parseJson(argsString, {});
-      delete state.accumulatingArgs[doneCallId];
-
-      return MessageTransformer.createStreamChunk(
-        state.content,
-        '',
-        Object.values(state.toolCalls)
-      );
-    }
-    return null;
-  }
-
-  private handleCompleted(event: CompletedEvent, state: StreamState): StreamChunk {
-    const finishReason = state.hasToolCalls
-      ? ('tool_use' as const)
-      : this.mapFinishReason(event.response?.status || 'completed');
-
-    return MessageTransformer.createStreamChunk(
-      state.content,
-      '',
-      state.hasToolCalls ? Object.values(state.toolCalls) : undefined,
-      finishReason
-    );
-  }
-
-  private mapFinishReason(status: string): FinishReason {
-    switch (status) {
-      case 'completed':
-        return 'stop';
-      case 'incomplete':
-      case 'max_tokens':
-        return 'length';
-      case 'failed_function_call':
-      case 'tool_calls':
-      case 'requires_action':
-        return 'tool_use';
-      default:
-        return 'stop';
-    }
+    const chunk = processEvent(event, state);
+    if (chunk) yield chunk;
   }
 }
 
 /**
- * Manages the state during stream processing.
- * Simplified version using composition pattern.
+ * Transforms AIKit messages to OpenAI Responses API format.
  */
+function transformMessages(messages: Message[]): ResponsesAPIMessage[] {
+  return messages.flatMap(msg => mapMessage(msg));
+}
+
+/**
+ * Maps a single message to OpenAI format.
+ */
+function mapMessage(msg: Message): ResponsesAPIMessage[] {
+  switch (msg.role) {
+    case 'system':
+      return [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: MessageTransformer.extractTextContent(msg.content),
+            },
+          ],
+        },
+      ];
+    case 'tool': {
+      const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+      return toolResults.map(
+        content =>
+          ({
+            type: 'function_call_output',
+            call_id: content.toolCallId,
+            output: content.result,
+          }) as ResponsesAPIFunctionCallOutput
+      );
+    }
+    case 'user':
+      return [
+        {
+          role: 'user',
+          content: buildContentParts(msg.content),
+        },
+      ];
+    case 'assistant':
+      if (msg.toolCalls?.length) {
+        return msg.toolCalls.map(
+          toolCall =>
+            ({
+              type: 'function_call',
+              call_id: toolCall.id,
+              name: toolCall.name,
+              arguments: JSON.stringify(toolCall.arguments),
+            }) as ResponsesAPIFunctionCall
+        );
+      }
+      return [
+        {
+          role: 'assistant',
+          content: buildContentParts(msg.content),
+        },
+      ];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Builds content parts for user/assistant messages.
+ */
+function buildContentParts(content: Message['content']): ResponsesAPIContentPart[] {
+  const parts: ResponsesAPIContentPart[] = [];
+  for (const item of content) {
+    switch (item.type) {
+      case 'text':
+        parts.push({ type: 'input_text', text: item.text });
+        break;
+      case 'image':
+        parts.push({ type: 'input_image', image_url: item.image });
+        break;
+      default:
+        // Skip unsupported content types silently
+        break;
+    }
+  }
+  return parts;
+}
+
+function addOptionalParams(params: ResponsesCreateParams, options: OpenAIResponsesOptions) {
+  if (options.background !== undefined) params.background = options.background;
+  if (options.include !== undefined) params.include = options.include;
+  if (options.instructions !== undefined) params.instructions = options.instructions;
+  if (options.metadata !== undefined) params.metadata = options.metadata;
+  if (options.parallelToolCalls !== undefined)
+    params.parallel_tool_calls = options.parallelToolCalls;
+  if (options.previousResponseId !== undefined)
+    params.previous_response_id = options.previousResponseId;
+  if (options.reasoning !== undefined) params.reasoning = options.reasoning;
+  if (options.serviceTier !== undefined) params.service_tier = options.serviceTier;
+  if (options.store !== undefined) params.store = options.store;
+  if (options.text !== undefined) params.text = options.text;
+  if (options.truncation !== undefined) params.truncation = options.truncation;
+  if (options.user !== undefined) params.user = options.user;
+}
+
+function addToolParams(params: ResponsesCreateParams, options: OpenAIResponsesOptions) {
+  if (options.tools?.length) {
+    params.tools = formatTools(options.tools);
+    if (options.toolChoice) {
+      params.tool_choice = formatToolChoice(options.toolChoice);
+    }
+  }
+}
+
+function formatTools(tools: Tool[]): ResponsesAPITool[] {
+  return tools.map(tool => ({
+    type: 'function',
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+  }));
+}
+
+function formatToolChoice(
+  toolChoice: OpenAIResponsesOptions['toolChoice']
+): 'auto' | 'required' | { type: 'function'; name: string } {
+  if (!toolChoice) return 'auto';
+  if (typeof toolChoice === 'string') {
+    return toolChoice === 'none' ? 'auto' : toolChoice;
+  }
+  return { type: 'function', name: toolChoice.name };
+}
+
+function processEvent(event: ResponsesAPIStreamEvent, state: StreamState): StreamChunk | null {
+  switch (event.type) {
+    case 'response.output_text.delta':
+      return handleTextDelta(event, state);
+    case 'response.output_item.added':
+      return handleOutputItemAdded(event, state);
+    case 'response.function_call_arguments.delta':
+      return handleArgsDelta(event, state);
+    case 'response.function_call_arguments.done':
+      return handleArgsDone(event, state);
+    case 'response.completed':
+      return handleCompleted(event, state);
+    default:
+      return null;
+  }
+}
+
+function handleTextDelta(event: TextDeltaEvent, state: StreamState): StreamChunk {
+  state.content += event.delta;
+  return {
+    delta: event.delta,
+    content: state.content,
+    finishReason: undefined,
+    toolCalls: state.hasToolCalls ? Object.values(state.toolCalls) : undefined,
+  };
+}
+
+function handleOutputItemAdded(
+  event: OutputItemAddedEvent,
+  state: StreamState
+): StreamChunk | null {
+  if (event.item?.type === 'function_call') {
+    state.hasToolCalls = true;
+    const callId = event.item.call_id;
+    state.outputIndexToCallId[event.output_index] = callId;
+    state.toolCalls[callId] = {
+      id: callId,
+      name: event.item.name,
+      arguments: {},
+    };
+    state.accumulatingArgs[callId] = '';
+
+    return {
+      delta: '',
+      content: state.content,
+      finishReason: undefined,
+      toolCalls: Object.values(state.toolCalls),
+    };
+  }
+  return null;
+}
+
+function handleArgsDelta(event: ArgsDeltaEvent, state: StreamState): StreamChunk | null {
+  const callId = event.call_id || state.outputIndexToCallId[event.output_index];
+  if (!callId || !state.toolCalls[callId]) return null;
+
+  state.accumulatingArgs[callId] += event.delta;
+
+  return {
+    delta: '',
+    content: state.content,
+    finishReason: undefined,
+    toolCalls: Object.values(state.toolCalls),
+  };
+}
+
+function handleArgsDone(event: ArgsDoneEvent, state: StreamState): StreamChunk | null {
+  const callId = event.call_id || state.outputIndexToCallId[event.output_index];
+  if (!callId || !state.toolCalls[callId]) return null;
+
+  try {
+    const argsString = event.arguments || state.accumulatingArgs[callId] || '{}';
+    state.toolCalls[callId].arguments = JSON.parse(argsString);
+  } catch {
+    state.toolCalls[callId].arguments = {};
+  }
+
+  return {
+    delta: '',
+    content: state.content,
+    finishReason: undefined,
+    toolCalls: Object.values(state.toolCalls),
+  };
+}
+
+function handleCompleted(event: CompletedEvent, state: StreamState): StreamChunk {
+  const finishReason = mapFinishReason(event.response?.status || 'completed');
+  return {
+    delta: '',
+    content: state.content,
+    finishReason,
+    toolCalls: state.hasToolCalls ? Object.values(state.toolCalls) : undefined,
+  };
+}
+
+function mapFinishReason(status: string): FinishReason {
+  switch (status) {
+    case 'completed':
+      return 'stop';
+    case 'incomplete':
+      return 'length';
+    case 'failed':
+      return 'error';
+    case 'tool_calls_required':
+      return 'tool_use';
+    default:
+      return 'stop';
+  }
+}
+
 class StreamState {
   content = '';
   toolCalls: Record<string, ToolCall> = {};
@@ -453,9 +411,7 @@ class StreamState {
   hasToolCalls = false;
 }
 
-// Type definitions for OpenAI Responses API
-// @internal
-
+// Type definitions
 type ResponsesCreateParams = {
   model: string;
   input: ResponsesAPIMessage[];

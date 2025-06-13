@@ -30,7 +30,7 @@ async function step1_BasicStreaming() {
     userText('Write a short story about a robot learning to paint. Keep it under 150 words.'),
   ];
 
-  const stream = provider.generate(messages, {
+  const stream = provider(messages, {
     model: getModelName(type!),
     maxOutputTokens: 200,
     temperature: 0.8,
@@ -51,7 +51,7 @@ async function step2_CustomStreamHandlers() {
   let wordCount = 0;
   let chunkCount = 0;
 
-  const stream = provider.generate(messages, {
+  const stream = provider(messages, {
     model: getModelName(type!),
     maxOutputTokens: 300,
     temperature: 0.3,
@@ -88,7 +88,7 @@ async function step3_CollectingDeltas() {
     .user('List 5 programming best practices with brief explanations.')
     .build();
 
-  const stream = provider.generate(messages, {
+  const stream = provider(messages, {
     model: getModelName(type!),
     maxOutputTokens: 250,
     temperature: 0.4,
@@ -113,7 +113,7 @@ async function step4_StreamingComparison() {
   console.log('Streaming approach:');
   const streamStart = Date.now();
 
-  const stream = provider.generate(messages, {
+  const stream = provider(messages, {
     model: getModelName(type!),
     maxOutputTokens: 100,
     temperature: 0.7,
@@ -126,7 +126,7 @@ async function step4_StreamingComparison() {
   console.log('Collect-all approach:');
   const collectStart = Date.now();
 
-  const collectStream = provider.generate(messages, {
+  const collectStream = provider(messages, {
     model: getModelName(type!),
     maxOutputTokens: 100,
     temperature: 0.7,

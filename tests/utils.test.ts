@@ -485,22 +485,20 @@ describe('Stream Utilities', () => {
   });
 
   describe('generate function', () => {
-    it('should call provider generate and return stream result', async () => {
+    it('should call provider function and return stream result', async () => {
       const mockStream = createMockStream([
         { delta: 'Hello', content: 'Hello' },
         { delta: ' world', content: 'Hello world', finishReason: 'stop' },
       ]);
 
-      const mockProvider = {
-        generate: jest.fn().mockReturnValue(mockStream),
-      };
+      const mockProvider = jest.fn().mockReturnValue(mockStream);
 
       const messages = [userText('Hello')];
       const options = { temperature: 0.7 };
 
       const result = await generate(mockProvider as any, messages, options);
 
-      expect(mockProvider.generate).toHaveBeenCalledWith(messages, options);
+      expect(mockProvider).toHaveBeenCalledWith(messages, options);
       expect(result.content).toBe('Hello world');
       expect(result.finishReason).toBe('stop');
     });
@@ -510,15 +508,13 @@ describe('Stream Utilities', () => {
         { delta: 'Hello', content: 'Hello', finishReason: 'stop' },
       ]);
 
-      const mockProvider = {
-        generate: jest.fn().mockReturnValue(mockStream),
-      };
+      const mockProvider = jest.fn().mockReturnValue(mockStream);
 
       const messages = [userText('Hello')];
 
       const result = await generate(mockProvider as any, messages);
 
-      expect(mockProvider.generate).toHaveBeenCalledWith(messages, {});
+      expect(mockProvider).toHaveBeenCalledWith(messages, {});
       expect(result.content).toBe('Hello');
     });
   });

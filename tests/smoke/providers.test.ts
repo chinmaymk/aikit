@@ -81,14 +81,14 @@ describe('Provider Smoke Tests', () => {
         async () => {
           console.log(`Testing ${name} ${model} - Basic Generation:`);
 
-          const provider = createProvider(type, { apiKey });
+          const provider = createProvider(type, { apiKey: apiKey! });
           const messages = conversation()
             .system('You are a helpful assistant. Keep responses concise.')
             .user('What is 2 + 2? Answer in one sentence.')
             .build();
 
           const result = await printStream(
-            provider.generate(messages, {
+            provider(messages, {
               model,
               maxOutputTokens: 100,
               temperature: 0.1,
@@ -107,7 +107,7 @@ describe('Provider Smoke Tests', () => {
         async () => {
           console.log(`Testing ${name} ${model} - Tool Calling:`);
 
-          const provider = createProvider(type, { apiKey });
+          const provider = createProvider(type, { apiKey: apiKey! });
           const calculatorTool = createTool('calculator', 'Perform basic mathematical operations', {
             type: 'object',
             properties: {
@@ -124,7 +124,7 @@ describe('Provider Smoke Tests', () => {
             .build();
 
           const result = await printStream(
-            provider.generate(messages, {
+            provider(messages, {
               model,
               tools: [calculatorTool],
               maxOutputTokens: 500,
@@ -144,7 +144,7 @@ describe('Provider Smoke Tests', () => {
 
             console.log(`${name} ${model} - Final Response:`);
             const finalResult = await printStream(
-              provider.generate(messages, {
+              provider(messages, {
                 model,
                 maxOutputTokens: 300,
                 temperature: 0.1,
@@ -162,7 +162,7 @@ describe('Provider Smoke Tests', () => {
         async () => {
           console.log(`Testing ${name} ${model} - Reasoning:`);
 
-          const provider = createProvider(type, { apiKey });
+          const provider = createProvider(type, { apiKey: apiKey! });
           const messages = conversation()
             .system('You are a helpful assistant. Think step by step.')
             .user('A farmer has 17 sheep. All but 9 die. How many sheep are left?')
@@ -179,7 +179,7 @@ describe('Provider Smoke Tests', () => {
               model.startsWith('o1') && { reasoning: { effort: 'low' as const } }),
           };
 
-          const result = await printStream(provider.generate(messages, options));
+          const result = await printStream(provider(messages, options));
 
           expect(result.content).toBeDefined();
           expect(result.content.length).toBeGreaterThan(0);
@@ -195,10 +195,10 @@ describe('Provider Smoke Tests', () => {
 
         let embeddings;
         if (type === 'openai') {
-          embeddings = createOpenAIEmbeddings({ apiKey, model: 'text-embedding-3-small' });
+          embeddings = createOpenAIEmbeddings({ apiKey: apiKey!, model: 'text-embedding-3-small' });
         } else if (type === 'google') {
           embeddings = createGoogleEmbeddings({
-            apiKey,
+            apiKey: apiKey!,
             model: 'text-embedding-004',
             taskType: 'SEMANTIC_SIMILARITY',
           });
@@ -207,7 +207,7 @@ describe('Provider Smoke Tests', () => {
         }
 
         const testTexts = ['Hello, world!', 'How are you today?'];
-        const result = await embeddings.embed(testTexts);
+        const result = await embeddings(testTexts);
 
         expect(result.embeddings).toBeDefined();
         expect(result.embeddings).toHaveLength(testTexts.length);

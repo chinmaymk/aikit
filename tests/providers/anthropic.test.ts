@@ -1,5 +1,6 @@
 import {
-  AnthropicProvider,
+  createAnthropic,
+  anthropic,
   userText,
   userImage,
   systemText,
@@ -10,6 +11,7 @@ import {
   type AnthropicOptions,
   type StreamChunk,
   type FinishReason,
+  type AnthropicProvider,
 } from '@chinmaymk/aikit';
 import { MessageTransformer } from '@chinmaymk/aikit/providers/utils';
 import nock from 'nock';
@@ -25,6 +27,8 @@ import {
   anthropicContentBlockStopChunk,
   anthropicMessageDeltaChunk,
   anthropicMessageStopChunk,
+  anthropicTextResponseWithReasoning,
+  anthropicReasoningDeltaChunk,
 } from '../helpers/anthropicChunks';
 
 /**
@@ -49,7 +53,7 @@ function mockAnthropicGeneration(
 }
 
 describe('AnthropicProvider', () => {
-  const mockConfig: AnthropicOptions = {
+  const mockConfig = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.anthropic.com/v1',
     timeout: 30000,
@@ -63,7 +67,7 @@ describe('AnthropicProvider', () => {
   });
 
   beforeEach(() => {
-    provider = new AnthropicProvider(mockConfig);
+    provider = createAnthropic(mockConfig);
     nock.cleanAll();
   });
 
@@ -74,22 +78,22 @@ describe('AnthropicProvider', () => {
   describe('constructor', () => {
     it('should throw error when API key is missing', () => {
       expect(() => {
-        new AnthropicProvider({} as AnthropicOptions);
+        createAnthropic({} as any);
       }).toThrow('Anthropic API key is required');
     });
 
-    it('should have correct provider configuration', () => {
-      expect(provider).toBeInstanceOf(AnthropicProvider);
+    it('should create provider successfully', () => {
+      expect(typeof provider).toBe('function');
     });
 
     it('should handle beta configuration', () => {
-      const configWithBeta: AnthropicOptions = {
+      const configWithBeta = {
         apiKey: 'test-api-key',
         beta: ['message-batches-2024-09-24', 'prompt-caching-2024-07-31'],
       };
 
-      const providerWithBeta = new AnthropicProvider(configWithBeta);
-      expect(providerWithBeta).toBeInstanceOf(AnthropicProvider);
+      const providerWithBeta = createAnthropic(configWithBeta);
+      expect(typeof providerWithBeta).toBe('function');
     });
   });
 
@@ -127,7 +131,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Hello!'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -155,7 +159,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Hi there!'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
+      for await (const chunk of provider(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -182,7 +186,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('I see an image'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+      for await (const chunk of provider(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -218,7 +222,7 @@ describe('AnthropicProvider', () => {
         );
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+        for await (const chunk of provider(messagesWithImage, mockOptions)) {
           chunks.push(chunk);
         }
 
@@ -233,10 +237,10 @@ describe('AnthropicProvider', () => {
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, optionsWithoutModel)) {
+        for await (const chunk of provider(mockMessages, optionsWithoutModel)) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+      }).rejects.toThrow('Model is required in config or options');
     });
 
     it('should handle stop sequences', async () => {
@@ -248,7 +252,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, optionsWithStopSequences)) {
+      for await (const chunk of provider(mockMessages, optionsWithStopSequences)) {
         chunks.push(chunk);
       }
 
@@ -278,7 +282,7 @@ describe('AnthropicProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -329,7 +333,7 @@ describe('AnthropicProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, anthropicOptions)) {
+      for await (const chunk of provider(mockMessages, anthropicOptions)) {
         chunks.push(chunk);
       }
 
@@ -353,7 +357,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Hello!'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, anthropicOptions)) {
+      for await (const chunk of provider(mockMessages, anthropicOptions)) {
         chunks.push(chunk);
       }
 
@@ -383,7 +387,7 @@ describe('AnthropicProvider', () => {
         body => {}
       );
 
-      for await (const _ of provider.generate(mockMessages, {
+      for await (const _ of provider(mockMessages, {
         ...toolOptions,
         toolChoice: 'required',
       })) {
@@ -398,7 +402,7 @@ describe('AnthropicProvider', () => {
         body => {}
       );
 
-      for await (const _ of provider.generate(mockMessages, {
+      for await (const _ of provider(mockMessages, {
         ...toolOptions,
         toolChoice: { name: 'calculate' },
       })) {
@@ -423,7 +427,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(streamingChunks, () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -471,7 +475,7 @@ describe('AnthropicProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(toolResultMessages, mockOptions)) {
+      for await (const chunk of provider(toolResultMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -487,7 +491,7 @@ describe('AnthropicProvider', () => {
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
       }).rejects.toThrow('API error: 400 Bad Request');
@@ -503,7 +507,7 @@ describe('AnthropicProvider', () => {
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
       }).rejects.toThrow('Anthropic API error: overloaded_error - Overloaded');
@@ -521,7 +525,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messageWithUnknownRole, mockOptions)) {
+      for await (const chunk of provider(messageWithUnknownRole, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -553,7 +557,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(malformedJsonChunks, () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -582,7 +586,7 @@ describe('AnthropicProvider', () => {
         const scopeReq = mockAnthropicGeneration(chunks, () => {});
 
         const results: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           results.push(chunk);
         }
 
@@ -610,7 +614,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(emptyArgsChunks, () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -628,7 +632,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Hello!'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
+      for await (const chunk of provider([assistantMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -658,7 +662,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Done'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([userText('Ping'), emptyToolMsg], mockOptions)) {
+      for await (const chunk of provider([userText('Ping'), emptyToolMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -695,7 +699,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(reasoningChunks, () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -726,7 +730,7 @@ describe('AnthropicProvider', () => {
         const scopeReq = mockAnthropicGeneration(chunks, () => {});
 
         const results: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           results.push(chunk);
         }
 
@@ -759,7 +763,7 @@ describe('AnthropicProvider', () => {
         });
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -783,7 +787,7 @@ describe('AnthropicProvider', () => {
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
       }).rejects.toThrow('Anthropic API error: rate_limit_error - Rate limit exceeded');
@@ -794,7 +798,7 @@ describe('AnthropicProvider', () => {
 
   describe('AnthropicProvider - Edge Cases', () => {
     beforeEach(() => {
-      provider = new AnthropicProvider({ apiKey: 'test-api-key' });
+      provider = createAnthropic({ apiKey: 'test-api-key' });
     });
 
     it('should handle malformed JSON in stream gracefully', async () => {
@@ -821,7 +825,7 @@ describe('AnthropicProvider', () => {
       ];
       const chunks: StreamChunk[] = [];
 
-      for await (const chunk of provider.generate(messages, {
+      for await (const chunk of provider(messages, {
         model: 'claude-3-5-sonnet-20241022',
       })) {
         chunks.push(chunk);
@@ -849,7 +853,7 @@ describe('AnthropicProvider', () => {
       ];
 
       await expect(async () => {
-        for await (const _ of provider.generate(messages, {
+        for await (const _ of provider(messages, {
           model: 'claude-3-5-sonnet-20241022',
         })) {
           void _; // ignore
@@ -868,7 +872,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messages, {
+      for await (const chunk of provider(messages, {
         model: 'claude-3-5-sonnet-20241022',
       })) {
         chunks.push(chunk);
@@ -888,7 +892,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messages, {
+      for await (const chunk of provider(messages, {
         model: 'claude-3-5-sonnet-20241022',
       })) {
         chunks.push(chunk);
@@ -911,7 +915,7 @@ describe('AnthropicProvider', () => {
       const scopeReq = mockAnthropicGeneration(anthropicTextResponse('Response'), body => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messages, {
+      for await (const chunk of provider(messages, {
         model: 'claude-3-5-sonnet-20241022',
       })) {
         chunks.push(chunk);
@@ -942,7 +946,7 @@ describe('AnthropicProvider', () => {
         ];
         const chunks: StreamChunk[] = [];
 
-        for await (const chunk of provider.generate(messages, {
+        for await (const chunk of provider(messages, {
           model: 'claude-3-5-sonnet-20241022',
         })) {
           chunks.push(chunk);
@@ -954,6 +958,29 @@ describe('AnthropicProvider', () => {
           reason === 'pause_turn' ? 'stop' : reason === 'refusal' ? 'error' : undefined;
         expect(chunks[1].finishReason).toBe(expectedFinish);
       }
+    });
+  });
+
+  describe('direct anthropic function', () => {
+    it('should work as a direct function call', async () => {
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hello from Anthropic!'),
+        () => {}
+      );
+      const testMessages: Message[] = [userText('Hello')];
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of anthropic(
+        { apiKey: 'test-api-key', model: 'claude-3-5-sonnet-20241022' },
+        testMessages
+      )) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0].content).toBe('Hello from Anthropic!');
+      expect(chunks[1].finishReason).toBe('stop');
     });
   });
 });

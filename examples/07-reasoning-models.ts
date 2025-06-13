@@ -8,12 +8,11 @@
  */
 
 import {
-  createProvider,
+  createAnthropic,
+  createOpenAI,
   userText,
   collectDeltas,
   processStream,
-  AnthropicOptions,
-  OpenAIOptions,
 } from '@chinmaymk/aikit';
 import { printSectionHeader } from './utils.js';
 
@@ -25,9 +24,9 @@ async function demonstrateAnthropicReasoning() {
     return;
   }
 
-  const anthropic = createProvider('anthropic', {
+  const anthropic = createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
-  } as AnthropicOptions);
+  });
 
   const question = userText(
     'Solve this step by step: If a train travels 60 miles in 45 minutes, what is its speed in miles per hour?'
@@ -37,7 +36,7 @@ async function demonstrateAnthropicReasoning() {
   console.log('\n--- Streaming with Real-time Reasoning ---');
 
   await processStream(
-    anthropic.generate([question], {
+    anthropic([question], {
       model: 'claude-3-5-sonnet-20241022',
       thinking: { type: 'enabled', budget_tokens: 1024 },
       maxOutputTokens: 500,
@@ -59,7 +58,7 @@ async function demonstrateAnthropicReasoning() {
 
   // Also collect the complete result
   const result = await collectDeltas(
-    anthropic.generate([question], {
+    anthropic([question], {
       model: 'claude-3-5-sonnet-20241022',
       thinking: { type: 'enabled', budget_tokens: 1024 },
       maxOutputTokens: 500,
@@ -80,9 +79,9 @@ async function demonstrateOpenAIReasoning() {
     return;
   }
 
-  const openai = createProvider('openai', {
+  const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
-  } as OpenAIOptions);
+  });
 
   const question = userText(
     'Explain the concept of recursion in programming with a simple example.'
@@ -94,7 +93,7 @@ async function demonstrateOpenAIReasoning() {
   let hasReasoning = false;
 
   await processStream(
-    openai.generate([question], {
+    openai([question], {
       model: 'o1-mini',
       reasoning: { effort: 'medium' },
       maxOutputTokens: 600,
@@ -124,7 +123,7 @@ async function demonstrateOpenAIReasoning() {
 
   // Collect complete result
   const result = await collectDeltas(
-    openai.generate([question], {
+    openai([question], {
       model: 'o1-mini',
       reasoning: { effort: 'medium' },
       maxOutputTokens: 600,
@@ -153,12 +152,12 @@ async function demonstrateReasoningComparison() {
       name: 'Anthropic Claude',
       condition: () => !!process.env.ANTHROPIC_API_KEY,
       test: async () => {
-        const anthropic = createProvider('anthropic', {
+        const anthropic = createAnthropic({
           apiKey: process.env.ANTHROPIC_API_KEY!,
-        } as AnthropicOptions);
+        });
 
         const result = await collectDeltas(
-          anthropic.generate([mathProblem], {
+          anthropic([mathProblem], {
             model: 'claude-3-5-sonnet-20241022',
             thinking: { type: 'enabled', budget_tokens: 512 },
             maxOutputTokens: 300,
@@ -175,12 +174,12 @@ async function demonstrateReasoningComparison() {
       name: 'OpenAI o1-mini',
       condition: () => !!process.env.OPENAI_API_KEY,
       test: async () => {
-        const openai = createProvider('openai', {
+        const openai = createOpenAI({
           apiKey: process.env.OPENAI_API_KEY!,
-        } as OpenAIOptions);
+        });
 
         const result = await collectDeltas(
-          openai.generate([mathProblem], {
+          openai([mathProblem], {
             model: 'o1-mini',
             reasoning: { effort: 'low' },
             maxOutputTokens: 300,

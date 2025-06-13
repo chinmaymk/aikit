@@ -1,5 +1,4 @@
 import type {
-  AIProvider,
   GenerationOptions,
   Message,
   Tool,
@@ -7,6 +6,7 @@ import type {
   Content,
   StreamChunk,
   StreamResult,
+  AnyGenerationProvider,
 } from './types';
 
 // === Message Creation Helpers ===
@@ -585,7 +585,7 @@ export const conversation = () => new ConversationBuilder();
  * Generates a complete response from an AI provider.
  * This is the main function you'll use for getting AI responses.
  * It collects all the deltas and gives you the final result.
- * @param provider - The AI provider to use for generation
+ * @param provider - The AI provider to use for generation (functional)
  * @param messages - The conversation messages
  * @param options - Generation options (model, temperature, etc.)
  * @returns A promise that resolves to the complete generation result
@@ -597,11 +597,11 @@ export const conversation = () => new ConversationBuilder();
  * ```
  */
 export const generate = async (
-  provider: AIProvider,
+  provider: AnyGenerationProvider,
   messages: Message[],
   options: Partial<GenerationOptions> = {}
 ): Promise<StreamResult> => {
-  return collectDeltas(provider.generate(messages, options as GenerationOptions));
+  return collectDeltas(provider(messages, options));
 };
 
 /**

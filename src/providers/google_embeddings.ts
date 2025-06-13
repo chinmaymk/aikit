@@ -1,71 +1,126 @@
-import type { EmbeddingResponse, EmbeddingResult, GoogleEmbeddingOptions } from '../types';
+import type {
+  EmbeddingResponse,
+  EmbeddingResult,
+  GoogleEmbeddingOptions,
+  WithApiKey,
+  EmbedFunction,
+} from '../types';
 import { APIClient } from './api';
 
 /**
- * Google Embeddings provider.
- * @group Providers
+ * Creates a Google embeddings function with pre-configured defaults.
+ * Returns a simple function that takes texts and options.
+ *
+ * @example
+ * ```typescript
+ * const embeddings = createGoogleEmbeddings({
+ *   apiKey: '...',
+ *   model: 'text-embedding-004',
+ *   taskType: 'SEMANTIC_SIMILARITY'
+ * });
+ *
+ * // Use like any function
+ * const result = await embeddings(['Hello world', 'How are you?']);
+ *
+ * // Override options
+ * const result2 = await embeddings(['Text'], { dimensions: 512 });
+ * ```
  */
-export class GoogleEmbeddingProvider {
-  private client: APIClient;
-  private defaultOptions: GoogleEmbeddingOptions;
-
-  constructor(options: GoogleEmbeddingOptions) {
-    if (!options.apiKey) {
-      throw new Error('Google API key is required');
-    }
-
-    this.defaultOptions = options;
-    this.client = new APIClient(
-      options.baseURL || 'https://generativelanguage.googleapis.com/v1beta',
-      { 'Content-Type': 'application/json' },
-      options.timeout,
-      options.maxRetries
-    );
+export function createGoogleEmbeddings(
+  config: WithApiKey<GoogleEmbeddingOptions>
+): EmbedFunction<Partial<GoogleEmbeddingOptions>> {
+  if (!config.apiKey) {
+    throw new Error('Google API key is required');
   }
 
-  async embed(
+  const {
+    apiKey,
+    baseURL = 'https://generativelanguage.googleapis.com/v1beta',
+    timeout,
+    maxRetries,
+    ...defaultEmbeddingOptions
+  } = config;
+
+  const headers = { 'Content-Type': 'application/json' };
+  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const defaultOptions = { apiKey, ...defaultEmbeddingOptions };
+
+  return async function googleEmbeddings(
     texts: string[],
-    options?: Partial<GoogleEmbeddingOptions>
-  ): Promise<EmbeddingResponse> {
-    if (texts.length === 0) {
-      throw new Error('At least one text must be provided');
+    options: Partial<GoogleEmbeddingOptions> = {}
+  ) {
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required in config or options');
     }
 
-    const finalOptions = { ...this.defaultOptions, ...options };
-    const model = finalOptions.model || this.defaultOptions.model;
+    return embed(client, texts, mergedOptions);
+  };
+}
 
-    if (!model) {
-      throw new Error('Model is required. Provide it at construction time or when calling embed.');
-    }
+/**
+ * Direct Google embeddings function - no configuration step needed
+ *
+ * @example
+ * ```typescript
+ * const result = await googleEmbeddings(
+ *   { apiKey: '...', model: 'text-embedding-004', taskType: 'SEMANTIC_SIMILARITY' },
+ *   ['Hello world']
+ * );
+ * ```
+ */
+export async function googleEmbeddings(
+  config: WithApiKey<GoogleEmbeddingOptions>,
+  texts: string[]
+): Promise<EmbeddingResponse> {
+  const provider = createGoogleEmbeddings(config);
+  return provider(texts);
+}
 
-    const cleanModel = model.replace(/^models\//, '');
-    const embeddings: EmbeddingResult[] = [];
+/**
+ * Generate embeddings for the provided texts using Google's embedding models.
+ */
+async function embed(
+  client: APIClient,
+  texts: string[],
+  options: GoogleEmbeddingOptions
+): Promise<EmbeddingResponse> {
+  validateTexts(texts);
 
-    // Google processes one text at a time
-    for (let i = 0; i < texts.length; i++) {
-      const requestBody = {
-        content: { parts: [{ text: texts[i] }] },
-      } as Record<string, unknown>;
+  const cleanModel = options.model!.replace(/^models\//, '');
+  const embeddings: EmbeddingResult[] = [];
 
-      if (finalOptions.taskType) requestBody.taskType = finalOptions.taskType;
-      if (finalOptions.title) requestBody.title = finalOptions.title;
-      if (finalOptions.dimensions) requestBody.outputDimensionality = finalOptions.dimensions;
-      if (finalOptions.outputDtype) requestBody.outputDtype = finalOptions.outputDtype;
+  // Google processes one text at a time
+  for (let i = 0; i < texts.length; i++) {
+    const requestBody = {
+      content: { parts: [{ text: texts[i] }] },
+    } as Record<string, unknown>;
 
-      const response = (await this.client.post(
-        `/models/${cleanModel}:embedContent?key=${finalOptions.apiKey}`,
-        requestBody
-      )) as { embedding: { values: number[] } };
+    if (options.taskType) requestBody.taskType = options.taskType;
+    if (options.title) requestBody.title = options.title;
+    if (options.dimensions) requestBody.outputDimensionality = options.dimensions;
+    if (options.outputDtype) requestBody.outputDtype = options.outputDtype;
 
-      embeddings.push({
-        values: response.embedding.values,
-        index: i,
-      });
-    }
+    const response = (await client.post(
+      `/models/${cleanModel}:embedContent?key=${options.apiKey}`,
+      requestBody
+    )) as { embedding: { values: number[] } };
 
-    return {
-      embeddings,
-      model: cleanModel,
-    };
+    embeddings.push({
+      values: response.embedding.values,
+      index: i,
+    });
+  }
+
+  return {
+    embeddings,
+    model: cleanModel,
+  };
+}
+
+function validateTexts(texts: string[]): void {
+  if (texts.length === 0) {
+    throw new Error('At least one text must be provided');
   }
 }

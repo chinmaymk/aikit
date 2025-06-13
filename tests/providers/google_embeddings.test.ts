@@ -1,8 +1,8 @@
-import { GoogleEmbeddingProvider, type GoogleEmbeddingOptions } from '@chinmaymk/aikit';
+import { createGoogleEmbeddings } from '@chinmaymk/aikit';
 import nock from 'nock';
 
 describe('GoogleEmbeddingProvider', () => {
-  const defaultOptions: GoogleEmbeddingOptions = {
+  const defaultOptions = {
     apiKey: 'test-api-key',
   };
 
@@ -12,22 +12,22 @@ describe('GoogleEmbeddingProvider', () => {
 
   describe('constructor', () => {
     it('should create provider with required options', () => {
-      const provider = new GoogleEmbeddingProvider(defaultOptions);
-      expect(provider).toBeInstanceOf(GoogleEmbeddingProvider);
+      const provider = createGoogleEmbeddings(defaultOptions);
+      expect(typeof provider).toBe('function');
     });
 
     it('should throw error when API key is missing', () => {
       expect(() => {
-        new GoogleEmbeddingProvider({} as GoogleEmbeddingOptions);
+        createGoogleEmbeddings({} as any);
       }).toThrow('Google API key is required');
     });
   });
 
   describe('embed', () => {
-    let provider: GoogleEmbeddingProvider;
+    let provider: ReturnType<typeof createGoogleEmbeddings>;
 
     beforeEach(() => {
-      provider = new GoogleEmbeddingProvider({
+      provider = createGoogleEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-004',
       });
@@ -45,7 +45,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world']);
+      const result = await provider(['Hello world']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
@@ -77,7 +77,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse2));
 
-      const result = await provider.embed(['Hello world', 'How are you?']);
+      const result = await provider(['Hello world', 'How are you?']);
 
       expect(scope1.isDone()).toBe(true);
       expect(scope2.isDone()).toBe(true);
@@ -105,7 +105,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world'], {
+      const result = await provider(['Hello world'], {
         taskType: 'RETRIEVAL_DOCUMENT',
         title: 'Test Document',
         dimensions: 2,
@@ -132,7 +132,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world'], {
+      const result = await provider(['Hello world'], {
         taskType: 'RETRIEVAL_QUERY',
       });
 
@@ -157,7 +157,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world'], {
+      const result = await provider(['Hello world'], {
         outputDtype: 'float',
       });
 
@@ -166,15 +166,15 @@ describe('GoogleEmbeddingProvider', () => {
     });
 
     it('should throw error when model is not provided', async () => {
-      const providerWithoutModel = new GoogleEmbeddingProvider(defaultOptions);
+      const providerWithoutModel = createGoogleEmbeddings(defaultOptions);
 
-      await expect(providerWithoutModel.embed(['Hello world'])).rejects.toThrow(
-        'Model is required. Provide it at construction time or when calling embed.'
+      await expect(providerWithoutModel(['Hello world'])).rejects.toThrow(
+        'Model is required in config or options'
       );
     });
 
     it('should throw error when no texts provided', async () => {
-      await expect(provider.embed([])).rejects.toThrow('At least one text must be provided');
+      await expect(provider([])).rejects.toThrow('At least one text must be provided');
     });
 
     it('should handle API errors gracefully', async () => {
@@ -183,12 +183,12 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(400, 'Invalid request');
 
-      await expect(provider.embed(['Hello world'])).rejects.toThrow();
+      await expect(provider(['Hello world'])).rejects.toThrow();
       expect(scope.isDone()).toBe(true);
     });
 
     it('should use custom base URL', async () => {
-      const customProvider = new GoogleEmbeddingProvider({
+      const customProvider = createGoogleEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-004',
         baseURL: 'https://custom.googleapis.com/v1beta',
@@ -205,14 +205,14 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await customProvider.embed(['Hello world']);
+      const result = await customProvider(['Hello world']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
     });
 
     it('should merge construction and call-time options correctly', async () => {
-      const providerWithDefaults = new GoogleEmbeddingProvider({
+      const providerWithDefaults = createGoogleEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-004',
         taskType: 'RETRIEVAL_DOCUMENT',
@@ -236,7 +236,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await providerWithDefaults.embed(['Hello world'], {
+      const result = await providerWithDefaults(['Hello world'], {
         model: 'gemini-embedding-001',
         taskType: 'SEMANTIC_SIMILARITY',
         dimensions: 1024,
@@ -247,7 +247,7 @@ describe('GoogleEmbeddingProvider', () => {
     });
 
     it('should handle models with versions correctly', async () => {
-      const providerWithVersionedModel = new GoogleEmbeddingProvider({
+      const providerWithVersionedModel = createGoogleEmbeddings({
         ...defaultOptions,
         model: 'models/text-embedding-004',
       });
@@ -263,7 +263,7 @@ describe('GoogleEmbeddingProvider', () => {
         .query({ key: 'test-api-key' })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await providerWithVersionedModel.embed(['Hello world']);
+      const result = await providerWithVersionedModel(['Hello world']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);

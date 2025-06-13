@@ -1,17 +1,94 @@
 import type {
-  AIProvider,
   Message,
-  AnthropicOptions,
   StreamChunk,
-  ToolCall,
-  Tool,
-  ToolResultContent,
   FinishReason,
+  Tool,
+  ToolCall,
+  AnthropicOptions,
+  WithApiKey,
+  StreamingGenerateFunction,
 } from '../types';
 
 import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
 import { APIClient } from './api';
 import { extractDataLines } from './api';
+
+/**
+ * Creates an Anthropic generation function with pre-configured defaults.
+ * Returns a simple function that takes messages and options.
+ *
+ * @example
+ * ```typescript
+ * const anthropic = createAnthropic({ apiKey: '...', model: 'claude-3-5-sonnet-20241022' });
+ *
+ * // Use like any function
+ * const result = await collectDeltas(anthropic([userText('Hello')]));
+ *
+ * // Override options
+ * const creative = await collectDeltas(anthropic([userText('Be creative')], { temperature: 0.9 }));
+ * ```
+ */
+export function createAnthropic(
+  config: WithApiKey<AnthropicOptions>
+): StreamingGenerateFunction<Partial<AnthropicOptions>> {
+  if (!config.apiKey) {
+    throw new Error('Anthropic API key is required');
+  }
+
+  const {
+    apiKey,
+    baseURL = 'https://api.anthropic.com/v1',
+    timeout,
+    maxRetries,
+    beta,
+    anthropicVersion = '2023-06-01',
+    ...defaultGenerationOptions
+  } = config;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': anthropicVersion,
+  };
+
+  if (beta && beta.length > 0) {
+    headers['anthropic-beta'] = beta.join(',');
+  }
+
+  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const defaultOptions = { apiKey, beta, anthropicVersion, ...defaultGenerationOptions };
+
+  return async function* anthropic(messages: Message[], options: Partial<AnthropicOptions> = {}) {
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required in config or options');
+    }
+
+    const params = buildRequestParams(messages, mergedOptions);
+    const stream = await client.stream('/messages', params);
+    const sseStream = client.processStreamAsLines(stream);
+    yield* processStream(sseStream);
+  };
+}
+
+/**
+ * Direct Anthropic function - no configuration step needed
+ *
+ * @example
+ * ```typescript
+ * const result = await collectDeltas(
+ *   anthropic({ apiKey: '...', model: 'claude-3-5-sonnet-20241022' }, [userText('Hello')])
+ * );
+ * ```
+ */
+export async function* anthropic(
+  config: WithApiKey<AnthropicOptions>,
+  messages: Message[]
+): AsyncIterable<StreamChunk> {
+  const provider = createAnthropic(config);
+  yield* provider(messages);
+}
 
 // Anthropic API types
 interface AnthropicTextBlockParam {
@@ -149,410 +226,326 @@ interface ErrorEvent extends AnthropicStreamEvent {
   };
 }
 
-/**
- * The bridge to Anthropic's world of Claude.
- * This class translates AIKit's universal language into Anthropic's specific API dialect.
- * It's the kind of diplomat who is fluent in both cultures and always knows the right thing to say.
- *
- * @group Providers
- */
-export class AnthropicProvider implements AIProvider<AnthropicOptions> {
-  private readonly client: APIClient;
-  private readonly defaultOptions: AnthropicOptions;
+// Helper functions for functional API
+function buildRequestParams(
+  messages: Message[],
+  options: AnthropicOptions
+): AnthropicCreateMessageRequest {
+  const { systemMessage, anthropicMessages } = transformMessages(messages);
 
-  /**
-   * Initializes the Anthropic provider.
-   * @param options - Your Anthropic API credentials and default generation settings.
-   */
-  constructor(options: AnthropicOptions) {
-    if (!options.apiKey) {
-      throw new Error('Anthropic API key is required');
-    }
+  const params: AnthropicCreateMessageRequest = {
+    model: options.model!,
+    messages: anthropicMessages,
+    max_tokens: options.maxOutputTokens || 4096,
+    stream: true,
+    temperature: options.temperature,
+    top_p: options.topP,
+    top_k: options.topK,
+    stop_sequences: options.stopSequences,
+  };
 
-    const {
-      apiKey,
-      baseURL = 'https://api.anthropic.com/v1',
-      timeout,
-      maxRetries,
-      beta,
-      anthropicVersion = '2023-06-01',
-      ...defaultGenerationOptions
-    } = options;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': anthropicVersion,
-    };
-
-    if (beta && beta.length > 0) {
-      headers['anthropic-beta'] = beta.join(',');
-    }
-
-    this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.defaultOptions = { apiKey, beta, anthropicVersion, ...defaultGenerationOptions };
+  if (systemMessage) {
+    params.system = systemMessage;
   }
 
-  /**
-   * Orchestrates the generation process with Anthropic's API.
-   * It transforms the request, makes the call, and then processes the
-   * server-sent events stream into a format AIKit can understand.
-   * @param messages - The conversation history.
-   * @param options - Generation options for the request (optional, will use defaults from constructor).
-   * @returns An async iterable of stream chunks.
-   */
-  async *generate(messages: Message[], options: AnthropicOptions = {}): AsyncIterable<StreamChunk> {
-    const mergedOptions = this.mergeOptions(options);
-
-    if (!mergedOptions.model) {
-      throw new Error('Model is required. Provide it at construction time or generation time.');
-    }
-
-    const params = this.buildRequestParams(messages, mergedOptions);
-    const stream = await this.client.stream('/messages', params);
-    const lineStream = this.client.processStreamAsLines(stream);
-    const sseStream = extractDataLines(lineStream);
-    yield* this.processStream(sseStream);
-  }
-
-  /**
-   * Merges default options with generation-time options.
-   * Generation-time options take precedence over construction-time options.
-   */
-  private mergeOptions(generationOptions: AnthropicOptions): AnthropicOptions {
-    return {
-      ...this.defaultOptions,
-      ...generationOptions,
-    };
-  }
-
-  /**
-   * Builds request parameters for the Anthropic API.
-   * Handles message transformation, tool formatting, and system messages.
-   */
-  private buildRequestParams(
-    messages: Message[],
-    options: AnthropicOptions
-  ): AnthropicCreateMessageRequest {
-    const { systemMessage, anthropicMessages } = this.transformMessages(messages);
-
-    const params: AnthropicCreateMessageRequest = {
-      model: options.model!,
-      messages: anthropicMessages,
-      max_tokens: options.maxOutputTokens || 1024,
-      stream: true,
-    };
-
-    // Handle system message - prioritize options.system over extracted system message
-    if (options.system) {
-      params.system = options.system;
-    } else if (systemMessage) {
-      params.system = systemMessage;
-    }
-
-    if (options.temperature !== undefined) params.temperature = options.temperature;
-    if (options.topP !== undefined) params.top_p = options.topP;
-    if (options.topK !== undefined) params.top_k = options.topK;
-    if (options.stopSequences && options.stopSequences.length > 0) {
-      params.stop_sequences = options.stopSequences;
-    }
-
-    if (options.tools) {
-      params.tools = this.formatTools(options.tools);
-      if (options.toolChoice) {
-        params.tool_choice = this.formatToolChoice(options.toolChoice);
-      }
-    }
-
-    // Add new options
-    if (options.container) params.container = options.container;
-    if (options.mcpServers && options.mcpServers.length > 0) {
-      params.mcp_servers = options.mcpServers.map(server => ({
-        name: server.name,
-        type: 'url' as const,
-        url: server.url,
-        authorization_token: server.authorization_token,
-        tool_configuration: server.tool_configuration,
-      }));
-    }
-    if (options.metadata) params.metadata = options.metadata;
-    if (options.serviceTier) params.service_tier = options.serviceTier;
-    if (options.thinking) params.thinking = options.thinking;
-
-    return params;
-  }
-
-  /**
-   * Processes the server-sent events stream from Anthropic.
-   * Manages state and yields properly formatted chunks.
-   */
-  private async *processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    let content = '';
-    let reasoningContent = '';
-    const toolCallStates: Record<string, { name: string; arguments: string }> = {};
-    const indexToToolCallId: Record<number, string> = {};
-
-    for await (const data of sseStream) {
-      const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
-      if (!event) continue;
-
-      try {
-        switch (event.type) {
-          case 'content_block_start': {
-            const startEvent = event as ContentBlockStartEvent;
-            if (startEvent.content_block.type === 'tool_use') {
-              const toolCallId = startEvent.content_block.id;
-              toolCallStates[toolCallId] = {
-                name: startEvent.content_block.name,
-                arguments: '',
-              };
-              indexToToolCallId[startEvent.index] = toolCallId;
-            }
-            break;
-          }
-
-          case 'content_block_delta': {
-            const deltaEvent = event as ContentBlockDeltaEvent;
-            if (deltaEvent.delta.type === 'text_delta') {
-              const delta = deltaEvent.delta.text;
-              content += delta;
-              yield MessageTransformer.createStreamChunk(
-                content,
-                delta,
-                undefined,
-                undefined,
-                reasoningContent ? { content: reasoningContent, delta: '' } : undefined
-              );
-            } else if (deltaEvent.delta.type === 'input_json_delta') {
-              // Find the tool call this delta belongs to using the index.
-              const toolCallId = indexToToolCallId[deltaEvent.index];
-              if (toolCallId && toolCallStates[toolCallId]) {
-                toolCallStates[toolCallId].arguments += deltaEvent.delta.partial_json;
-              }
-            } else if (deltaEvent.delta.type === 'thinking_delta') {
-              // Handle thinking deltas - now we expose reasoning content
-              const reasoningDelta = deltaEvent.delta.thinking;
-              reasoningContent += reasoningDelta;
-              yield MessageTransformer.createStreamChunk(content, '', undefined, undefined, {
-                content: reasoningContent,
-                delta: reasoningDelta,
-              });
-            } else if (deltaEvent.delta.type === 'signature_delta') {
-              // Handle signature deltas for thinking blocks - could be useful for metadata
-            }
-            break;
-          }
-
-          case 'message_delta': {
-            const deltaEvent = event as MessageDeltaEvent;
-            const finishReason = this.mapFinishReason(deltaEvent.delta.stop_reason);
-            const toolCalls = this.finalizeToolCalls(toolCallStates);
-            yield MessageTransformer.createStreamChunk(
-              content,
-              '',
-              toolCalls,
-              finishReason,
-              reasoningContent ? { content: reasoningContent, delta: '' } : undefined
-            );
-            break;
-          }
-
-          case 'error': {
-            const errorEvent = event as ErrorEvent;
-            // This is a specific API error, so we should throw it
-            throw new Error(
-              `Anthropic API error: ${errorEvent.error.type} - ${errorEvent.error.message}`
-            );
-          }
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message.startsWith('Anthropic API error')) {
-          // Re-throw API errors to be caught by the consumer
-          throw e;
-        }
-        // Ignore other errors (e.g., malformed JSON). It's the wild west out here.
-        continue;
-      }
+  if (options.tools) {
+    params.tools = formatTools(options.tools);
+    if (options.toolChoice) {
+      params.tool_choice = formatToolChoice(options.toolChoice);
     }
   }
 
-  /**
-   * Transforms AIKit messages to Anthropic format.
-   * Separates system messages from conversation messages.
-   */
-  private transformMessages(messages: Message[]): {
-    systemMessage: string;
-    anthropicMessages: AnthropicMessageParam[];
-  } {
-    let systemMessage = '';
-    const anthropicMessages: AnthropicMessageParam[] = [];
-
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        systemMessage = MessageTransformer.extractTextContent(msg.content);
-        continue;
-      }
-
-      const transformed = this.transformMessage(msg);
-      if (transformed) {
-        if (Array.isArray(transformed)) {
-          anthropicMessages.push(...transformed);
-        } else {
-          anthropicMessages.push(transformed);
-        }
-      }
-    }
-
-    // Anthropic requires a user message to start the conversation.
-    if (anthropicMessages.length > 0 && anthropicMessages[0].role !== 'user') {
-      anthropicMessages.unshift({ role: 'user', content: [] });
-    }
-
-    return { systemMessage, anthropicMessages };
+  if (options.container) {
+    params.container = options.container;
   }
 
-  /**
-   * Transforms a single message to Anthropic format.
-   */
-  private transformMessage(msg: Message): AnthropicMessageParam | AnthropicMessageParam[] | null {
-    switch (msg.role) {
-      case 'system':
-        return null;
-      case 'tool':
-        return this.transformToolMessage(msg);
-      case 'user':
-      case 'assistant':
-        return this.transformUserOrAssistantMessage(msg);
-      default:
-        return null;
-    }
-  }
-
-  /**
-   * Transforms tool result messages.
-   */
-  private transformToolMessage(msg: Message): AnthropicMessageParam[] {
-    const toolResults = (msg.content as ToolResultContent[]).map(c => ({
-      type: 'tool_result' as const,
-      tool_use_id: c.toolCallId,
-      content: c.result,
+  if (options.mcpServers) {
+    params.mcp_servers = options.mcpServers.map(server => ({
+      ...server,
+      type: 'url' as const,
     }));
+  }
 
-    if (toolResults.length === 0) {
-      return [];
+  if (options.metadata) {
+    params.metadata = options.metadata;
+  }
+
+  if (options.serviceTier) {
+    params.service_tier = options.serviceTier;
+  }
+
+  if (options.thinking) {
+    params.thinking = options.thinking;
+  }
+
+  return params;
+}
+
+async function* processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
+  let content = '';
+  let thinking = '';
+  const toolCallStates: Record<string, { name: string; arguments: string }> = {};
+
+  for await (const data of extractDataLines(sseStream)) {
+    if (data.trim() === 'data: [DONE]' || data.trim() === '[DONE]') {
+      break;
     }
 
-    return [{ role: 'user', content: toolResults }];
+    const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
+    if (!event) continue;
+
+    switch (event.type) {
+      case 'content_block_start': {
+        const startEvent = event as ContentBlockStartEvent;
+        if (startEvent.content_block.type === 'tool_use') {
+          const toolBlock = startEvent.content_block as {
+            type: 'tool_use';
+            id: string;
+            name: string;
+            input: DynamicParams;
+          };
+          toolCallStates[toolBlock.id] = {
+            name: toolBlock.name,
+            arguments: '',
+          };
+        }
+        break;
+      }
+
+      case 'content_block_delta': {
+        const deltaEvent = event as ContentBlockDeltaEvent;
+
+        if (deltaEvent.delta.type === 'text_delta') {
+          const textDelta = deltaEvent.delta.text;
+          content += textDelta;
+          yield {
+            delta: textDelta,
+            content,
+          };
+        } else if (deltaEvent.delta.type === 'input_json_delta') {
+          // Handle tool call argument accumulation
+          const partialJson = deltaEvent.delta.partial_json;
+          const toolCallId =
+            Object.keys(toolCallStates)[deltaEvent.index] || Object.keys(toolCallStates)[0];
+
+          if (toolCallId && toolCallStates[toolCallId]) {
+            toolCallStates[toolCallId].arguments += partialJson;
+          }
+        } else if (deltaEvent.delta.type === 'thinking_delta') {
+          const thinkingDelta = deltaEvent.delta.thinking;
+          thinking += thinkingDelta;
+
+          yield {
+            delta: '',
+            content,
+            reasoning: {
+              delta: thinkingDelta,
+              content: thinking,
+            },
+          };
+        }
+        break;
+      }
+
+      case 'message_delta': {
+        const messageDelta = event as MessageDeltaEvent;
+        if (messageDelta.delta.stop_reason) {
+          const finishReason = mapFinishReason(messageDelta.delta.stop_reason);
+          const toolCalls = finalizeToolCalls(toolCallStates);
+
+          yield {
+            delta: '',
+            content,
+            finishReason,
+            ...(toolCalls && { toolCalls }),
+            ...(thinking && {
+              reasoning: {
+                delta: '',
+                content: thinking,
+              },
+            }),
+          };
+        }
+        break;
+      }
+
+      case 'error': {
+        const errorEvent = event as ErrorEvent;
+        throw new Error(
+          `Anthropic API error: ${errorEvent.error.type} - ${errorEvent.error.message}`
+        );
+      }
+    }
+  }
+}
+
+function transformMessages(messages: Message[]): {
+  systemMessage: string;
+  anthropicMessages: AnthropicMessageParam[];
+} {
+  let systemMessage = '';
+  const anthropicMessages: AnthropicMessageParam[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === 'system') {
+      systemMessage = MessageTransformer.extractTextContent(msg.content);
+      continue;
+    }
+
+    const transformedMessage = transformMessage(msg);
+    if (transformedMessage) {
+      if (Array.isArray(transformedMessage)) {
+        anthropicMessages.push(...transformedMessage);
+      } else {
+        anthropicMessages.push(transformedMessage);
+      }
+    }
   }
 
-  /**
-   * Transforms user or assistant messages.
-   */
-  private transformUserOrAssistantMessage(msg: Message): AnthropicMessageParam {
-    return {
-      role: msg.role as 'user' | 'assistant',
-      content: this.buildContentBlocks(msg),
-    };
+  return { systemMessage, anthropicMessages };
+}
+
+function transformMessage(msg: Message): AnthropicMessageParam | AnthropicMessageParam[] | null {
+  switch (msg.role) {
+    case 'tool':
+      return transformToolMessage(msg);
+    case 'user':
+    case 'assistant':
+      return transformUserOrAssistantMessage(msg);
+    default:
+      return null;
+  }
+}
+
+function transformToolMessage(msg: Message): AnthropicMessageParam[] {
+  const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+
+  return toolResults.map(toolResult => ({
+    role: 'user' as const,
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: toolResult.toolCallId,
+        content: toolResult.result,
+      },
+    ],
+  }));
+}
+
+function transformUserOrAssistantMessage(msg: Message): AnthropicMessageParam {
+  return {
+    role: msg.role as 'user' | 'assistant',
+    content: buildContentBlocks(msg),
+  };
+}
+
+function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
+  const blocks: AnthropicContentBlock[] = [];
+
+  // Add text content
+  const textContent = MessageTransformer.extractTextContent(msg.content);
+  if (textContent) {
+    blocks.push({
+      type: 'text',
+      text: textContent,
+    });
   }
 
-  /**
-   * Builds content blocks for a message.
-   */
-  private buildContentBlocks(msg: Message): AnthropicContentBlock[] {
-    const blocks: AnthropicContentBlock[] = [];
+  // Add image content
+  const { images } = MessageTransformer.groupContentByType(msg.content);
+  for (const imageContent of images) {
+    if (imageContent.image.startsWith('data:')) {
+      const [header, data] = imageContent.image.split(',');
+      const mediaType = header.match(/data:([^;]+)/)?.[1] as
+        | 'image/jpeg'
+        | 'image/png'
+        | 'image/gif'
+        | 'image/webp';
 
-    // Add text or image content
-    for (const content of msg.content) {
-      if (content.type === 'text') {
-        blocks.push({ type: 'text', text: content.text });
-      } else if (content.type === 'image') {
+      if (mediaType && ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mediaType)) {
         blocks.push({
           type: 'image',
           source: {
             type: 'base64',
-            media_type: MessageTransformer.detectImageMimeType(content.image) as
-              | 'image/jpeg'
-              | 'image/png'
-              | 'image/gif'
-              | 'image/webp',
-            data: MessageTransformer.extractBase64Data(content.image),
+            media_type: mediaType,
+            data,
           },
         });
       }
     }
+  }
 
-    // Add tool calls for assistant messages
-    if (msg.role === 'assistant' && msg.toolCalls) {
-      for (const toolCall of msg.toolCalls) {
-        blocks.push({
-          type: 'tool_use',
-          id: toolCall.id,
-          name: toolCall.name,
-          input: toolCall.arguments,
-        });
-      }
+  // Add tool use blocks for assistant messages
+  if (msg.role === 'assistant' && msg.toolCalls) {
+    for (const toolCall of msg.toolCalls) {
+      blocks.push({
+        type: 'tool_use',
+        id: toolCall.id,
+        name: toolCall.name,
+        input: toolCall.arguments,
+      });
     }
-
-    return blocks;
   }
 
-  /**
-   * Formats tools for Anthropic API.
-   */
-  private formatTools(tools: Tool[]): AnthropicTool[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      input_schema: tool.parameters,
-    }));
-  }
+  return blocks;
+}
 
-  /**
-   * Formats tool choice for Anthropic API.
-   */
-  private formatToolChoice(toolChoice: AnthropicOptions['toolChoice']): AnthropicToolChoice {
-    if (toolChoice === 'required') return { type: 'any' };
-    if (toolChoice === 'auto') return { type: 'auto' };
-    if (typeof toolChoice === 'object') {
-      return { type: 'tool', name: toolChoice.name };
+function formatTools(tools: Tool[]): AnthropicTool[] {
+  return tools.map(tool => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.parameters,
+  }));
+}
+
+function formatToolChoice(toolChoice: AnthropicOptions['toolChoice']): AnthropicToolChoice {
+  if (!toolChoice) return { type: 'auto' };
+  if (typeof toolChoice === 'object') {
+    return { type: 'tool', name: toolChoice.name };
+  }
+  return { type: toolChoice as 'auto' | 'any' };
+}
+
+function finalizeToolCalls(
+  toolCallStates: Record<string, { name: string; arguments: string }>
+): ToolCall[] | undefined {
+  const entries = Object.entries(toolCallStates);
+  if (entries.length === 0) return undefined;
+
+  return entries.map(([id, state]) => {
+    try {
+      return {
+        id,
+        name: state.name,
+        arguments: JSON.parse(state.arguments),
+      };
+    } catch {
+      return {
+        id,
+        name: state.name,
+        arguments: {},
+      };
     }
-    return { type: 'auto' };
-  }
+  });
+}
 
-  /**
-   * Converts the internal tool call states into the final AIKit ToolCall objects.
-   */
-  private finalizeToolCalls(
-    toolCallStates: Record<string, { name: string; arguments: string }>
-  ): ToolCall[] | undefined {
-    const calls = Object.entries(toolCallStates).map(([id, state]) => ({
-      id,
-      name: state.name,
-      arguments: MessageTransformer.parseJson(state.arguments, {}) || {},
-    }));
+function mapFinishReason(reason?: string): FinishReason | undefined {
+  if (!reason) return undefined;
 
-    return calls.length > 0 ? calls : undefined;
-  }
-
-  /**
-   * Maps Anthropic's finish reasons to AIKit format.
-   */
-  private mapFinishReason(reason?: string): FinishReason | undefined {
-    switch (reason) {
-      case 'end_turn':
-        return 'stop';
-      case 'max_tokens':
-        return 'length';
-      case 'tool_use':
-        return 'tool_use';
-      case 'stop_sequence':
-        return 'stop';
-      case 'pause_turn':
-        return 'stop'; // Treat pause as stop for now
-      case 'refusal':
-        return 'error'; // Treat refusal as error
-      default:
-        return undefined;
-    }
+  switch (reason) {
+    case 'end_turn':
+      return 'stop';
+    case 'max_tokens':
+      return 'length';
+    case 'stop_sequence':
+      return 'stop';
+    case 'tool_use':
+      return 'tool_use';
+    case 'pause_turn':
+      return 'stop';
+    case 'refusal':
+      return 'error';
+    default:
+      return undefined;
   }
 }

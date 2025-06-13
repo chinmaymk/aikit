@@ -1,78 +1,132 @@
-import type { EmbeddingResponse, EmbeddingResult, OpenAIEmbeddingOptions } from '../types';
-import { BaseEmbeddingProvider } from './base_embedding';
+import type {
+  EmbeddingResponse,
+  EmbeddingResult,
+  OpenAIEmbeddingOptions,
+  WithApiKey,
+  EmbedFunction,
+} from '../types';
+import { APIClient } from './api';
 
 /**
- * OpenAI Embeddings provider for generating text embeddings.
- * This class handles OpenAI's embedding models like text-embedding-3-small, text-embedding-3-large, etc.
+ * Creates an OpenAI embeddings function with pre-configured defaults.
+ * Returns a simple function that takes texts and options.
  *
- * @group Providers
+ * @example
+ * ```typescript
+ * const embeddings = createOpenAIEmbeddings({ apiKey: '...', model: 'text-embedding-3-small' });
+ *
+ * // Use like any function
+ * const result = await embeddings(['Hello world', 'How are you?']);
+ *
+ * // Override options
+ * const result2 = await embeddings(['Text'], { dimensions: 512 });
+ * ```
  */
-export class OpenAIEmbeddingProvider extends BaseEmbeddingProvider<OpenAIEmbeddingOptions> {
-  getProviderName(): string {
-    return 'OpenAI';
+export function createOpenAIEmbeddings(
+  config: WithApiKey<OpenAIEmbeddingOptions>
+): EmbedFunction<Partial<OpenAIEmbeddingOptions>> {
+  if (!config.apiKey) {
+    throw new Error('OpenAI API key is required');
   }
 
-  getBaseUrl(options: OpenAIEmbeddingOptions): string {
-    return options.baseURL || 'https://api.openai.com/v1';
-  }
+  const {
+    apiKey,
+    baseURL = 'https://api.openai.com/v1',
+    organization,
+    project,
+    timeout,
+    maxRetries,
+    ...defaultEmbeddingOptions
+  } = config;
 
-  getHeaders(options: OpenAIEmbeddingOptions): Record<string, string> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${options.apiKey}`,
-    };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${apiKey}`,
+  };
+  if (organization) headers['OpenAI-Organization'] = organization;
+  if (project) headers['OpenAI-Project'] = project;
 
-    if (options.organization) headers['OpenAI-Organization'] = options.organization;
-    if (options.project) headers['OpenAI-Project'] = options.project;
+  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const defaultOptions = { apiKey, ...defaultEmbeddingOptions };
 
-    return headers;
-  }
-
-  /**
-   * Generate embeddings for the provided texts using OpenAI's embedding models.
-   * @param texts - Array of text strings to embed
-   * @param options - Optional embedding configuration that overrides defaults
-   * @returns Promise resolving to embedding response with vectors and usage info
-   */
-  async embed(
+  return async function openaiEmbeddings(
     texts: string[],
-    options?: Partial<OpenAIEmbeddingOptions>
-  ): Promise<EmbeddingResponse> {
-    this.validateTexts(texts);
+    options: Partial<OpenAIEmbeddingOptions> = {}
+  ) {
+    const mergedOptions = { ...defaultOptions, ...options };
 
-    if (texts.length > 2048) {
-      throw new Error('OpenAI embedding API supports up to 2048 texts per request');
+    if (!mergedOptions.model) {
+      throw new Error('Model is required in config or options');
     }
 
-    const finalOptions = this.mergeOptions(options);
-    const model = this.getModel(options);
+    return embed(client, texts, mergedOptions);
+  };
+}
 
-    const requestBody = { model, input: texts } as Record<string, unknown>;
+/**
+ * Direct OpenAI embeddings function - no configuration step needed
+ *
+ * @example
+ * ```typescript
+ * const result = await openaiEmbeddings(
+ *   { apiKey: '...', model: 'text-embedding-3-small' },
+ *   ['Hello world']
+ * );
+ * ```
+ */
+export async function openaiEmbeddings(
+  config: WithApiKey<OpenAIEmbeddingOptions>,
+  texts: string[]
+): Promise<EmbeddingResponse> {
+  const provider = createOpenAIEmbeddings(config);
+  return provider(texts);
+}
 
-    if (finalOptions.dimensions) requestBody.dimensions = finalOptions.dimensions;
-    if (finalOptions.encodingFormat) requestBody.encoding_format = finalOptions.encodingFormat;
-    if (finalOptions.user) requestBody.user = finalOptions.user;
+/**
+ * Generate embeddings for the provided texts using OpenAI's embedding models.
+ */
+async function embed(
+  client: APIClient,
+  texts: string[],
+  options: OpenAIEmbeddingOptions
+): Promise<EmbeddingResponse> {
+  validateTexts(texts);
 
-    const response = (await this.client.post('/embeddings', requestBody)) as {
-      data: Array<{ embedding: number[] }>;
-      model: string;
-      usage?: { prompt_tokens: number; total_tokens: number };
-    };
+  if (texts.length > 2048) {
+    throw new Error('OpenAI embedding API supports up to 2048 texts per request');
+  }
 
-    const embeddings: EmbeddingResult[] = response.data.map((item, index) => ({
-      values: item.embedding,
-      index,
-    }));
+  const requestBody = { model: options.model!, input: texts } as Record<string, unknown>;
 
-    return {
-      embeddings,
-      model: response.model,
-      usage: response.usage
-        ? {
-            inputTokens: response.usage.prompt_tokens,
-            totalTokens: response.usage.total_tokens,
-          }
-        : undefined,
-    };
+  if (options.dimensions) requestBody.dimensions = options.dimensions;
+  if (options.encodingFormat) requestBody.encoding_format = options.encodingFormat;
+  if (options.user) requestBody.user = options.user;
+
+  const response = (await client.post('/embeddings', requestBody)) as {
+    data: Array<{ embedding: number[] }>;
+    model: string;
+    usage?: { prompt_tokens: number; total_tokens: number };
+  };
+
+  const embeddings: EmbeddingResult[] = response.data.map((item, index) => ({
+    values: item.embedding,
+    index,
+  }));
+
+  return {
+    embeddings,
+    model: response.model,
+    usage: response.usage
+      ? {
+          inputTokens: response.usage.prompt_tokens,
+          totalTokens: response.usage.total_tokens,
+        }
+      : undefined,
+  };
+}
+
+function validateTexts(texts: string[]): void {
+  if (texts.length === 0) {
+    throw new Error('At least one text must be provided');
   }
 }

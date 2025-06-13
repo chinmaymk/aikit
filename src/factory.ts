@@ -1,294 +1,308 @@
 import type {
-  AIProvider,
+  WithApiKey,
   OpenAIOptions,
-  OpenAIResponsesOptions,
   AnthropicOptions,
   GoogleOptions,
+  OpenAIResponsesOptions,
   OpenAIEmbeddingOptions,
   GoogleEmbeddingOptions,
+  OpenAIProvider,
+  AnthropicProvider,
+  GoogleProvider,
+  OpenAIResponsesProvider,
+  OpenAIEmbeddingProvider,
+  GoogleEmbeddingProvider,
+  AnyGenerationProvider,
+  AnyEmbeddingProvider,
+  GenerationProviderType,
+  EmbeddingProviderType,
+  AvailableProviderResult,
 } from './types';
 
-import { OpenAIProvider } from './providers/openai_completions';
-import { OpenAIProvider as OpenAIResponsesProvider } from './providers/openai_responses';
-import { AnthropicProvider } from './providers/anthropic';
-import { GoogleGeminiProvider } from './providers/google';
-import { OpenAIEmbeddingProvider } from './providers/openai_embeddings';
-import { GoogleEmbeddingProvider } from './providers/google_embeddings';
+import { createOpenAI as createOpenAIProvider } from './providers/openai_completions';
+import { createAnthropic as createAnthropicProvider } from './providers/anthropic';
+import { createGoogle as createGoogleProvider } from './providers/google';
+import { createOpenAIResponses as createOpenAIResponsesProvider } from './providers/openai_responses';
+import { createOpenAIEmbeddings as createOpenAIEmbeddingsProvider } from './providers/openai_embeddings';
+import { createGoogleEmbeddings as createGoogleEmbeddingsProvider } from './providers/google_embeddings';
+
+// Re-export types for external use
+export type { GenerationProviderType, EmbeddingProviderType };
 
 /**
- * Maps provider type strings to their corresponding provider classes
- */
-type ProviderMap = {
-  openai: OpenAIProvider;
-  openai_responses: OpenAIResponsesProvider;
-  anthropic: AnthropicProvider;
-  google: GoogleGeminiProvider;
-  openai_embeddings: OpenAIEmbeddingProvider;
-  google_embeddings: GoogleEmbeddingProvider;
-};
-
-/**
- * Maps provider type strings to their corresponding option types
- */
-type OptionsMap = {
-  openai: OpenAIOptions;
-  openai_responses: OpenAIResponsesOptions;
-  anthropic: AnthropicOptions;
-  google: GoogleOptions;
-  openai_embeddings: OpenAIEmbeddingOptions;
-  google_embeddings: GoogleEmbeddingOptions;
-};
-
-/**
- * Union type of all available provider types.
- * Use this for type-safe provider selection.
- */
-export type ProviderType = keyof ProviderMap;
-
-/**
- * Union type of AI generation provider types only (excludes embedding providers).
- * Use this when you need providers that support the generate() method.
- */
-export type GenerationProviderType = 'openai' | 'openai_responses' | 'anthropic' | 'google';
-
-/**
- * Union type of embedding provider types only.
- * Use this when you need providers that support the embed() method.
- */
-export type EmbeddingProviderType = 'openai_embeddings' | 'google_embeddings';
-
-/**
- * Summons an AIProvider that speaks fluent OpenAI using the Chat Completions API (default).
- * Just give it your credentials and it'll be ready to chat.
+ * Creates an OpenAI provider using the Chat Completions API.
  *
- * @param options - The configuration and default generation options for the OpenAI Chat Completions API.
- * @returns An AIProvider, ready to do your bidding with OpenAI's models.
+ * @param options - Configuration options with required API key
+ * @returns OpenAI streaming generation provider function
  *
  * @example
  * ```typescript
  * const openai = createOpenAI({
- *   apiKey: process.env.OPENAI_API_KEY!,
- *   model: 'gpt-4o', // Default model
- *   temperature: 0.7, // Default temperature
- * });
- * ```
- *
- * @group Factory Functions
- */
-export function createOpenAI(options: OpenAIOptions): AIProvider {
-  return new OpenAIProvider(options);
-}
-
-/**
- * Creates an OpenAI provider using the Responses API.
- * This is an alternative to the default Chat Completions API.
- *
- * @param options - The configuration and default generation options for the OpenAI Responses API.
- * @returns An AIProvider using OpenAI's Responses API.
- *
- * @example
- * ```typescript
- * const openaiResponses = createOpenAIResponses({
- *   apiKey: process.env.OPENAI_API_KEY!,
+ *   apiKey: 'sk-...',
  *   model: 'gpt-4o',
- *   reasoning: { effort: 'high' },
+ *   temperature: 0.7
  * });
  * ```
- *
- * @group Factory Functions
  */
-export function createOpenAIResponses(options: OpenAIResponsesOptions): AIProvider {
-  return new OpenAIResponsesProvider(options);
+export function createOpenAI(options: WithApiKey<OpenAIOptions>): OpenAIProvider {
+  return createOpenAIProvider(options);
 }
 
 /**
- * Whips up an AIProvider that communicates with Anthropic's Claude.
- * It's thoughtful, helpful, and probably won't start a robot uprising.
+ * Creates an Anthropic provider.
  *
- * @param options - The configuration and default generation options for Anthropic's API.
- * @returns An AIProvider, configured to work with Anthropic's models.
+ * @param options - Configuration options with required API key
+ * @returns Anthropic streaming generation provider function
  *
  * @example
  * ```typescript
  * const anthropic = createAnthropic({
- *   apiKey: process.env.ANTHROPIC_API_KEY!,
- *   model: 'claude-3-5-sonnet-20240620', // Default model
- *   maxTokens: 1000, // Default max tokens
+ *   apiKey: 'sk-ant-...',
+ *   model: 'claude-3-5-sonnet-20241022',
+ *   topK: 40
  * });
  * ```
- *
- * @group Factory Functions
  */
-export function createAnthropic(options: AnthropicOptions): AIProvider {
-  return new AnthropicProvider(options);
+export function createAnthropic(options: WithApiKey<AnthropicOptions>): AnthropicProvider {
+  return createAnthropicProvider(options);
 }
 
 /**
- * Assembles an AIProvider for Google's Gemini.
- * Get ready for some of that Google magic.
+ * Creates a Google Gemini provider.
  *
- * @param options - The configuration and default generation options for Google's API.
- * @returns An AIProvider, geared up for Gemini.
+ * @param options - Configuration options with required API key
+ * @returns Google streaming generation provider function
  *
  * @example
  * ```typescript
  * const google = createGoogle({
- *   apiKey: process.env.GOOGLE_API_KEY!,
- *   model: 'gemini-1.5-pro', // Default model
- *   temperature: 0.8, // Default temperature
+ *   apiKey: 'AIza...',
+ *   model: 'gemini-1.5-pro',
+ *   topK: 20
  * });
  * ```
- *
- * @group Factory Functions
  */
-export function createGoogle(options: GoogleOptions): AIProvider {
-  return new GoogleGeminiProvider(options);
+export function createGoogle(options: WithApiKey<GoogleOptions>): GoogleProvider {
+  return createGoogleProvider(options);
 }
 
 /**
- * The one function to rule them all.
- * A generic way to create any provider with type safety.
- * It's like a universal remote for AI.
+ * Creates an OpenAI provider using the Responses API.
  *
- * @param type - The flavor of AI you're in the mood for: 'openai', 'anthropic', 'google', 'openai_embeddings', or 'google_embeddings'.
- * @param options - The configuration and default generation options for your chosen flavor.
- * @returns The specific provider instance for the chosen type.
+ * @param options - Configuration options with required API key
+ * @returns OpenAI Responses streaming generation provider function
  *
  * @example
  * ```typescript
- * const openaiProvider = createProvider('openai', {
- *   apiKey: process.env.OPENAI_API_KEY!,
- *   model: 'gpt-4o'
- * });
- *
- * const embeddingProvider = createProvider('openai_embeddings', {
- *   apiKey: process.env.OPENAI_API_KEY!,
- *   model: 'text-embedding-3-small'
+ * const openaiResponses = createOpenAIResponses({
+ *   apiKey: 'sk-...',
+ *   model: 'gpt-4o',
+ *   reasoning: { effort: 'high' }
  * });
  * ```
- *
- * @group Factory Functions
  */
-export function createProvider<T extends ProviderType>(
-  type: T,
-  options: OptionsMap[T]
-): ProviderMap[T] {
-  switch (type) {
-    case 'openai':
-      return createOpenAI(options as OpenAIOptions) as ProviderMap[T];
-    case 'openai_responses':
-      return createOpenAIResponses(options as OpenAIResponsesOptions) as ProviderMap[T];
-    case 'anthropic':
-      return createAnthropic(options as AnthropicOptions) as ProviderMap[T];
-    case 'google':
-      return createGoogle(options as GoogleOptions) as ProviderMap[T];
-    case 'openai_embeddings':
-      return createOpenAIEmbeddings(options as OpenAIEmbeddingOptions) as ProviderMap[T];
-    case 'google_embeddings':
-      return createGoogleEmbeddings(options as GoogleEmbeddingOptions) as ProviderMap[T];
-    default:
-      // This should be impossible with TypeScript, but we'll be safe.
-      // If you see this, you've somehow broken reality.
-      throw new Error(`Unknown provider type: ${type}. How did you do that?`);
-  }
+export function createOpenAIResponses(
+  options: WithApiKey<OpenAIResponsesOptions>
+): OpenAIResponsesProvider {
+  return createOpenAIResponsesProvider(options);
 }
 
 /**
- * Creates an OpenAI embedding provider for generating text embeddings.
- * Perfect for semantic search, clustering, and similarity tasks.
+ * Creates an OpenAI embedding provider.
  *
- * @param options - Configuration for OpenAI's embedding models
- * @returns An EmbeddingProvider ready to create vectors from text
+ * @param options - Configuration options with required API key
+ * @returns OpenAI embedding provider function
  *
  * @example
  * ```typescript
  * const embeddings = createOpenAIEmbeddings({
- *   apiKey: process.env.OPENAI_API_KEY!,
- *   model: 'text-embedding-3-small',
+ *   apiKey: 'sk-...',
+ *   model: 'text-embedding-3-large',
+ *   dimensions: 1024
  * });
- *
- * const response = await embeddings.embed(['Hello world', 'How are you?']);
  * ```
- *
- * @group Factory Functions
  */
-export function createOpenAIEmbeddings(options: OpenAIEmbeddingOptions): OpenAIEmbeddingProvider {
-  return new OpenAIEmbeddingProvider(options);
+export function createOpenAIEmbeddings(
+  options: WithApiKey<OpenAIEmbeddingOptions>
+): OpenAIEmbeddingProvider {
+  return createOpenAIEmbeddingsProvider(options);
 }
 
 /**
- * Creates a Google embedding provider for generating text embeddings.
- * Supports both Gemini and traditional Google embedding models.
+ * Creates a Google embedding provider.
  *
- * @param options - Configuration for Google's embedding models
- * @returns An EmbeddingProvider ready to create vectors from text
+ * @param options - Configuration options with required API key
+ * @returns Google embedding provider function
  *
  * @example
  * ```typescript
  * const embeddings = createGoogleEmbeddings({
- *   apiKey: process.env.GOOGLE_API_KEY!,
+ *   apiKey: 'AIza...',
  *   model: 'text-embedding-004',
- *   taskType: 'RETRIEVAL_DOCUMENT',
+ *   taskType: 'SEMANTIC_SIMILARITY'
  * });
- *
- * const response = await embeddings.embed(['Document text here']);
  * ```
- *
- * @group Factory Functions
  */
-export function createGoogleEmbeddings(options: GoogleEmbeddingOptions): GoogleEmbeddingProvider {
-  return new GoogleEmbeddingProvider(options);
+export function createGoogleEmbeddings(
+  options: WithApiKey<GoogleEmbeddingOptions>
+): GoogleEmbeddingProvider {
+  return createGoogleEmbeddingsProvider(options);
 }
 
 /**
- * Gets the first available AI provider constructed with default options.
- * Checks for API keys in order: OpenAI, Anthropic, Google and returns a ready-to-use provider.
- * @returns A constructed provider instance, or null if no API keys are available
- * @group Factory Functions
+ * Generic embeddings provider factory function with strong typing.
+ * Creates embedding providers with full type safety.
+ * Returns a narrowed type based on the provider type.
+ *
  * @example
  * ```typescript
- * const { provider } = getAvailableProvider();
- * if (!provider) throw new Error('No API keys found, configure it manually');
- * // Provider is ready to use
- * const response = await generate(provider, messages, options);
+ * // Strongly typed - options are specific to the provider type
+ * const openaiEmbeddings = createEmbeddingsProvider('openai_embeddings', {
+ *   apiKey: 'sk-...',
+ *   model: 'text-embedding-3-large',
+ *   dimensions: 1024  // OpenAI-specific option
+ * });
+ *
+ * const googleEmbeddings = createEmbeddingsProvider('google_embeddings', {
+ *   apiKey: 'AIza...',
+ *   model: 'text-embedding-004'
+ * });
  * ```
  */
-export function getAvailableProvider(): {
-  provider?: AIProvider;
-  type?: ProviderType;
-  name?: string;
-} {
-  const providerConfigs = [
-    {
-      type: 'openai' as const,
-      name: 'OpenAI',
-      key: 'OPENAI_API_KEY',
-      envVar: process.env.OPENAI_API_KEY,
-    },
-    {
-      type: 'anthropic' as const,
-      name: 'Anthropic',
-      key: 'ANTHROPIC_API_KEY',
-      envVar: process.env.ANTHROPIC_API_KEY,
-    },
-    {
-      type: 'google' as const,
-      name: 'Google',
-      key: 'GOOGLE_API_KEY',
-      envVar: process.env.GOOGLE_API_KEY,
-    },
+
+// Function overloads for precise type narrowing
+export function createEmbeddingsProvider(
+  type: 'openai_embeddings',
+  options: WithApiKey<OpenAIEmbeddingOptions>
+): OpenAIEmbeddingProvider;
+export function createEmbeddingsProvider(
+  type: 'google_embeddings',
+  options: WithApiKey<GoogleEmbeddingOptions>
+): GoogleEmbeddingProvider;
+export function createEmbeddingsProvider(
+  type: EmbeddingProviderType,
+  options: WithApiKey<OpenAIEmbeddingOptions | GoogleEmbeddingOptions>
+): AnyEmbeddingProvider;
+
+// Implementation
+export function createEmbeddingsProvider(
+  type: EmbeddingProviderType,
+  options: WithApiKey<OpenAIEmbeddingOptions | GoogleEmbeddingOptions>
+): AnyEmbeddingProvider {
+  switch (type) {
+    case 'openai_embeddings':
+      return createOpenAIEmbeddings(options as WithApiKey<OpenAIEmbeddingOptions>);
+    case 'google_embeddings':
+      return createGoogleEmbeddings(options as WithApiKey<GoogleEmbeddingOptions>);
+    default:
+      throw new Error(`Unknown embedding provider type: ${type}`);
+  }
+}
+
+/**
+ * Generic provider factory for generation providers with strong typing.
+ * This is the default factory for text generation providers.
+ * Returns a narrowed type based on the provider type.
+ *
+ * @example
+ * ```typescript
+ * // Strongly typed - options are specific to the provider type
+ * const openai = createProvider('openai', {
+ *   apiKey: 'sk-...',
+ *   model: 'gpt-4o',
+ *   temperature: 0.7
+ * });
+ *
+ * const anthropic = createProvider('anthropic', {
+ *   apiKey: 'sk-ant-...',
+ *   model: 'claude-3-5-sonnet-20241022',
+ *   topK: 40  // Anthropic-specific option
+ * });
+ * ```
+ */
+
+// Function overloads for precise type narrowing
+export function createProvider(type: 'openai', options: WithApiKey<OpenAIOptions>): OpenAIProvider;
+export function createProvider(
+  type: 'anthropic',
+  options: WithApiKey<AnthropicOptions>
+): AnthropicProvider;
+export function createProvider(type: 'google', options: WithApiKey<GoogleOptions>): GoogleProvider;
+export function createProvider(
+  type: 'openai_responses',
+  options: WithApiKey<OpenAIResponsesOptions>
+): OpenAIResponsesProvider;
+export function createProvider(
+  type: GenerationProviderType,
+  options: WithApiKey<OpenAIOptions | AnthropicOptions | GoogleOptions | OpenAIResponsesOptions>
+): AnyGenerationProvider;
+
+// Implementation
+export function createProvider(
+  type: GenerationProviderType,
+  options: WithApiKey<OpenAIOptions | AnthropicOptions | GoogleOptions | OpenAIResponsesOptions>
+): AnyGenerationProvider {
+  switch (type) {
+    case 'openai':
+      return createOpenAI(options as WithApiKey<OpenAIOptions>);
+    case 'anthropic':
+      return createAnthropic(options as WithApiKey<AnthropicOptions>);
+    case 'google':
+      return createGoogle(options as WithApiKey<GoogleOptions>);
+    case 'openai_responses':
+      return createOpenAIResponses(options as WithApiKey<OpenAIResponsesOptions>);
+    default:
+      throw new Error(`Unknown generation provider type: ${type}`);
+  }
+}
+
+/**
+ * Checks for available generation providers based on environment variables.
+ * Returns a properly typed provider based on what's available.
+ *
+ * @example
+ * ```typescript
+ * const result = getAvailableProvider();
+ * if (result.provider) {
+ *   console.log(`Using ${result.name} provider`);
+ *   const response = await result.provider(messages, { model: 'default' });
+ * }
+ * ```
+ */
+
+// Function overloads for precise type narrowing based on available providers
+export function getAvailableProvider(): AvailableProviderResult {
+  const envKeys = [
+    { keys: ['OPENAI_API_KEY'], type: 'openai' as const, name: 'OpenAI' },
+    { keys: ['ANTHROPIC_API_KEY'], type: 'anthropic' as const, name: 'Anthropic' },
+    { keys: ['GOOGLE_API_KEY', 'GEMINI_API_KEY'], type: 'google' as const, name: 'Google' },
   ];
 
-  const availableConfig = providerConfigs.find(p => p.envVar);
-  if (!availableConfig) {
-    return {};
+  for (const { keys, type, name } of envKeys) {
+    const apiKey = keys.find(key => process.env[key]);
+    if (apiKey && process.env[apiKey]) {
+      try {
+        switch (type) {
+          case 'openai': {
+            const provider = createProvider('openai', { apiKey: process.env[apiKey]! });
+            return { provider, type, name } as AvailableProviderResult<'openai'>;
+          }
+          case 'anthropic': {
+            const provider = createProvider('anthropic', { apiKey: process.env[apiKey]! });
+            return { provider, type, name } as AvailableProviderResult<'anthropic'>;
+          }
+          case 'google': {
+            const provider = createProvider('google', { apiKey: process.env[apiKey]! });
+            return { provider, type, name } as AvailableProviderResult<'google'>;
+          }
+          default:
+            continue;
+        }
+      } catch {
+        continue;
+      }
+    }
   }
 
-  return {
-    provider: createProvider(availableConfig.type, {
-      apiKey: availableConfig.envVar!,
-    }),
-    type: availableConfig.type,
-    name: availableConfig.name,
-  };
+  return {};
 }

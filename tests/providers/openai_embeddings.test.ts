@@ -1,36 +1,48 @@
-import { OpenAIEmbeddingProvider, type OpenAIEmbeddingOptions } from '@chinmaymk/aikit';
+import {
+  createOpenAIEmbeddings,
+  type EmbeddingResponse,
+  type OpenAIEmbeddingOptions,
+  type OpenAIEmbeddingProvider,
+} from '@chinmaymk/aikit';
 import nock from 'nock';
 
 describe('OpenAIEmbeddingProvider', () => {
-  const defaultOptions: OpenAIEmbeddingOptions = {
+  const defaultOptions = {
     apiKey: 'test-api-key',
+    model: 'text-embedding-3-small',
   };
 
-  afterEach(() => {
+  let provider: OpenAIEmbeddingProvider;
+
+  beforeAll(() => {
+    nock.disableNetConnect();
+  });
+
+  beforeEach(() => {
+    provider = createOpenAIEmbeddings(defaultOptions);
     nock.cleanAll();
   });
 
+  afterAll(() => {
+    nock.enableNetConnect();
+  });
+
   describe('constructor', () => {
-    it('should create provider with required options', () => {
-      const provider = new OpenAIEmbeddingProvider(defaultOptions);
-      expect(provider).toBeInstanceOf(OpenAIEmbeddingProvider);
+    it('should create provider successfully', () => {
+      expect(typeof provider).toBe('function');
     });
 
     it('should throw error when API key is missing', () => {
       expect(() => {
-        new OpenAIEmbeddingProvider({} as OpenAIEmbeddingOptions);
+        createOpenAIEmbeddings({} as any);
       }).toThrow('OpenAI API key is required');
     });
 
-    it('should set custom headers for organization and project', () => {
-      const options: OpenAIEmbeddingOptions = {
-        ...defaultOptions,
-        organization: 'test-org',
-        project: 'test-project',
-      };
-
-      // This should not throw
-      new OpenAIEmbeddingProvider(options);
+    it('should validate required options', () => {
+      const options = { apiKey: 'test-key' };
+      expect(() => {
+        createOpenAIEmbeddings(options);
+      }).not.toThrow();
     });
   });
 
@@ -38,7 +50,7 @@ describe('OpenAIEmbeddingProvider', () => {
     let provider: OpenAIEmbeddingProvider;
 
     beforeEach(() => {
-      provider = new OpenAIEmbeddingProvider({
+      provider = createOpenAIEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-3-small',
       });
@@ -65,7 +77,7 @@ describe('OpenAIEmbeddingProvider', () => {
         .post('/embeddings')
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world']);
+      const result = await provider(['Hello world']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
@@ -102,7 +114,7 @@ describe('OpenAIEmbeddingProvider', () => {
         .post('/embeddings')
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world', 'How are you?']);
+      const result = await provider(['Hello world', 'How are you?']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(2);
@@ -137,7 +149,7 @@ describe('OpenAIEmbeddingProvider', () => {
         })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await provider.embed(['Hello world'], {
+      const result = await provider(['Hello world'], {
         dimensions: 2,
         encodingFormat: 'float',
         user: 'test-user',
@@ -148,21 +160,21 @@ describe('OpenAIEmbeddingProvider', () => {
     });
 
     it('should throw error when model is not provided', async () => {
-      const providerWithoutModel = new OpenAIEmbeddingProvider(defaultOptions);
+      const providerWithoutModel = createOpenAIEmbeddings({ apiKey: 'test-api-key' });
 
-      await expect(providerWithoutModel.embed(['Hello world'])).rejects.toThrow(
-        'Model is required. Provide it at construction time or when calling embed.'
+      await expect(providerWithoutModel(['Hello world'])).rejects.toThrow(
+        'Model is required in config or options'
       );
     });
 
     it('should throw error when no texts provided', async () => {
-      await expect(provider.embed([])).rejects.toThrow('At least one text must be provided');
+      await expect(provider([])).rejects.toThrow('At least one text must be provided');
     });
 
     it('should throw error when too many texts provided', async () => {
       const tooManyTexts = Array(2049).fill('text');
 
-      await expect(provider.embed(tooManyTexts)).rejects.toThrow(
+      await expect(provider(tooManyTexts)).rejects.toThrow(
         'OpenAI embedding API supports up to 2048 texts per request'
       );
     });
@@ -172,12 +184,12 @@ describe('OpenAIEmbeddingProvider', () => {
         .post('/embeddings')
         .reply(400, 'Invalid request');
 
-      await expect(provider.embed(['Hello world'])).rejects.toThrow();
+      await expect(provider(['Hello world'])).rejects.toThrow();
       expect(scope.isDone()).toBe(true);
     });
 
     it('should use custom base URL', async () => {
-      const customProvider = new OpenAIEmbeddingProvider({
+      const customProvider = createOpenAIEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-3-small',
         baseURL: 'https://custom.openai.com/v1',
@@ -203,14 +215,14 @@ describe('OpenAIEmbeddingProvider', () => {
         .post('/embeddings')
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await customProvider.embed(['Hello world']);
+      const result = await customProvider(['Hello world']);
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
     });
 
     it('should merge construction and call-time options correctly', async () => {
-      const providerWithDefaults = new OpenAIEmbeddingProvider({
+      const providerWithDefaults = createOpenAIEmbeddings({
         ...defaultOptions,
         model: 'text-embedding-3-small',
         dimensions: 512,
@@ -240,7 +252,7 @@ describe('OpenAIEmbeddingProvider', () => {
         })
         .reply(200, JSON.stringify(mockResponse));
 
-      const result = await providerWithDefaults.embed(['Hello world'], {
+      const result = await providerWithDefaults(['Hello world'], {
         model: 'text-embedding-3-large',
         dimensions: 1024,
       });

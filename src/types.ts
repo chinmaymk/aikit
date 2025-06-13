@@ -616,22 +616,6 @@ export interface AnthropicOptions extends ProviderOptions {
 }
 
 /**
- * The core interface that all AI providers must implement.
- * It's the social contract that holds this whole library together.
- * @group Interfaces
- */
-export interface AIProvider<GenOpts extends GenerationOptions = GenerationOptions> {
-  /**
-   * The main event. This is where the magic happens.
-   * Give it a list of messages and some options, and it'll give you back a stream of consciousness.
-   * @param messages - The conversation so far. A story waiting to be told.
-   * @param options - The rules of the game. How you want the AI to behave.
-   * @returns An async iterable of stream chunks. Data, glorious data!
-   */
-  generate(messages: Message[], options?: GenOpts): AsyncIterable<StreamChunk>;
-}
-
-/**
  * Interface for AI providers that support embedding generation.
  * Embedding providers convert text into numerical vectors for semantic similarity tasks.
  * @group Types
@@ -645,4 +629,127 @@ export interface EmbeddingProvider<EmbedOpts extends EmbeddingOptions = Embeddin
    * @returns Promise that resolves to an embedding response with vectors and usage information.
    */
   embed(texts: string[], options?: EmbedOpts): Promise<EmbeddingResponse>;
+}
+
+/**
+ * Core type utilities for the AIKit library
+ */
+
+/**
+ * Type utility for provider options that require an API key
+ */
+export type WithApiKey<T> = Partial<T> & { apiKey: string };
+
+/**
+ * Type utility for streaming generator functions
+ */
+export type StreamingGenerateFunction<T = Record<string, unknown>> = (
+  messages: Message[],
+  options?: Partial<T>
+) => AsyncIterable<StreamChunk>;
+
+/**
+ * Type utility for embedding functions
+ */
+export type EmbedFunction<T = Record<string, unknown>> = (
+  texts: string[],
+  options?: Partial<T>
+) => Promise<EmbeddingResponse>;
+
+/**
+ * Type utility for non-streaming generation functions
+ */
+export type GenerateFunction<T = Record<string, unknown>> = (
+  messages: Message[],
+  options?: Partial<T>
+) => Promise<StreamResult>;
+
+/**
+ * Generic provider configuration type
+ */
+export type ProviderConfig<T> = T & {
+  apiKey: string;
+};
+
+/**
+ * Factory function return type utility
+ */
+export type ProviderFactory<TOptions, TProvider> = (options: WithApiKey<TOptions>) => TProvider;
+
+/**
+ * Embedding provider factory return type utility
+ */
+export type EmbeddingProviderFactory<TOptions, TProvider> = (
+  options: WithApiKey<TOptions>
+) => TProvider;
+
+/**
+ * Specific provider types using the utility types
+ */
+
+/**
+ * OpenAI text generation provider
+ */
+export type OpenAIProvider = StreamingGenerateFunction<OpenAIOptions>;
+
+/**
+ * Anthropic text generation provider
+ */
+export type AnthropicProvider = StreamingGenerateFunction<AnthropicOptions>;
+
+/**
+ * Google text generation provider
+ */
+export type GoogleProvider = StreamingGenerateFunction<GoogleOptions>;
+
+/**
+ * OpenAI Responses API provider
+ */
+export type OpenAIResponsesProvider = StreamingGenerateFunction<OpenAIResponsesOptions>;
+
+/**
+ * OpenAI embedding provider
+ */
+export type OpenAIEmbeddingProvider = EmbedFunction<OpenAIEmbeddingOptions>;
+
+/**
+ * Google embedding provider
+ */
+export type GoogleEmbeddingProvider = EmbedFunction<GoogleEmbeddingOptions>;
+
+/**
+ * Union types for provider collections
+ */
+export type AnyGenerationProvider =
+  | OpenAIProvider
+  | AnthropicProvider
+  | GoogleProvider
+  | OpenAIResponsesProvider;
+
+export type AnyEmbeddingProvider = OpenAIEmbeddingProvider | GoogleEmbeddingProvider;
+
+/**
+ * Provider type literals
+ */
+export type GenerationProviderType = 'openai' | 'anthropic' | 'google' | 'openai_responses';
+export type EmbeddingProviderType = 'openai_embeddings' | 'google_embeddings';
+
+/**
+ * Factory function result types
+ */
+
+// Clean mapping of provider types to their implementations
+type ProviderTypeMap = {
+  openai: OpenAIProvider;
+  anthropic: AnthropicProvider;
+  google: GoogleProvider;
+  openai_responses: OpenAIResponsesProvider;
+};
+
+export interface AvailableProviderResult<
+  T extends GenerationProviderType = GenerationProviderType,
+> {
+  provider?: T extends keyof ProviderTypeMap ? ProviderTypeMap[T] : AnyGenerationProvider;
+  type?: T;
+  name?: string;
 }

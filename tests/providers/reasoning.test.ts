@@ -1,14 +1,11 @@
 import {
-  AnthropicProvider,
-  OpenAIProvider,
-  GoogleGeminiProvider,
+  createAnthropic,
+  createOpenAI,
+  createGoogle,
   userText,
   collectDeltas,
   processStream,
   type StreamChunk,
-  type AnthropicOptions,
-  type OpenAIOptions,
-  type GoogleOptions,
 } from '@chinmaymk/aikit';
 import {
   anthropicTextResponseWithReasoning,
@@ -44,9 +41,9 @@ describe('Reasoning Support', () => {
   });
 
   describe('AnthropicProvider', () => {
-    const provider = new AnthropicProvider({
+    const provider = createAnthropic({
       apiKey: 'test-api-key',
-    } as AnthropicOptions);
+    });
 
     it('should expose reasoning content in stream chunks', async () => {
       const mockChunks = anthropicTextResponseWithReasoning(
@@ -62,7 +59,7 @@ describe('Reasoning Support', () => {
         });
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([userText('Hello')], {
+      for await (const chunk of provider([userText('Hello')], {
         model: 'claude-3-5-sonnet-20241022',
         thinking: { type: 'enabled', budget_tokens: 1024 },
       })) {
@@ -93,7 +90,7 @@ describe('Reasoning Support', () => {
         });
 
       const result = await collectDeltas(
-        provider.generate([userText('Test')], {
+        provider([userText('Test')], {
           model: 'claude-3-5-sonnet-20241022',
           thinking: { type: 'enabled', budget_tokens: 1024 },
         })
@@ -119,12 +116,12 @@ describe('Reasoning Support', () => {
       let finalReasoning = '';
 
       await processStream(
-        provider.generate([userText('Test')], {
+        provider([userText('Test')], {
           model: 'claude-3-5-sonnet-20241022',
           thinking: { type: 'enabled', budget_tokens: 1024 },
         }),
         {
-          onReasoning: reasoning => {
+          onReasoning: (reasoning: any) => {
             reasoningDeltas.push(reasoning.delta);
             finalReasoning = reasoning.content;
           },
@@ -137,9 +134,9 @@ describe('Reasoning Support', () => {
   });
 
   describe('OpenAIProvider', () => {
-    const provider = new OpenAIProvider({
+    const provider = createOpenAI({
       apiKey: 'test-api-key',
-    } as OpenAIOptions);
+    });
 
     it('should expose reasoning content for o1 models', async () => {
       const scope = nock('https://api.openai.com/v1')
@@ -149,7 +146,7 @@ describe('Reasoning Support', () => {
         });
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([userText('Hello')], {
+      for await (const chunk of provider([userText('Hello')], {
         model: 'o1-mini',
         reasoning: { effort: 'medium' },
       })) {
@@ -174,7 +171,7 @@ describe('Reasoning Support', () => {
         });
 
       const result = await collectDeltas(
-        provider.generate([userText('Test')], {
+        provider([userText('Test')], {
           model: 'o1-mini',
           reasoning: { effort: 'high' },
         })
@@ -186,9 +183,9 @@ describe('Reasoning Support', () => {
   });
 
   describe('GoogleGeminiProvider', () => {
-    const provider = new GoogleGeminiProvider({
+    const provider = createGoogle({
       apiKey: 'test-api-key',
-    } as GoogleOptions);
+    });
 
     it('should not expose reasoning content (not supported)', async () => {
       const mockResponse = {
@@ -208,7 +205,7 @@ describe('Reasoning Support', () => {
         });
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([userText('Hello')], {
+      for await (const chunk of provider([userText('Hello')], {
         model: 'gemini-1.5-pro',
       })) {
         chunks.push(chunk);

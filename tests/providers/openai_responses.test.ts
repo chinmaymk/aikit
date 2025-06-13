@@ -1,15 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
-  OpenAIResponsesProvider,
+  createOpenAIResponses,
+  openaiResponses,
   userText,
-  systemText,
   userImage,
+  systemText,
   assistantWithToolCalls,
-  toolResult,
+  toolResult as toolResultMsg,
   type Message,
   type GenerationOptions,
-  type OpenAIOptions,
+  type OpenAIResponsesOptions,
   type StreamChunk,
+  type FinishReason,
+  type OpenAIResponsesProvider,
 } from '@chinmaymk/aikit';
 import nock from 'nock';
 import { textChunk, toolCallChunk, textDelta, completionChunk } from '../helpers/openaiChunks';
@@ -31,13 +34,18 @@ function mockResponsesAPI(expectedChunks: any[], captureBody: (body: any) => voi
 }
 
 describe('OpenAIResponsesProvider', () => {
-  const mockConfig: OpenAIOptions = {
+  const mockConfig = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.openai.com/v1',
     timeout: 30000,
   };
 
   let provider: OpenAIResponsesProvider;
+  const mockMessages: Message[] = [userText('Hello, world!')];
+  const mockOptions: OpenAIResponsesOptions = {
+    model: 'gpt-4o',
+    apiKey: 'test-api-key',
+  };
 
   // Ensure no real HTTP requests are made
   beforeAll(() => {
@@ -45,7 +53,7 @@ describe('OpenAIResponsesProvider', () => {
   });
 
   beforeEach(() => {
-    provider = new OpenAIResponsesProvider(mockConfig);
+    provider = createOpenAIResponses(mockConfig);
     nock.cleanAll();
   });
 
@@ -55,32 +63,30 @@ describe('OpenAIResponsesProvider', () => {
 
   describe('constructor', () => {
     it('should initialize with organization and project headers', () => {
-      const configWithOrgAndProject: OpenAIOptions = {
+      const configWithOrgAndProject = {
         apiKey: 'test-api-key',
         organization: 'test-org',
         project: 'test-project',
       };
 
-      const providerWithHeaders = new OpenAIResponsesProvider(configWithOrgAndProject);
-      expect(providerWithHeaders).toBeInstanceOf(OpenAIResponsesProvider);
+      const providerWithHeaders = createOpenAIResponses(configWithOrgAndProject);
+      expect(typeof providerWithHeaders).toBe('function');
     });
 
     it('should initialize with custom configuration', () => {
-      const customConfig: OpenAIOptions = {
+      const customConfig = {
         apiKey: 'test-api-key',
         baseURL: 'https://custom.openai.com/v1',
         timeout: 30000,
         maxRetries: 5,
       };
 
-      const customProvider = new OpenAIResponsesProvider(customConfig);
-      expect(customProvider).toBeInstanceOf(OpenAIResponsesProvider);
+      const customProvider = createOpenAIResponses(customConfig);
+      expect(typeof customProvider).toBe('function');
     });
   });
 
   describe('generate', () => {
-    const mockMessages: Message[] = [userText('Hello')];
-
     const mockOptions: GenerationOptions = {
       model: 'gpt-4o',
       maxOutputTokens: 100,
@@ -91,7 +97,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Hello!', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -107,7 +113,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Hi!', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
+      for await (const chunk of provider(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -122,7 +128,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('I see an image', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+      for await (const chunk of provider(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -157,7 +163,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -176,7 +182,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Let me check...', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
+      for await (const chunk of provider([assistantMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -184,7 +190,7 @@ describe('OpenAIResponsesProvider', () => {
     });
 
     it('should handle tool result messages', async () => {
-      const toolResultMessage: Message = toolResult(
+      const toolResultMessage: Message = toolResultMsg(
         'call_123',
         '{"temperature": 72, "condition": "sunny"}'
       );
@@ -192,7 +198,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('The weather is sunny', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResultMessage], mockOptions)) {
+      for await (const chunk of provider([toolResultMessage], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -206,7 +212,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -229,7 +235,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, detailedOptions)) {
+      for await (const chunk of provider(mockMessages, detailedOptions)) {
         chunks.push(chunk);
       }
 
@@ -252,7 +258,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -275,7 +281,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -298,7 +304,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -321,7 +327,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -344,7 +350,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -354,7 +360,7 @@ describe('OpenAIResponsesProvider', () => {
     it('should handle different finish reasons', async () => {
       const finishReasonTests = [
         { status: 'completed', expected: 'stop' },
-        { status: 'max_tokens', expected: 'length' },
+        { status: 'incomplete', expected: 'length' },
         { status: 'unknown', expected: 'stop' },
       ];
 
@@ -362,7 +368,7 @@ describe('OpenAIResponsesProvider', () => {
         const scope = mockResponsesAPI([textDelta('test'), completionChunk(status)], () => {});
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
 
@@ -401,7 +407,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -415,7 +421,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textDelta('test')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -432,7 +438,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([unknownRoleMsg], mockOptions)) {
+      for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -484,7 +490,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -502,7 +508,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -525,7 +531,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithNullContent, mockOptions)) {
+      for await (const chunk of provider(messagesWithNullContent, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -550,7 +556,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -575,7 +581,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, openaiOptions)) {
+      for await (const chunk of provider(mockMessages, openaiOptions)) {
         chunks.push(chunk);
       }
 
@@ -651,7 +657,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -688,7 +694,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -699,7 +705,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textDelta('Hello'), completionChunk('incomplete')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -714,7 +720,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(assistantMsg, mockOptions)) {
+      for await (const chunk of provider(assistantMsg, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -726,7 +732,7 @@ describe('OpenAIResponsesProvider', () => {
 
       const chunks: StreamChunk[] = [];
       // No tools or toolChoice in options
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -748,7 +754,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantToolOnly], mockOptions)) {
+      for await (const chunk of provider([assistantToolOnly], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -757,14 +763,14 @@ describe('OpenAIResponsesProvider', () => {
     });
 
     it('should throw error when no model is provided', async () => {
-      const providerWithoutModel = new OpenAIResponsesProvider({ apiKey: 'test-key' });
+      const providerWithoutModel = createOpenAIResponses({ apiKey: 'test-key' });
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+        for await (const chunk of providerWithoutModel(mockMessages, {})) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+      }).rejects.toThrow('Model is required in config or options');
     });
 
     it('should handle malformed function call arguments', async () => {
@@ -804,7 +810,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -821,7 +827,7 @@ describe('OpenAIResponsesProvider', () => {
         const scope = mockResponsesAPI([textDelta('Hello'), completionChunk(status)], () => {});
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
 
@@ -851,7 +857,7 @@ describe('OpenAIResponsesProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -876,7 +882,7 @@ describe('OpenAIResponsesProvider', () => {
       const scope = mockResponsesAPI([textChunk('Response', 'stop')], body => (requestBody = body));
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -885,6 +891,32 @@ describe('OpenAIResponsesProvider', () => {
         type: 'function',
         name: 'specific_tool',
       });
+    });
+  });
+
+  describe('direct openaiResponses function', () => {
+    it('should work as a direct function call', async () => {
+      const scope = nock('https://api.openai.com/v1')
+        .post('/responses')
+        .reply(
+          200,
+          'data: {"type": "response.output_text.delta", "delta": "Hello from OpenAI!"}\ndata: [DONE]\n',
+          {
+            'content-type': 'text/event-stream',
+          }
+        );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of openaiResponses(
+        { apiKey: 'test-api-key', model: 'gpt-4o' },
+        mockMessages
+      )) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].content).toBe('Hello from OpenAI!');
     });
   });
 });

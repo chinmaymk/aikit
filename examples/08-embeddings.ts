@@ -23,12 +23,12 @@ async function main() {
 
     try {
       // Single text
-      const single = await embeddings.embed(['Hello, world!']);
+      const single = await embeddings(['Hello, world!']);
       console.log(`Single text: ${single.embeddings[0].values.length} dimensions`);
       console.log(`Tokens used: ${single.usage?.totalTokens || 0}`);
 
       // Multiple texts
-      const batch = await embeddings.embed(texts);
+      const batch = await embeddings(texts);
       console.log(`\nBatch of ${batch.embeddings.length} texts:`);
       batch.embeddings.forEach((emb, i) => {
         console.log(`  ${i + 1}. ${emb.values.length} dimensions`);
@@ -57,12 +57,12 @@ async function main() {
 
     try {
       // Single text
-      const single = await embeddings.embed(['Hello, world!']);
+      const single = await embeddings(['Hello, world!']);
       console.log(`Single text: ${single.embeddings[0].values.length} dimensions`);
       console.log(`Tokens used: ${single.usage?.totalTokens || 0}`);
 
       // Task-specific embeddings
-      const docResult = await embeddings.embed(['Important document content'], {
+      const docResult = await embeddings(['Important document content'], {
         taskType: 'RETRIEVAL_DOCUMENT',
         title: 'Sample Document',
       });

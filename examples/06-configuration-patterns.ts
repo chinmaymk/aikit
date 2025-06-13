@@ -10,22 +10,14 @@
  * - Compile-time error prevention
  */
 
-import {
-  createProvider,
-  userText,
-  generate,
-  type AIProvider,
-  type OpenAIOptions,
-  type AnthropicOptions,
-  type GoogleOptions,
-} from '@chinmaymk/aikit';
+import { createOpenAI, createAnthropic, createGoogle, userText, generate } from '@chinmaymk/aikit';
 import { printDelimiter, printSectionHeader } from './utils';
 
 async function pattern1_BasicConfiguration() {
   printSectionHeader('Pattern 1: Basic Configuration - Everything at Generation Time');
 
   // Minimal construction with just API key
-  const provider = createProvider('openai', {
+  const provider = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
   });
 
@@ -44,7 +36,7 @@ async function pattern2_DefaultsAtConstruction() {
   printSectionHeader('Pattern 2: Defaults at Construction - Override at Generation');
 
   // Set default model and generation options at construction time
-  const provider = createProvider('openai', {
+  const provider = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
     temperature: 0.5,
@@ -79,8 +71,8 @@ async function pattern2_DefaultsAtConstruction() {
 async function pattern3_AdvancedOpenAIConfiguration() {
   printSectionHeader('Pattern 3: Advanced OpenAI Configuration with Type Safety');
 
-  // Using OpenAIOptions type for better type safety and IDE support
-  const openaiConfig: OpenAIOptions = {
+  // Clean configuration object - TypeScript infers the correct types
+  const provider = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
     temperature: 0.7,
@@ -97,9 +89,7 @@ async function pattern3_AdvancedOpenAIConfiguration() {
     maxRetries: 3,
     organization: process.env.OPENAI_ORG_ID,
     project: process.env.OPENAI_PROJECT_ID,
-  };
-
-  const provider = createProvider('openai', openaiConfig);
+  });
 
   const result = await generate(provider, [
     userText('Write a short creative story about a robot learning to paint.'),
@@ -117,8 +107,8 @@ async function pattern4_AnthropicConfiguration() {
     return;
   }
 
-  // Using AnthropicOptions type for full type safety
-  const anthropicConfig: AnthropicOptions = {
+  // Clean configuration object - TypeScript infers the correct types
+  const provider = createAnthropic({
     apiKey: process.env.ANTHROPIC_API_KEY!,
     model: 'claude-3-5-sonnet-20241022',
     temperature: 0.6,
@@ -135,9 +125,7 @@ async function pattern4_AnthropicConfiguration() {
       budget_tokens: 1024,
     },
     serviceTier: 'auto',
-  };
-
-  const provider = createProvider('anthropic', anthropicConfig);
+  });
 
   // Use with generation-time overrides
   const result = await generate(
@@ -161,8 +149,8 @@ async function pattern5_GoogleConfiguration() {
     return;
   }
 
-  // Using GoogleOptions type for full type safety
-  const googleConfig: GoogleOptions = {
+  // Clean configuration object - TypeScript infers the correct types
+  const provider = createGoogle({
     apiKey: process.env.GOOGLE_API_KEY!,
     model: 'gemini-1.5-pro',
     temperature: 0.8,
@@ -172,9 +160,7 @@ async function pattern5_GoogleConfiguration() {
     topK: 20,
     topP: 0.8,
     candidateCount: 1,
-  };
-
-  const provider = createProvider('google', googleConfig);
+  });
 
   const result = await generate(provider, [userText('What are the benefits of renewable energy?')]);
 
@@ -185,7 +171,7 @@ async function pattern5_GoogleConfiguration() {
 async function pattern6_DynamicConfiguration() {
   printSectionHeader('Pattern 6: Dynamic Configuration Based on Use Case');
 
-  const provider = createProvider('openai', {
+  const provider = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
   });
@@ -217,7 +203,7 @@ async function pattern7_ToolsConfiguration() {
   };
 
   // Set default tools at construction
-  const provider = createProvider('openai', {
+  const provider = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY!,
     model: 'gpt-4o',
     tools: [weatherTool],
@@ -233,30 +219,8 @@ async function pattern7_ToolsConfiguration() {
   console.log();
 }
 
-async function pattern8_TypeSafetyBenefits() {
-  printSectionHeader('Pattern 8: Type Safety Benefits');
-
-  console.log('✅ Type safety prevents configuration errors at compile time:\n');
-  console.log('// OpenAI-specific options');
-  console.log('const config: OpenAIOptions = {');
-  console.log('  presencePenalty: 0.1,     // ✅ Valid for OpenAI');
-  console.log('  // beta: ["test"],        // ❌ Compile error: not valid for OpenAI');
-  console.log('};\n');
-
-  console.log('// Anthropic-specific options');
-  console.log('const config: AnthropicOptions = {');
-  console.log('  topK: 40,                 // ✅ Valid for Anthropic');
-  console.log('  beta: ["computer-use"],   // ✅ Valid for Anthropic');
-  console.log('  // presencePenalty: 0.1,  // ❌ Compile error: not valid for Anthropic');
-  console.log('};\n');
-
-  console.log(
-    'Provider-specific types prevent configuration errors and provide better IDE support.\n'
-  );
-}
-
-async function pattern9_MultiProviderConsistency() {
-  printSectionHeader('Pattern 9: Multi-Provider Consistency');
+async function pattern8_MultiProviderConsistency() {
+  printSectionHeader('Pattern 8: Multi-Provider Consistency');
 
   const question = [userText('What is recursion?')];
   const baseOptions = { temperature: 0.6, maxOutputTokens: 50 };
@@ -264,7 +228,7 @@ async function pattern9_MultiProviderConsistency() {
   const providers = [
     process.env.OPENAI_API_KEY && [
       'OpenAI',
-      createProvider('openai', {
+      createOpenAI({
         apiKey: process.env.OPENAI_API_KEY!,
         model: 'gpt-4o',
         ...baseOptions,
@@ -272,7 +236,7 @@ async function pattern9_MultiProviderConsistency() {
     ],
     process.env.ANTHROPIC_API_KEY && [
       'Anthropic',
-      createProvider('anthropic', {
+      createAnthropic({
         apiKey: process.env.ANTHROPIC_API_KEY!,
         model: 'claude-3-5-sonnet-20241022',
         ...baseOptions,
@@ -280,13 +244,13 @@ async function pattern9_MultiProviderConsistency() {
     ],
     process.env.GOOGLE_API_KEY && [
       'Google',
-      createProvider('google', {
+      createGoogle({
         apiKey: process.env.GOOGLE_API_KEY!,
         model: 'gemini-1.5-pro',
         ...baseOptions,
       }),
     ],
-  ].filter(Boolean) as [string, AIProvider][];
+  ].filter(Boolean) as Array<[string, ReturnType<typeof createOpenAI>]>;
 
   if (providers.length === 0) {
     console.log('No API keys configured\n');
@@ -314,16 +278,9 @@ async function main() {
     await pattern5_GoogleConfiguration();
     await pattern6_DynamicConfiguration();
     await pattern7_ToolsConfiguration();
-    await pattern8_TypeSafetyBenefits();
-    await pattern9_MultiProviderConsistency();
+    await pattern8_MultiProviderConsistency();
 
     printDelimiter('Configuration Patterns Complete!', '-');
-
-    console.log('\n📚 Key Takeaways:');
-    console.log('• Single interface per provider with flexible configuration');
-    console.log('• Set defaults at construction, override at generation time');
-    console.log('• Provider-specific types (OpenAIOptions, AnthropicOptions, GoogleOptions)');
-    console.log('• Full TypeScript support prevents configuration errors');
   } catch (error) {
     console.error('Error:', error);
   }

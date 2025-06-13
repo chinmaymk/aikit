@@ -1,14 +1,17 @@
 import {
-  OpenAIProvider,
+  createOpenAI,
+  openai,
   userText,
-  systemText,
   userImage,
+  systemText,
   assistantWithToolCalls,
   toolResult as toolResultMsg,
   type Message,
+  type GenerationOptions,
   type OpenAIOptions,
   type StreamChunk,
-  type GenerationOptions,
+  type FinishReason,
+  type OpenAIProvider,
 } from '@chinmaymk/aikit';
 import nock from 'nock';
 import { chatTextChunk, chatStopChunk, chatToolCallChunk } from '../helpers/openaiChunks';
@@ -30,21 +33,27 @@ function mockChatCompletion(expectedChunks: any[], captureBody: (body: any) => v
 }
 
 describe('OpenAIProvider', () => {
-  const mockConfig: OpenAIOptions = {
+  const mockConfig = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.openai.com/v1',
     timeout: 30000,
   };
 
   let provider: OpenAIProvider;
+  const mockMessages: Message[] = [userText('Hello')];
+  const mockOptions: OpenAIOptions = {
+    model: 'gpt-4o',
+    apiKey: 'test-api-key',
+    maxOutputTokens: 100,
+    temperature: 0.7,
+  };
 
-  // Ensure no real HTTP requests are made
   beforeAll(() => {
     nock.disableNetConnect();
   });
 
   beforeEach(() => {
-    provider = new OpenAIProvider(mockConfig);
+    provider = createOpenAI(mockConfig);
     nock.cleanAll();
   });
 
@@ -55,43 +64,39 @@ describe('OpenAIProvider', () => {
   describe('constructor', () => {
     it('should throw error when API key is missing', () => {
       expect(() => {
-        new OpenAIProvider({} as OpenAIOptions);
+        createOpenAI({} as any);
       }).toThrow('OpenAI API key is required');
     });
 
+    it('should create provider successfully', () => {
+      expect(typeof provider).toBe('function');
+    });
+
     it('should initialize with organization and project headers', () => {
-      const configWithOrgAndProject: OpenAIOptions = {
+      const configWithOrgAndProject = {
         apiKey: 'test-api-key',
         organization: 'test-org',
         project: 'test-project',
       };
 
-      const providerWithHeaders = new OpenAIProvider(configWithOrgAndProject);
-      expect(providerWithHeaders).toBeInstanceOf(OpenAIProvider);
+      const providerWithHeaders = createOpenAI(configWithOrgAndProject);
+      expect(typeof providerWithHeaders).toBe('function');
     });
 
     it('should initialize with custom configuration', () => {
-      const customConfig: OpenAIOptions = {
+      const customConfig = {
         apiKey: 'test-api-key',
         baseURL: 'https://custom.openai.com/v1',
         timeout: 30000,
         maxRetries: 5,
       };
 
-      const customProvider = new OpenAIProvider(customConfig);
-      expect(customProvider).toBeInstanceOf(OpenAIProvider);
+      const customProvider = createOpenAI(customConfig);
+      expect(typeof customProvider).toBe('function');
     });
   });
 
   describe('generate', () => {
-    const mockMessages: Message[] = [userText('Hello')];
-
-    const mockOptions: OpenAIOptions = {
-      model: 'gpt-4o',
-      maxOutputTokens: 100,
-      temperature: 0.7,
-    };
-
     it('should call OpenAI API with correct parameters', async () => {
       let requestBody: any;
       const scope = mockChatCompletion(
@@ -100,7 +105,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -134,7 +139,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
+      for await (const chunk of provider(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -161,7 +166,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithDeveloper, mockOptions)) {
+      for await (const chunk of provider(messagesWithDeveloper, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -187,7 +192,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+      for await (const chunk of provider(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -227,7 +232,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -265,7 +270,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([assistantMsg], mockOptions)) {
+      for await (const chunk of provider([assistantMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -299,7 +304,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResult], mockOptions)) {
+      for await (const chunk of provider([toolResult], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -318,7 +323,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -346,7 +351,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, detailedOptions)) {
+      for await (const chunk of provider(mockMessages, detailedOptions)) {
         chunks.push(chunk);
       }
 
@@ -381,7 +386,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -409,7 +414,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -437,7 +442,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -465,7 +470,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -496,7 +501,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -510,10 +515,10 @@ describe('OpenAIProvider', () => {
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, optionsWithoutModel)) {
+        for await (const chunk of provider(mockMessages, optionsWithoutModel)) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+      }).rejects.toThrow('Model is required in config or options');
     });
 
     it('should handle stream options and parallel tool calls', async () => {
@@ -537,7 +542,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, optionsWithStreamAndParallel)) {
+      for await (const chunk of provider(mockMessages, optionsWithStreamAndParallel)) {
         chunks.push(chunk);
       }
 
@@ -556,34 +561,40 @@ describe('OpenAIProvider', () => {
 
       for (const { reason, expected } of finishReasonTests) {
         const scope = mockChatCompletion(
-          [{ choices: [{ delta: { content: 'test' }, finish_reason: reason }] }],
+          [
+            { choices: [{ delta: { content: 'test' } }] },
+            { choices: [{ delta: {}, finish_reason: reason }] },
+          ],
           () => {}
         );
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
 
         expect(scope.isDone()).toBe(true);
-        expect(chunks[0].finishReason).toBe(expected);
+        expect(chunks[1].finishReason).toBe(expected);
         nock.cleanAll();
       }
     });
 
     it('should handle null finish reason', async () => {
       const scope = mockChatCompletion(
-        [{ choices: [{ delta: { content: 'test' }, finish_reason: null }] }],
+        [
+          { choices: [{ delta: { content: 'test' } }] },
+          { choices: [{ delta: {}, finish_reason: null }] },
+        ],
         () => {}
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
       expect(scope.isDone()).toBe(true);
-      expect(chunks[0].finishReason).toBeUndefined();
+      expect(chunks).toHaveLength(1); // Only the content chunk should be returned
     });
 
     it('should handle messages with unknown roles', async () => {
@@ -599,7 +610,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([unknownRoleMsg], mockOptions)) {
+      for await (const chunk of provider([unknownRoleMsg], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -620,7 +631,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -638,7 +649,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -665,7 +676,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithNullContent, mockOptions)) {
+      for await (const chunk of provider(messagesWithNullContent, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -695,7 +706,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -720,7 +731,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithDeveloper, mockOptions)) {
+      for await (const chunk of provider(messagesWithDeveloper, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -732,14 +743,14 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle missing model at construction time', async () => {
-      const providerWithoutModel = new OpenAIProvider({ apiKey: 'test-key' });
+      const providerWithoutModel = createOpenAI({ apiKey: 'test-key' });
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+        for await (const chunk of providerWithoutModel(mockMessages, {})) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+      }).rejects.toThrow('Model is required in config or options');
     });
 
     it('should handle tool calls with function choice object', async () => {
@@ -762,7 +773,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -785,7 +796,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -806,7 +817,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -815,6 +826,28 @@ describe('OpenAIProvider', () => {
       expect(last.toolCalls).toEqual([
         { id: 'call_123', name: 'test_tool', arguments: { param: 'value' } },
       ]);
+    });
+  });
+
+  describe('direct openai function', () => {
+    it('should work as a direct function call', async () => {
+      const scope = mockChatCompletion(
+        [
+          { choices: [{ delta: { content: 'Hello from OpenAI!' } }] },
+          { choices: [{ delta: {}, finish_reason: 'stop' }] },
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of openai({ apiKey: 'test-api-key', model: 'gpt-4o' }, mockMessages)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0].content).toBe('Hello from OpenAI!');
+      expect(chunks[1].finishReason).toBe('stop');
     });
   });
 });

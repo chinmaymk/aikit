@@ -1,13 +1,17 @@
 import {
-  GoogleGeminiProvider,
+  createGoogle,
+  google,
   userText,
   systemText,
   userImage,
   assistantWithToolCalls,
   toolResult,
   type Message,
+  type GenerationOptions,
   type GoogleOptions,
   type StreamChunk,
+  type FinishReason,
+  type GoogleProvider,
 } from '@chinmaymk/aikit';
 import nock from 'nock';
 import { googleTextChunk, googleStopChunk, googleToolCallChunk } from '../helpers/googleChunks';
@@ -32,19 +36,26 @@ function mockGoogleGeneration(
     });
 }
 
-describe('GoogleGeminiProvider', () => {
-  const mockConfig: GoogleOptions = {
+describe('GoogleProvider', () => {
+  const mockConfig = {
     apiKey: 'test-api-key',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta',
+    timeout: 30000,
   };
 
-  let provider: GoogleGeminiProvider;
+  let provider: GoogleProvider;
+  const mockMessages: Message[] = [userText('Hello')];
+  const mockOptions: GoogleOptions = {
+    model: 'gemini-1.5-pro',
+    apiKey: 'test-api-key',
+  };
 
   beforeAll(() => {
     nock.disableNetConnect();
   });
 
   beforeEach(() => {
-    provider = new GoogleGeminiProvider(mockConfig);
+    provider = createGoogle(mockConfig);
     nock.cleanAll();
   });
 
@@ -55,8 +66,6 @@ describe('GoogleGeminiProvider', () => {
   describe('constructor', () => {});
 
   describe('generate', () => {
-    const mockMessages: Message[] = [userText('Hello')];
-
     const mockOptions: GoogleOptions = {
       model: 'gemini-1.5-pro',
       maxOutputTokens: 100,
@@ -72,7 +81,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -105,7 +114,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithSystem, mockOptions)) {
+      for await (const chunk of provider(messagesWithSystem, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -134,7 +143,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithImage, mockOptions)) {
+      for await (const chunk of provider(messagesWithImage, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -175,7 +184,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -218,7 +227,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -248,7 +257,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -278,7 +287,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -311,7 +320,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -341,7 +350,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithToolCalls, mockOptions)) {
+      for await (const chunk of provider(messagesWithToolCalls, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -379,7 +388,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -418,7 +427,7 @@ describe('GoogleGeminiProvider', () => {
         const scope = mockGoogleGeneration('gemini-1.5-pro', [customChunk], () => {});
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
 
@@ -442,7 +451,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -472,7 +481,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, fullOptions)) {
+      for await (const chunk of provider(mockMessages, fullOptions)) {
         chunks.push(chunk);
       }
 
@@ -502,7 +511,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(messagesWithUnknownRole, mockOptions)) {
+      for await (const chunk of provider(messagesWithUnknownRole, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -534,7 +543,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+      for await (const chunk of provider(mockMessages, toolOptions)) {
         chunks.push(chunk);
       }
 
@@ -561,7 +570,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+      for await (const chunk of provider(mockMessages, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -582,7 +591,7 @@ describe('GoogleGeminiProvider', () => {
         body => (requestBody = body)
       );
 
-      for await (const _ of provider.generate(messagesWithUnknownImage, mockOptions)) {
+      for await (const _ of provider(messagesWithUnknownImage, mockOptions)) {
         void _; // consume stream
       }
 
@@ -593,14 +602,14 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should throw error when no model is provided', async () => {
-      const providerWithoutModel = new GoogleGeminiProvider({ apiKey: 'test-key' });
+      const providerWithoutModel = createGoogle({ apiKey: 'test-key' });
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+        for await (const chunk of providerWithoutModel(mockMessages, {})) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+      }).rejects.toThrow('Model is required in config or options');
     });
 
     it('should handle safety-related finish reasons', async () => {
@@ -619,7 +628,7 @@ describe('GoogleGeminiProvider', () => {
         const scope = mockGoogleGeneration('gemini-1.5-pro', [chunk], () => {});
 
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        for await (const chunk of provider(mockMessages, mockOptions)) {
           chunks.push(chunk);
         }
 
@@ -646,7 +655,7 @@ describe('GoogleGeminiProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate(emptyToolResults, mockOptions)) {
+      for await (const chunk of provider(emptyToolResults, mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -654,6 +663,29 @@ describe('GoogleGeminiProvider', () => {
       // Should include the empty function response
       const toolResponseContent = requestBody.contents.find((c: any) => c.role === 'function');
       expect(toolResponseContent.parts[0].functionResponse.response).toEqual({ result: '' });
+    });
+  });
+
+  describe('direct google function', () => {
+    it('should work as a direct function call', async () => {
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Hello from Google!'), googleStopChunk()],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of google(
+        { apiKey: 'test-api-key', model: 'gemini-1.5-pro' },
+        mockMessages
+      )) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0].content).toBe('Hello from Google!');
+      expect(chunks[1].finishReason).toBe('stop');
     });
   });
 });

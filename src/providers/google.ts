@@ -1,7 +1,76 @@
-import type { AIProvider, Message, GoogleOptions, StreamChunk, ToolCall, Tool } from '../types';
+import type {
+  Message,
+  StreamChunk,
+  Tool,
+  ToolCall,
+  GoogleOptions,
+  WithApiKey,
+  StreamingGenerateFunction,
+} from '../types';
 
 import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
 import { APIClient } from './api';
+
+/**
+ * Creates a Google Gemini generation function with pre-configured defaults.
+ * Returns a simple function that takes messages and options.
+ *
+ * @example
+ * ```typescript
+ * const google = createGoogle({ apiKey: '...', model: 'gemini-1.5-pro' });
+ *
+ * // Use like any function
+ * const result = await collectDeltas(google([userText('Hello')]));
+ *
+ * // Override options
+ * const creative = await collectDeltas(google([userText('Be creative')], { temperature: 0.9 }));
+ * ```
+ */
+export function createGoogle(
+  config: WithApiKey<GoogleOptions>
+): StreamingGenerateFunction<Partial<GoogleOptions>> {
+  if (!config.apiKey) {
+    throw new Error('Google API key is required');
+  }
+
+  const baseUrl = config.baseURL || 'https://generativelanguage.googleapis.com/v1beta';
+  const headers = { 'Content-Type': 'application/json' };
+  const client = new APIClient(baseUrl, headers, config.timeout, config.maxRetries);
+
+  const { apiKey, ...defaultGenerationOptions } = config;
+  const defaultOptions = { apiKey, ...defaultGenerationOptions };
+
+  return async function* google(messages: Message[], options: Partial<GoogleOptions> = {}) {
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required in config or options');
+    }
+
+    const { endpoint, payload } = buildRequest(messages, mergedOptions);
+    const stream = await client.stream(endpoint, payload);
+    const lineStream = client.processStreamAsLines(stream);
+    yield* processStream(lineStream);
+  };
+}
+
+/**
+ * Direct Google function - no configuration step needed
+ *
+ * @example
+ * ```typescript
+ * const result = await collectDeltas(
+ *   google({ apiKey: '...', model: 'gemini-1.5-pro' }, [userText('Hello')])
+ * );
+ * ```
+ */
+export async function* google(
+  config: WithApiKey<GoogleOptions>,
+  messages: Message[]
+): AsyncIterable<StreamChunk> {
+  const provider = createGoogle(config);
+  yield* provider(messages);
+}
 
 // Local replacement for the Google SDK `FunctionCallingMode` enum
 type GoogleFunctionCallingMode = 'AUTO' | 'NONE' | 'ANY';
@@ -63,383 +132,305 @@ interface StreamGenerateContentChunk {
   }>;
 }
 
-/**
- * Your gateway to the world of Google's Gemini models.
- * This class is the master translator, converting AIKit's standard format
- * into the specific dialect that Gemini understands. It's like having a
- * personal interpreter for one of the most powerful AIs on the planet.
- *
- * @group Providers
- */
-export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
-  private readonly client: APIClient;
-  private readonly defaultOptions: GoogleOptions;
+// Helper functions for functional API
+function buildRequest(
+  messages: Message[],
+  options: GoogleOptions
+): { endpoint: string; payload: GenerateContentRequestBody } {
+  const { systemInstruction, googleMessages } = transformMessages(messages);
+  const modelConfig = buildModelConfig(systemInstruction, options);
 
-  /**
-   * Initializes the Google Gemini provider.
-   * @param options - Your Google API credentials and default generation settings.
-   */
-  constructor(options: GoogleOptions) {
-    if (!options.apiKey) {
-      throw new Error('Google API key is required');
-    }
+  const payload: GenerateContentRequestBody = {
+    ...modelConfig,
+    contents: googleMessages,
+  };
 
-    const baseUrl = options.baseURL || 'https://generativelanguage.googleapis.com/v1beta';
-    const headers = { 'Content-Type': 'application/json' };
+  // The key is passed as a query parameter, which is a bit different from other providers.
+  const endpoint = `/models/${options.model!}:streamGenerateContent?key=${options.apiKey}&alt=sse`;
 
-    this.client = new APIClient(baseUrl, headers, options.timeout, options.maxRetries);
+  return { endpoint, payload };
+}
 
-    const { apiKey, ...defaultGenerationOptions } = options;
-    this.defaultOptions = { apiKey, ...defaultGenerationOptions };
-  }
+async function* processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
+  let currentContent = '';
+  let pendingToolCalls: ToolCall[] = [];
 
-  /**
-   * Kicks off the generation process with the Gemini API.
-   * It transforms the request, makes the call, and processes the stream of
-   * consciousness that comes back.
-   * @param messages - The conversation history.
-   * @param options - Generation options for the request (optional, will use defaults from constructor).
-   * @returns An async iterable of stream chunks.
-   */
-  async *generate(messages: Message[], options: GoogleOptions = {}): AsyncIterable<StreamChunk> {
-    const mergedOptions = this.mergeOptions(options);
+  for await (const line of lineStream) {
+    if (!line.trim() || !line.startsWith('data: ')) continue;
 
-    if (!mergedOptions.model) {
-      throw new Error('Model is required. Provide it at construction time or generation time.');
-    }
+    const data = line.slice(6);
+    if (data.trim() === '[DONE]') break;
 
-    const { endpoint, payload } = this.buildRequest(messages, mergedOptions);
+    const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
+    if (!chunk) continue;
 
-    const stream = await this.client.stream(endpoint, payload);
-    const lineStream = this.client.processStreamAsLines(stream);
-
-    yield* this.processStream(lineStream);
-  }
-
-  /**
-   * Merges default options with generation-time options.
-   * Generation-time options take precedence over construction-time options.
-   */
-  private mergeOptions(generationOptions: GoogleOptions): GoogleOptions {
-    return {
-      ...this.defaultOptions,
-      ...generationOptions,
-    };
-  }
-
-  /**
-   * Builds the complete request for the Google API, including the endpoint and payload.
-   */
-  private buildRequest(
-    messages: Message[],
-    options: GoogleOptions
-  ): { endpoint: string; payload: GenerateContentRequestBody } {
-    const { systemInstruction, googleMessages } = this.transformMessages(messages);
-    const modelConfig = this.buildModelConfig(systemInstruction, options);
-
-    const payload: GenerateContentRequestBody = {
-      ...modelConfig,
-      contents: googleMessages,
-    };
-
-    // The key is passed as a query parameter, which is a bit different from other providers.
-    const endpoint = `/models/${options.model!}:streamGenerateContent?key=${options.apiKey}&alt=sse`;
-
-    return { endpoint, payload };
-  }
-
-  /**
-   * Processes the stream of responses from Google's API.
-   */
-  private async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    let currentContent = '';
-    let pendingToolCalls: ToolCall[] = [];
-
-    for await (const line of lineStream) {
-      if (!line.trim() || !line.startsWith('data: ')) continue;
-
-      const data = line.slice(6);
-      if (data.trim() === '[DONE]') break;
-
-      const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
-      if (!chunk) continue;
-
-      const result = this.processChunk(chunk, currentContent, pendingToolCalls);
-      if (result) {
-        currentContent = result.content;
-        // Update pendingToolCalls if new tool calls were added
-        if (result.toolCalls) {
-          pendingToolCalls = result.toolCalls;
-        }
-        yield result;
+    const result = processChunk(chunk, currentContent, pendingToolCalls);
+    if (result) {
+      currentContent = result.content;
+      // Update pendingToolCalls if new tool calls were added
+      if (result.toolCalls) {
+        pendingToolCalls = result.toolCalls;
       }
+      yield result;
+    }
+  }
+}
+
+function processChunk(
+  chunk: StreamGenerateContentChunk,
+  currentContent: string,
+  pendingToolCalls: ToolCall[]
+): StreamChunk | null {
+  const candidate = chunk.candidates?.[0];
+  if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) return null;
+
+  let delta = '';
+  const newToolCalls: ToolCall[] = [];
+
+  for (const part of candidate.content.parts) {
+    if ('text' in part) {
+      delta += part.text;
+      currentContent += part.text;
+    } else if ('functionCall' in part) {
+      // For Google Gemini, we use the function name as the ID since Google doesn't provide explicit IDs
+      const toolCall: ToolCall = {
+        id: part.functionCall.name,
+        name: part.functionCall.name,
+        arguments: part.functionCall.args,
+      };
+      newToolCalls.push(toolCall);
     }
   }
 
-  /**
-   * Processes a single chunk from the stream.
-   */
-  private processChunk(
-    chunk: StreamGenerateContentChunk,
-    currentContent: string,
-    pendingToolCalls: ToolCall[]
-  ): StreamChunk | null {
-    const candidate = chunk.candidates?.[0];
-    if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) return null;
+  const finishReason = candidate.finishReason ? mapFinishReason(candidate.finishReason) : undefined;
 
-    let delta = '';
-    const newToolCalls: ToolCall[] = [];
+  return {
+    content: currentContent,
+    delta,
+    finishReason,
+    toolCalls:
+      newToolCalls.length > 0
+        ? newToolCalls
+        : pendingToolCalls.length > 0
+          ? pendingToolCalls
+          : undefined,
+  };
+}
 
-    for (const part of candidate.content.parts) {
-      if ('text' in part) {
-        delta += part.text;
-        currentContent += part.text;
-      } else if ('functionCall' in part) {
-        // For Google Gemini, we use the function name as the ID since Google doesn't provide explicit IDs
-        const toolCall: ToolCall = {
-          id: part.functionCall.name,
-          name: part.functionCall.name,
-          arguments: part.functionCall.args || {},
-        };
-        newToolCalls.push(toolCall);
-        pendingToolCalls.push(toolCall);
-      }
-    }
-
-    // Determine finish reason - if we have function calls, it's tool_use regardless of what Google says
-    const hasToolCalls = newToolCalls.length > 0;
-    const finishReason = hasToolCalls
-      ? ('tool_use' as const)
-      : candidate.finishReason
-        ? this.mapFinishReason(candidate.finishReason)
-        : undefined;
-
-    return MessageTransformer.createStreamChunk(
-      currentContent,
-      delta,
-      hasToolCalls ? pendingToolCalls : undefined,
-      finishReason
-    );
+function mapFinishReason(reason: string): 'stop' | 'length' | 'tool_use' | undefined {
+  switch (reason) {
+    case 'STOP':
+      return 'stop';
+    case 'MAX_TOKENS':
+      return 'length';
+    case 'TOOL_CODE_EXECUTED':
+      return 'tool_use';
+    case 'OTHER':
+      return 'stop';
+    case 'SAFETY':
+    case 'RECITATION':
+      return 'stop';
+    default:
+      return 'stop';
   }
+}
 
-  /**
-   * Maps Google's finish reasons to AIKit format.
-   */
-  private mapFinishReason(reason: string): 'stop' | 'length' | 'tool_use' | undefined {
-    switch (reason) {
-      case 'STOP':
-        return 'stop';
-      case 'MAX_TOKENS':
-        return 'length';
-      case 'TOOL_CODE_EXECUTED':
-        return 'tool_use';
-      case 'SAFETY':
-        return 'stop';
-      case 'RECITATION':
-        return 'stop';
-      case 'OTHER':
-        return 'stop';
-      default:
-        return 'stop';
-    }
-  }
+function transformMessages(messages: Message[]): {
+  systemInstruction: string;
+  googleMessages: GoogleContent[];
+} {
+  let systemInstruction = '';
+  const googleMessages: GoogleContent[] = [];
+  const toolCallIdToName = new Map<string, string>();
 
-  /**
-   * Transforms a list of AIKit messages into Google's format.
-   * It also separates out the system message, which Google treats as a special instruction.
-   */
-  private transformMessages(messages: Message[]): {
-    systemInstruction: string;
-    googleMessages: GoogleContent[];
-  } {
-    let systemInstruction = '';
-    const googleMessages: GoogleContent[] = [];
-
-    // Build tool call ID to name mapping for this request
-    const toolCallIdToName = new Map<string, string>();
-    for (const msg of messages) {
-      if (msg.role === 'assistant' && msg.toolCalls) {
-        for (const toolCall of msg.toolCalls) {
-          toolCallIdToName.set(toolCall.id, toolCall.name);
-        }
-      }
-    }
-
-    for (const msg of messages) {
-      if (msg.role === 'system') {
-        systemInstruction = MessageTransformer.extractTextContent(msg.content);
-        continue;
-      }
-
-      const mapped = this.mapMessage(msg, toolCallIdToName);
-      if (mapped) {
-        if (Array.isArray(mapped)) {
-          googleMessages.push(...mapped);
-        } else {
-          googleMessages.push(mapped);
-        }
-      }
-    }
-
-    return { systemInstruction, googleMessages };
-  }
-
-  /**
-   * Maps a single AIKit message to Google's format.
-   */
-  private mapMessage(
-    msg: Message,
-    toolCallIdToName: Map<string, string>
-  ): GoogleContent | GoogleContent[] | null {
-    switch (msg.role) {
-      case 'system':
-        return null;
-      case 'tool':
-        return this.toolResultToContent(msg, toolCallIdToName);
-      case 'user':
-      case 'assistant':
-        return this.standardMessageToContent(msg);
-      default:
-        return null;
-    }
-  }
-
-  /**
-   * Converts tool result messages to Google's format.
-   */
-  private toolResultToContent(
-    msg: Message,
-    toolCallIdToName: Map<string, string>
-  ): GoogleContent[] {
-    const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-
-    return toolResults.map(result => ({
-      role: 'function' as const,
-      parts: [
-        {
-          functionResponse: {
-            name: toolCallIdToName.get(result.toolCallId) || result.toolCallId,
-            response: { result: result.result },
-          },
-        },
-      ],
-    }));
-  }
-
-  /**
-   * Converts standard user/assistant messages to Google's format.
-   */
-  private standardMessageToContent(msg: Message): GoogleContent {
-    const parts: GooglePart[] = [];
-
-    for (const content of msg.content) {
-      if (content.type === 'text') {
-        parts.push({ text: content.text });
-      } else if (content.type === 'image') {
-        parts.push({
-          inlineData: {
-            mimeType: MessageTransformer.detectImageMimeType(content.image),
-            data: MessageTransformer.extractBase64Data(content.image),
-          },
-        });
-      }
-    }
-
-    // Add tool calls for assistant messages
+  // First pass: collect tool call IDs and names for mapping
+  for (const msg of messages) {
     if (msg.role === 'assistant' && msg.toolCalls) {
       for (const toolCall of msg.toolCalls) {
-        parts.push({
-          functionCall: {
-            name: toolCall.name,
-            args: toolCall.arguments,
-          },
-        });
+        toolCallIdToName.set(toolCall.id, toolCall.name);
       }
     }
-
-    return {
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts,
-    };
   }
 
-  /**
-   * Builds the model configuration for the Google API.
-   */
-  private buildModelConfig(systemInstruction: string, options: GoogleOptions): ModelConfig {
-    const config: ModelConfig = {
-      generationConfig: {
-        temperature: options.temperature,
-        topP: options.topP,
-        topK: options.topK,
-        maxOutputTokens: options.maxOutputTokens,
-        stopSequences: options.stopSequences,
-        candidateCount: options.candidateCount,
-        presencePenalty: options.presencePenalty,
-        frequencyPenalty: options.frequencyPenalty,
-        responseMimeType: options.responseMimeType,
-        responseSchema: options.responseSchema,
-        seed: options.seed,
-        responseLogprobs: options.responseLogprobs,
-        logprobs: options.logprobs,
-        audioTimestamp: options.audioTimestamp,
+  // Second pass: transform messages
+  for (const msg of messages) {
+    if (msg.role === 'system') {
+      systemInstruction = MessageTransformer.extractTextContent(msg.content);
+      continue;
+    }
+
+    const transformed = mapMessage(msg, toolCallIdToName);
+    if (transformed) {
+      if (Array.isArray(transformed)) {
+        googleMessages.push(...transformed);
+      } else {
+        googleMessages.push(transformed);
+      }
+    }
+  }
+
+  return { systemInstruction, googleMessages };
+}
+
+function mapMessage(
+  msg: Message,
+  toolCallIdToName: Map<string, string>
+): GoogleContent | GoogleContent[] | null {
+  switch (msg.role) {
+    case 'system':
+      return null; // Already handled in transformMessages
+    case 'tool':
+      return toolResultToContent(msg, toolCallIdToName);
+    case 'user':
+    case 'assistant':
+      return standardMessageToContent(msg);
+    default:
+      return null;
+  }
+}
+
+function toolResultToContent(msg: Message, toolCallIdToName: Map<string, string>): GoogleContent[] {
+  const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+
+  return toolResults.map(toolResult => ({
+    role: 'function' as const,
+    parts: [
+      {
+        functionResponse: {
+          name: toolCallIdToName.get(toolResult.toolCallId) || toolResult.toolCallId,
+          response: { result: toolResult.result },
+        },
+      },
+    ],
+  }));
+}
+
+function standardMessageToContent(msg: Message): GoogleContent {
+  const parts: GooglePart[] = [];
+
+  // Add text content
+  const textContent = MessageTransformer.extractTextContent(msg.content);
+  if (textContent) {
+    parts.push({ text: textContent });
+  }
+
+  // Add image content
+  const { images } = MessageTransformer.groupContentByType(msg.content);
+  for (const imageContent of images) {
+    if (imageContent.image.startsWith('data:')) {
+      const [mimeTypePart, data] = imageContent.image.split(',');
+      let mimeType = mimeTypePart.replace('data:', '').replace(';base64', '');
+
+      // Fallback to image/jpeg for unknown MIME types
+      if (!mimeType.startsWith('image/')) {
+        mimeType = 'image/jpeg';
+      }
+
+      parts.push({
+        inlineData: {
+          mimeType,
+          data,
+        },
+      });
+    }
+  }
+
+  // Add tool calls for assistant messages
+  if (msg.role === 'assistant' && msg.toolCalls) {
+    for (const toolCall of msg.toolCalls) {
+      parts.push({
+        functionCall: {
+          name: toolCall.name,
+          args: toolCall.arguments,
+        },
+      });
+    }
+  }
+
+  return {
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts,
+  };
+}
+
+function buildModelConfig(systemInstruction: string, options: GoogleOptions): ModelConfig {
+  const config: ModelConfig = {};
+
+  // Add generation config
+  const generationConfig: ModelConfig['generationConfig'] = {};
+  if (options.temperature !== undefined) generationConfig.temperature = options.temperature;
+  if (options.topP !== undefined) generationConfig.topP = options.topP;
+  if (options.topK !== undefined) generationConfig.topK = options.topK;
+  if (options.maxOutputTokens !== undefined)
+    generationConfig.maxOutputTokens = options.maxOutputTokens;
+  if (options.stopSequences && options.stopSequences.length > 0) {
+    generationConfig.stopSequences = options.stopSequences;
+  }
+  if (options.candidateCount !== undefined)
+    generationConfig.candidateCount = options.candidateCount;
+  if (options.presencePenalty !== undefined)
+    generationConfig.presencePenalty = options.presencePenalty;
+  if (options.frequencyPenalty !== undefined)
+    generationConfig.frequencyPenalty = options.frequencyPenalty;
+  if (options.responseMimeType !== undefined)
+    generationConfig.responseMimeType = options.responseMimeType;
+  if (options.responseSchema !== undefined)
+    generationConfig.responseSchema = options.responseSchema;
+  if (options.seed !== undefined) generationConfig.seed = options.seed;
+  if (options.responseLogprobs !== undefined)
+    generationConfig.responseLogprobs = options.responseLogprobs;
+  if (options.logprobs !== undefined) generationConfig.logprobs = options.logprobs;
+  if (options.audioTimestamp !== undefined)
+    generationConfig.audioTimestamp = options.audioTimestamp;
+
+  if (Object.keys(generationConfig).length > 0) {
+    config.generationConfig = generationConfig;
+  }
+
+  // Add system instruction
+  if (systemInstruction) {
+    config.systemInstruction = { parts: [{ text: systemInstruction }] };
+  }
+
+  // Add tools
+  if (options.tools) {
+    config.tools = [{ functionDeclarations: formatTools(options.tools) }];
+    if (options.toolChoice) {
+      config.toolConfig = formatToolChoice(options.toolChoice);
+    }
+  }
+
+  // Add safety settings
+  if (options.safetySettings) {
+    config.safetySettings = options.safetySettings;
+  }
+
+  return config;
+}
+
+function formatTools(tools: Tool[]): FunctionDeclaration[] {
+  return tools.map(tool => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
+  }));
+}
+
+function formatToolChoice(toolChoice: GoogleOptions['toolChoice']) {
+  const build = (mode: GoogleFunctionCallingMode) => ({
+    functionCallingConfig: { mode },
+  });
+
+  if (toolChoice === 'required') return build('ANY');
+  if (toolChoice === 'auto') return build('AUTO');
+  if (toolChoice === 'none') return build('NONE');
+  if (typeof toolChoice === 'object') {
+    return {
+      functionCallingConfig: {
+        mode: 'ANY' as GoogleFunctionCallingMode,
+        allowedFunctionNames: [toolChoice.name],
       },
     };
-
-    if (systemInstruction) {
-      config.systemInstruction = {
-        parts: [{ text: systemInstruction }],
-      };
-    }
-
-    if (options.tools) {
-      config.tools = [{ functionDeclarations: this.formatTools(options.tools) }];
-      if (options.toolChoice) {
-        config.toolConfig = this.formatToolChoice(options.toolChoice);
-      }
-    }
-
-    if (options.safetySettings) {
-      config.safetySettings = options.safetySettings;
-    }
-
-    return config;
   }
-
-  /**
-   * Formats tools for Google API.
-   */
-  private formatTools(tools: Tool[]): FunctionDeclaration[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-    }));
-  }
-
-  /**
-   * Formats tool choice for Google API.
-   */
-  private formatToolChoice(toolChoice: GoogleOptions['toolChoice']) {
-    const build = (mode: GoogleFunctionCallingMode) => ({
-      functionCallingConfig: { mode },
-    });
-
-    if (!toolChoice) return build('AUTO');
-
-    if (toolChoice === 'auto') return build('AUTO');
-    if (toolChoice === 'none') return build('NONE');
-    if (toolChoice === 'required') return build('ANY');
-
-    if (typeof toolChoice === 'object' && toolChoice.name) {
-      return {
-        functionCallingConfig: {
-          mode: 'ANY' as GoogleFunctionCallingMode,
-          allowedFunctionNames: [toolChoice.name],
-        },
-      };
-    }
-
-    return build('AUTO');
-  }
+  return build('AUTO');
 }
