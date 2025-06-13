@@ -116,10 +116,9 @@ async function basicToolExample() {
   const modelName = getModelName(type!);
 
   // Define a simple calculator tool
-  const calculatorTool = createTool(
-    'calculator',
-    'Perform basic mathematical operations',
-    {
+  const calculatorTool = createTool('calculator', 'Perform basic mathematical operations', {
+    type: 'object',
+    properties: {
       operation: {
         type: 'string',
         description: 'The operation to perform',
@@ -128,8 +127,8 @@ async function basicToolExample() {
       a: { type: 'number', description: 'First number' },
       b: { type: 'number', description: 'Second number' },
     },
-    ['operation', 'a', 'b']
-  );
+    required: ['operation', 'a', 'b'],
+  });
 
   const toolServices = {
     calculator: calculatorService,
@@ -201,10 +200,9 @@ async function multipleToolsExample() {
 
   // Define multiple tools
   const tools = [
-    createTool(
-      'get_weather',
-      'Get current weather information for a location',
-      {
+    createTool('get_weather', 'Get current weather information for a location', {
+      type: 'object',
+      properties: {
         location: {
           type: 'string',
           description: 'The city name, e.g. "New York" or "London"',
@@ -215,12 +213,11 @@ async function multipleToolsExample() {
           description: 'Temperature unit preference',
         },
       },
-      ['location']
-    ),
-    createTool(
-      'calculator',
-      'Perform mathematical calculations',
-      {
+      required: ['location'],
+    }),
+    createTool('calculator', 'Perform mathematical calculations', {
+      type: 'object',
+      properties: {
         operation: {
           type: 'string',
           enum: ['add', 'subtract', 'multiply', 'divide'],
@@ -229,19 +226,18 @@ async function multipleToolsExample() {
         a: { type: 'number', description: 'First number' },
         b: { type: 'number', description: 'Second number' },
       },
-      ['operation', 'a', 'b']
-    ),
-    createTool(
-      'get_datetime',
-      'Get current date and time for a timezone',
-      {
+      required: ['operation', 'a', 'b'],
+    }),
+    createTool('get_datetime', 'Get current date and time for a timezone', {
+      type: 'object',
+      properties: {
         timezone: {
           type: 'string',
           description: 'Timezone (e.g., "America/New_York", "Europe/London", "UTC")',
         },
       },
-      []
-    ),
+      required: [],
+    }),
   ];
 
   const toolServices = {
@@ -328,16 +324,15 @@ async function toolChoiceExample() {
   const { provider, type } = providerResult;
   const modelName = getModelName(type!);
 
-  const calculatorTool = createTool(
-    'calculator',
-    'Perform mathematical operations',
-    {
+  const calculatorTool = createTool('calculator', 'Perform mathematical operations', {
+    type: 'object',
+    properties: {
       operation: { type: 'string', enum: ['add', 'subtract', 'multiply', 'divide'] },
       a: { type: 'number' },
       b: { type: 'number' },
     },
-    ['operation', 'a', 'b']
-  );
+    required: ['operation', 'a', 'b'],
+  });
 
   const toolServices = { calculator: calculatorService };
 
@@ -396,16 +391,15 @@ async function toolErrorHandlingExample() {
   const { provider, type } = providerResult;
   const modelName = getModelName(type!);
 
-  const calculatorTool = createTool(
-    'calculator',
-    'Perform mathematical operations',
-    {
+  const calculatorTool = createTool('calculator', 'Perform mathematical operations', {
+    type: 'object',
+    properties: {
       operation: { type: 'string', enum: ['add', 'subtract', 'multiply', 'divide'] },
       a: { type: 'number' },
       b: { type: 'number' },
     },
-    ['operation', 'a', 'b']
-  );
+    required: ['operation', 'a', 'b'],
+  });
 
   const toolServices = { calculator: calculatorService };
 

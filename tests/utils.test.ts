@@ -125,34 +125,33 @@ describe('Utils', () => {
   });
 
   describe('Tool Creation', () => {
-    it('should create tools with properties and required fields', () => {
-      const properties = {
-        location: { type: 'string', description: 'City name' },
-        unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
+    it('should create tools with parameters', () => {
+      const parameters = {
+        type: 'object',
+        properties: {
+          location: { type: 'string', description: 'City name' },
+          unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
+        },
+        required: ['location'],
       };
-      const required = ['location'];
 
-      expect(createTool('get_weather', 'Get weather', properties, required)).toEqual({
+      expect(createTool('get_weather', 'Get weather', parameters)).toEqual({
         name: 'get_weather',
         description: 'Get weather',
-        parameters: {
-          type: 'object',
-          properties,
-          required,
-        },
+        parameters,
       });
     });
 
-    it('should work with empty required array', () => {
-      const properties = { query: { type: 'string' } };
-      expect(createTool('search', 'Search', properties)).toEqual({
+    it('should work with simple parameters', () => {
+      const parameters = {
+        type: 'object',
+        properties: { query: { type: 'string' } },
+        required: [],
+      };
+      expect(createTool('search', 'Search', parameters)).toEqual({
         name: 'search',
         description: 'Search',
-        parameters: {
-          type: 'object',
-          properties,
-          required: [],
-        },
+        parameters,
       });
     });
   });

@@ -100,15 +100,14 @@ import { createProvider, createTool, executeToolCall } from 'aikit';
 
 const provider = createProvider('openai', { apiKey: '...' });
 
-const weatherTool = createTool(
-  'get_weather',
-  'Get the weather for a location',
-  {
+const weatherTool = createTool('get_weather', 'Get the weather for a location', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name' },
     unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
   },
-  ['location']
-);
+  required: ['location'],
+});
 
 const result = await provider.generate([userText("What's the weather in Tokyo?")], {
   model: 'gpt-4o',

@@ -295,14 +295,13 @@ class ChatManager {
 ```typescript
 import { createTool, executeToolCall } from 'aikit';
 
-const weatherTool = createTool(
-  'get_weather',
-  'Get weather for a location',
-  {
+const weatherTool = createTool('get_weather', 'Get weather for a location', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name' },
   },
-  ['location']
-);
+  required: ['location'],
+});
 
 const toolServices = {
   get_weather: async (location: string) => {
@@ -345,15 +344,21 @@ await printStream(provider.generate([message], { model: 'gpt-4o' }));
 import { createProvider, createTool, processStream } from 'aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
-const tool = createTool('calculator', 'Do math', {...});
+const tool = createTool('calculator', 'Do math', {
+  type: 'object',
+  properties: {
+    /* tool properties */
+  },
+  required: [],
+});
 
 await processStream(
   provider.generate([userText('What is 2+2?')], { model: 'gpt-4o', tools: [tool] }),
   {
-    onDelta: (delta) => process.stdout.write(delta),
-    onChunk: (chunk) => {
+    onDelta: delta => process.stdout.write(delta),
+    onChunk: chunk => {
       if (chunk.toolCalls) console.log('\n[Tool call detected]');
-    }
+    },
   }
 );
 ```

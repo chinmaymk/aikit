@@ -196,15 +196,14 @@ import { createProvider, createTool, userText, executeToolCall } from 'aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 // Define a weather tool
-const weatherTool = createTool(
-  'get_weather',
-  'Get current weather information for a location',
-  {
+const weatherTool = createTool('get_weather', 'Get current weather information for a location', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name or location' },
     unit: { type: 'string', enum: ['celsius', 'fahrenheit'], description: 'Temperature unit' },
   },
-  ['location'] // Required parameters
-);
+  required: ['location'],
+});
 
 // Implement the actual function
 const toolServices = {

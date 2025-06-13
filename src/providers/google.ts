@@ -43,7 +43,7 @@ interface ModelConfig {
     logprobs?: number;
     audioTimestamp?: boolean;
   };
-  systemInstruction?: string;
+  systemInstruction?: { parts: GooglePart[] };
   tools?: Array<{ functionDeclarations: FunctionDeclaration[] }>;
   toolConfig?: DynamicParams;
   safetySettings?: Array<{
@@ -255,13 +255,23 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
     let systemInstruction = '';
     const googleMessages: GoogleContent[] = [];
 
+    // Build tool call ID to name mapping for this request
+    const toolCallIdToName = new Map<string, string>();
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.toolCalls) {
+        for (const toolCall of msg.toolCalls) {
+          toolCallIdToName.set(toolCall.id, toolCall.name);
+        }
+      }
+    }
+
     for (const msg of messages) {
       if (msg.role === 'system') {
         systemInstruction = MessageTransformer.extractTextContent(msg.content);
         continue;
       }
 
-      const mapped = this.mapMessage(msg);
+      const mapped = this.mapMessage(msg, toolCallIdToName);
       if (mapped) {
         if (Array.isArray(mapped)) {
           googleMessages.push(...mapped);
@@ -277,12 +287,15 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
   /**
    * Maps a single AIKit message to Google's format.
    */
-  private mapMessage(msg: Message): GoogleContent | GoogleContent[] | null {
+  private mapMessage(
+    msg: Message,
+    toolCallIdToName: Map<string, string>
+  ): GoogleContent | GoogleContent[] | null {
     switch (msg.role) {
       case 'system':
         return null;
       case 'tool':
-        return this.toolResultToContent(msg);
+        return this.toolResultToContent(msg, toolCallIdToName);
       case 'user':
       case 'assistant':
         return this.standardMessageToContent(msg);
@@ -294,7 +307,10 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
   /**
    * Converts tool result messages to Google's format.
    */
-  private toolResultToContent(msg: Message): GoogleContent[] {
+  private toolResultToContent(
+    msg: Message,
+    toolCallIdToName: Map<string, string>
+  ): GoogleContent[] {
     const { toolResults } = MessageTransformer.groupContentByType(msg.content);
 
     return toolResults.map(result => ({
@@ -302,7 +318,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
       parts: [
         {
           functionResponse: {
-            name: result.toolCallId,
+            name: toolCallIdToName.get(result.toolCallId) || result.toolCallId,
             response: { result: result.result },
           },
         },
@@ -371,7 +387,9 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
     };
 
     if (systemInstruction) {
-      config.systemInstruction = systemInstruction;
+      config.systemInstruction = {
+        parts: [{ text: systemInstruction }],
+      };
     }
 
     if (options.tools) {

@@ -222,8 +222,7 @@ export const toolResultContent = (toolCallId: string, result: string): Content =
  * Be descriptive - the AI needs to understand what your tool does!
  * @param name - The name of the tool (should match your function name)
  * @param description - A clear description of what the tool does
- * @param properties - The JSON schema properties for the tool's parameters
- * @param required - Array of required parameter names (defaults to empty)
+ * @param parameters - The parameters schema for the tool
  * @returns A properly formatted tool definition
  * @group Tool Helpers
  * @example
@@ -232,26 +231,24 @@ export const toolResultContent = (toolCallId: string, result: string): Content =
  *   "get_weather",
  *   "Get current weather for a location",
  *   {
- *     location: { type: "string", description: "City name" },
- *     unit: { type: "string", enum: ["celsius", "fahrenheit"] }
- *   },
- *   ["location"]
+ *     type: "object",
+ *     properties: {
+ *       location: { type: "string", description: "City name" },
+ *       unit: { type: "string", enum: ["celsius", "fahrenheit"] }
+ *     },
+ *     required: ["location"]
+ *   }
  * );
  * ```
  */
 export const createTool = (
   name: string,
   description: string,
-  properties: Record<string, { type: string; description?: string; enum?: string[] }>,
-  required: string[] = []
+  parameters: Record<string, unknown>
 ): Tool => ({
   name,
   description,
-  parameters: {
-    type: 'object',
-    properties,
-    required,
-  },
+  parameters,
 });
 
 /**

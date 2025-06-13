@@ -24,10 +24,9 @@ import { createProvider, createTool, userText, executeToolCall } from 'aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 // Define the tool
-const calculatorTool = createTool(
-  'calculator',
-  'Perform basic mathematical operations',
-  {
+const calculatorTool = createTool('calculator', 'Perform basic mathematical operations', {
+  type: 'object',
+  properties: {
     operation: {
       type: 'string',
       description: 'The operation to perform',
@@ -36,8 +35,8 @@ const calculatorTool = createTool(
     a: { type: 'number', description: 'First number' },
     b: { type: 'number', description: 'Second number' },
   },
-  ['operation', 'a', 'b'] // Required parameters
-);
+  required: ['operation', 'a', 'b'],
+});
 
 // Implement the actual function
 const toolServices = {
@@ -92,15 +91,14 @@ import {
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 // Define a weather tool
-const weatherTool = createTool(
-  'get_weather',
-  'Get current weather information for a location',
-  {
+const weatherTool = createTool('get_weather', 'Get current weather information for a location', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name or location' },
     unit: { type: 'string', enum: ['celsius', 'fahrenheit'], description: 'Temperature unit' },
   },
-  ['location']
-);
+  required: ['location'],
+});
 
 // Mock weather service
 const toolServices = {
@@ -181,34 +179,31 @@ import { createProvider, createTool, userText } from 'aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 // Weather tool
-const weatherTool = createTool(
-  'get_weather',
-  'Get weather information',
-  {
+const weatherTool = createTool('get_weather', 'Get weather information', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name' },
   },
-  ['location']
-);
+  required: ['location'],
+});
 
 // Time tool
-const timeTool = createTool(
-  'get_time',
-  'Get current time for a timezone',
-  {
+const timeTool = createTool('get_time', 'Get current time for a timezone', {
+  type: 'object',
+  properties: {
     timezone: { type: 'string', description: 'Timezone (e.g., America/New_York)' },
   },
-  ['timezone']
-);
+  required: ['timezone'],
+});
 
 // Calculator tool
-const calculatorTool = createTool(
-  'calculate',
-  'Perform mathematical calculations',
-  {
+const calculatorTool = createTool('calculate', 'Perform mathematical calculations', {
+  type: 'object',
+  properties: {
     expression: { type: 'string', description: 'Mathematical expression to evaluate' },
   },
-  ['expression']
-);
+  required: ['expression'],
+});
 
 const toolServices = {
   get_weather: (location: string) => {
@@ -368,12 +363,13 @@ import { createProvider, createTool, userText, processStream } from 'aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
-const weatherTool = createTool(
-  'get_weather',
-  'Get weather data',
-  { location: { type: 'string', description: 'City name' } },
-  ['location']
-);
+const weatherTool = createTool('get_weather', 'Get weather data', {
+  type: 'object',
+  properties: {
+    location: { type: 'string', description: 'City name' },
+  },
+  required: ['location'],
+});
 
 const toolServices = {
   get_weather: (location: string) =>
@@ -407,47 +403,44 @@ await processStream(stream, {
 ### File Operations
 
 ```typescript
-const fileOperationsTool = createTool(
-  'file_operations',
-  'Read, write, or list files',
-  {
+const fileOperationsTool = createTool('file_operations', 'Read, write, or list files', {
+  type: 'object',
+  properties: {
     operation: { type: 'string', enum: ['read', 'write', 'list'] },
     path: { type: 'string', description: 'File or directory path' },
     content: { type: 'string', description: 'Content to write (for write operation)' },
   },
-  ['operation', 'path']
-);
+  required: ['operation', 'path'],
+});
 ```
 
 ### API Calls
 
 ```typescript
-const apiCallTool = createTool(
-  'api_call',
-  'Make HTTP requests to external APIs',
-  {
+const apiCallTool = createTool('api_call', 'Make HTTP requests to external APIs', {
+  type: 'object',
+  properties: {
     url: { type: 'string', description: 'API endpoint URL' },
     method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE'] },
     headers: { type: 'object', description: 'Request headers' },
     body: { type: 'string', description: 'Request body for POST/PUT' },
   },
-  ['url', 'method']
-);
+  required: ['url', 'method'],
+});
 ```
 
 ### Database Queries
 
 ```typescript
-const databaseTool = createTool(
-  'database_query',
-  'Execute database queries',
-  {
+const databaseTool = createTool('database_query', 'Execute database queries', {
+  type: 'object',
+  properties: {
     table: { type: 'string', description: 'Table name' },
     operation: { type: 'string', enum: ['select', 'insert', 'update', 'delete'] },
     conditions: { type: 'object', description: 'Query conditions' },
   },
-  ['table', 'operation']
-);
+  required: ['table', 'operation'],
+});
 ```
 
 ## Best Practices

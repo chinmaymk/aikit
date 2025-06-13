@@ -19,6 +19,8 @@ alwaysApply: true
 - DO NOT add | undefined or | null type, never
 - DO NOT overuse type assertions and casting
 - DO focus on readability, maintainability and simplicity
+- DO NOT use emojis
+- DO follow a professional, clear, and concise approach to write code and comments
 
 ## Project Overview
-AIKit is a TypeScript library that provides a unified interface for OpenAI, Anthropic, and Google Gemini APIs. It supports streaming, multi-modal content, and tool use.
+[README.md](mdc:README.md)
