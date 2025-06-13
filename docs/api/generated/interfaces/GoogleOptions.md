@@ -2,14 +2,15 @@
 
 ---
 
-[aikit](../README.md) / GoogleGenerationOptions
+[aikit](../README.md) / GoogleOptions
 
-# Interface: GoogleGenerationOptions
+# Interface: GoogleOptions
 
-Defined in: [types.ts:255](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L255)
+Defined in: [types.ts:269](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L269)
 
-Google Gemini-specific settings. The secret sauce for Gemini models.
-Because Google likes to do things their own way.
+Google-specific configuration and generation options.
+These can be provided at construction time or generation time.
+Generation time options will override construction time options.
 
 ## Extends
 
@@ -17,9 +18,9 @@ Because Google likes to do things their own way.
 
 ## Properties
 
-### model
+### model?
 
-> **model**: `string`
+> `optional` **model**: `string`
 
 Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
 
@@ -122,11 +123,21 @@ How the model should choose which tool to use.
 
 ---
 
+### apiKey?
+
+> `optional` **apiKey**: `string`
+
+Defined in: [types.ts:271](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L271)
+
+Your Google AI API key. The key to the kingdom.
+
+---
+
 ### topK?
 
 > `optional` **topK**: `number`
 
-Defined in: [types.ts:260](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L260)
+Defined in: [types.ts:276](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L276)
 
 Top-k sampling. See `GenerationOptions` for the details.
 It's here because Google supports it.
@@ -141,6 +152,6 @@ It's here because Google supports it.
 
 > `optional` **candidateCount**: `number`
 
-Defined in: [types.ts:262](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L262)
+Defined in: [types.ts:278](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L278)
 
 How many different responses to generate. More candidates, more problems.

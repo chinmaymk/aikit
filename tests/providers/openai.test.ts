@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { OpenAIProvider } from '../../src/providers/openai';
-import type { Message, GenerationOptions, OpenAIConfig, StreamChunk } from '../../src/types';
+import type { Message, GenerationOptions, OpenAIOptions, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
 import {
@@ -47,7 +47,7 @@ function mockResponsesAPI(expectedChunks: any[], captureBody: (body: any) => voi
 }
 
 describe('OpenAIProvider', () => {
-  const mockConfig: OpenAIConfig = {
+  const mockConfig: OpenAIOptions = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.openai.com/v1',
     timeout: 30000,
@@ -71,7 +71,7 @@ describe('OpenAIProvider', () => {
 
   describe('constructor', () => {
     it('should initialize with organization and project headers', () => {
-      const configWithOrgAndProject: OpenAIConfig = {
+      const configWithOrgAndProject: OpenAIOptions = {
         apiKey: 'test-api-key',
         organization: 'test-org',
         project: 'test-project',
@@ -82,7 +82,7 @@ describe('OpenAIProvider', () => {
     });
 
     it('should initialize with custom configuration', () => {
-      const customConfig: OpenAIConfig = {
+      const customConfig: OpenAIOptions = {
         apiKey: 'test-api-key',
         baseURL: 'https://custom.openai.com/v1',
         timeout: 30000,

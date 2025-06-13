@@ -1,5 +1,5 @@
 import { GoogleGeminiProvider } from '../../src/providers/google';
-import type { Message, GoogleGenerationOptions, GoogleConfig, StreamChunk } from '../../src/types';
+import type { Message, GoogleOptions, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
 import {
@@ -43,7 +43,7 @@ function mockGoogleGeneration(
 }
 
 describe('GoogleGeminiProvider', () => {
-  const mockConfig: GoogleConfig = {
+  const mockConfig: GoogleOptions = {
     apiKey: 'test-api-key',
   };
 
@@ -67,7 +67,7 @@ describe('GoogleGeminiProvider', () => {
   describe('generate', () => {
     const mockMessages: Message[] = [userText('Hello')];
 
-    const mockOptions: GoogleGenerationOptions = {
+    const mockOptions: GoogleOptions = {
       model: 'gemini-1.5-pro',
       maxTokens: 100,
       temperature: 0.7,
@@ -159,7 +159,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tools configuration', async () => {
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -206,7 +206,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tool choice none', async () => {
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -236,7 +236,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tool choice required', async () => {
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -266,7 +266,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tool choice with specific tool', async () => {
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -299,7 +299,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle tool choice with undefined/default', async () => {
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -462,7 +462,7 @@ describe('GoogleGeminiProvider', () => {
     });
 
     it('should handle all generation options', async () => {
-      const fullOptions: GoogleGenerationOptions = {
+      const fullOptions: GoogleOptions = {
         model: 'gemini-1.5-pro',
         maxTokens: 200,
         temperature: 0.8,
@@ -522,7 +522,7 @@ describe('GoogleGeminiProvider', () => {
 
     it('should handle tool choice edge cases', async () => {
       // Test the fallback case for ToolChoiceHandler
-      const toolOptions: GoogleGenerationOptions = {
+      const toolOptions: GoogleOptions = {
         ...mockOptions,
         tools: [
           {
@@ -531,8 +531,7 @@ describe('GoogleGeminiProvider', () => {
             parameters: { type: 'object', properties: {} },
           },
         ],
-        // @ts-expect-error - testing edge case with invalid value
-        toolChoice: 'invalid_value',
+        toolChoice: 'invalid_value' as any,
       };
 
       let requestBody: any;

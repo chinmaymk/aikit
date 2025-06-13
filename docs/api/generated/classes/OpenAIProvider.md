@@ -6,7 +6,7 @@
 
 # Class: OpenAIProvider
 
-Defined in: [providers/openai.ts:55](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L55)
+Defined in: [providers/openai.ts:54](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L54)
 
 The powerhouse behind OpenAI integration.
 This class translates AIKit's generic requests into OpenAI's Responses API dialect
@@ -15,13 +15,13 @@ It's like a universal translator, but for AI - now with improved state managemen
 
 ## Implements
 
-- [`AIProvider`](../interfaces/AIProvider.md)
+- [`AIProvider`](../interfaces/AIProvider.md)\<[`OpenAIOptions`](../interfaces/OpenAIOptions.md)\>
 
 ## Constructors
 
 ### Constructor
 
-> **new OpenAIProvider**(`config`): `OpenAIProvider`
+> **new OpenAIProvider**(`options`): `OpenAIProvider`
 
 Defined in: [providers/openai.ts:62](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L62)
 
@@ -29,11 +29,11 @@ Sets up the OpenAI provider with your configuration.
 
 #### Parameters
 
-##### config
+##### options
 
-[`OpenAIConfig`](../interfaces/OpenAIConfig.md)
+[`OpenAIOptions`](../interfaces/OpenAIOptions.md)
 
-Your OpenAI API credentials and settings.
+Your OpenAI API credentials and default generation settings.
 
 #### Returns
 
@@ -45,7 +45,7 @@ Your OpenAI API credentials and settings.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/openai.ts:90](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L90)
+Defined in: [providers/openai.ts:96](https://github.com/chinmaymk/aikit/blob/main/src/providers/openai.ts#L96)
 
 Kicks off the generation process using the Responses API.
 It builds the request, sends it to OpenAI, and then processes the
@@ -61,9 +61,9 @@ The conversation history.
 
 ##### options
 
-[`OpenAIGenerationOptions`](../interfaces/OpenAIGenerationOptions.md)
+[`OpenAIOptions`](../interfaces/OpenAIOptions.md) = `{}`
 
-The generation options.
+The generation options (optional, will use defaults from constructor).
 
 #### Returns
 

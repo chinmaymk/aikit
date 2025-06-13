@@ -6,20 +6,20 @@
 
 # Function: createAnthropic()
 
-> **createAnthropic**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
+> **createAnthropic**(`options`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:61](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L61)
+Defined in: [factory.ts:65](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L65)
 
 Whips up an AIProvider that communicates with Anthropic's Claude.
 It's thoughtful, helpful, and probably won't start a robot uprising.
 
 ## Parameters
 
-### config
+### options
 
-[`AnthropicConfig`](../interfaces/AnthropicConfig.md)
+[`AnthropicOptions`](../interfaces/AnthropicOptions.md)
 
-The configuration needed to get Claude's attention.
+The configuration and default generation options for Anthropic's API.
 
 ## Returns
 
@@ -32,5 +32,7 @@ An AIProvider, configured to work with Anthropic's models.
 ```typescript
 const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
+  model: 'claude-3-5-sonnet-20240620', // Default model
+  maxTokens: 1000, // Default max tokens
 });
 ```

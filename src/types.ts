@@ -141,7 +141,7 @@ export interface StreamResult {
  */
 export interface GenerationOptions {
   /** The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-20240620'. */
-  model: string;
+  model?: string;
   /** The maximum number of tokens to generate. Don't want it to ramble on forever, do you? */
   maxTokens?: number;
   /**
@@ -175,10 +175,23 @@ export interface GenerationOptions {
 }
 
 /**
- * OpenAI-specific settings. For when you need that special OpenAI flavor.
- * These are the secret spices for the GPT family.
+ * OpenAI-specific configuration and generation options.
+ * These can be provided at construction time or generation time.
+ * Generation time options will override construction time options.
  */
-export interface OpenAIGenerationOptions extends GenerationOptions {
+export interface OpenAIOptions extends GenerationOptions {
+  /** Your OpenAI API key. Keep it secret, keep it safe. */
+  apiKey?: string;
+  /** A custom base URL for the API. For proxies and other fun stuff. */
+  baseURL?: string;
+  /** Your OpenAI organization ID. For when you're part of a fancy club. */
+  organization?: string;
+  /** Your OpenAI project ID. For even fancier clubs. */
+  project?: string;
+  /** How long to wait for a response before giving up, in milliseconds. */
+  timeout?: number;
+  /** How many times to retry a failed request. Because sometimes the internet blinks. */
+  maxRetries?: number;
   /**
    * Presence penalty. Positive values penalize new tokens based on whether they
    * appear in the text so far, increasing the model's likelihood to talk about new topics.
@@ -249,10 +262,13 @@ export interface OpenAIGenerationOptions extends GenerationOptions {
 }
 
 /**
- * Google Gemini-specific settings. The secret sauce for Gemini models.
- * Because Google likes to do things their own way.
+ * Google-specific configuration and generation options.
+ * These can be provided at construction time or generation time.
+ * Generation time options will override construction time options.
  */
-export interface GoogleGenerationOptions extends GenerationOptions {
+export interface GoogleOptions extends GenerationOptions {
+  /** Your Google AI API key. The key to the kingdom. */
+  apiKey?: string;
   /**
    * Top-k sampling. See `GenerationOptions` for the details.
    * It's here because Google supports it.
@@ -263,45 +279,13 @@ export interface GoogleGenerationOptions extends GenerationOptions {
 }
 
 /**
- * Anthropic-specific settings. For when you're feeling a bit more... anthropic.
- * These are the special levers for Claude models.
+ * Anthropic-specific configuration and generation options.
+ * These can be provided at construction time or generation time.
+ * Generation time options will override construction time options.
  */
-export interface AnthropicGenerationOptions extends GenerationOptions {
-  /**
-   * Top-k sampling. See `GenerationOptions` for the juicy gossip.
-   * It's here because Anthropic supports it too.
-   */
-  topK?: number;
-}
-
-/**
- * Configuration for the OpenAI provider.
- * This is how you tell AIKit where to find your OpenAI API key and other secrets.
- * @group Interfaces
- */
-export interface OpenAIConfig {
-  /** Your OpenAI API key. Keep it secret, keep it safe. */
-  apiKey: string;
-  /** A custom base URL for the API. For proxies and other fun stuff. */
-  baseURL?: string;
-  /** Your OpenAI organization ID. For when you're part of a fancy club. */
-  organization?: string;
-  /** Your OpenAI project ID. For even fancier clubs. */
-  project?: string;
-  /** How long to wait for a response before giving up, in milliseconds. */
-  timeout?: number;
-  /** How many times to retry a failed request. Because sometimes the internet blinks. */
-  maxRetries?: number;
-}
-
-/**
- * Configuration for the Anthropic provider.
- * All the deets AIKit needs to talk to Claude.
- * @group Interfaces
- */
-export interface AnthropicConfig {
+export interface AnthropicOptions extends GenerationOptions {
   /** Your Anthropic API key. Don't tell anyone. */
-  apiKey: string;
+  apiKey?: string;
   /** A custom base URL for the API. You know the drill. */
   baseURL?: string;
   /** How long to wait for a response before your patience wears out, in milliseconds. */
@@ -310,16 +294,11 @@ export interface AnthropicConfig {
   maxRetries?: number;
   /** For enabling beta features. Live on the edge. */
   beta?: string[];
-}
-
-/**
- * Configuration for the Google Gemini provider.
- * The credentials to unlock the power of Gemini.
- * @group Interfaces
- */
-export interface GoogleConfig {
-  /** Your Google AI API key. The key to the kingdom. */
-  apiKey: string;
+  /**
+   * Top-k sampling. See `GenerationOptions` for the juicy gossip.
+   * It's here because Anthropic supports it too.
+   */
+  topK?: number;
 }
 
 /**
@@ -335,5 +314,5 @@ export interface AIProvider<GenOpts extends GenerationOptions = GenerationOption
    * @param options - The rules of the game. How you want the AI to behave.
    * @returns An async iterable of stream chunks. Data, glorious data!
    */
-  generate(messages: Message[], options: GenOpts): AsyncIterable<StreamChunk>;
+  generate(messages: Message[], options?: GenOpts): AsyncIterable<StreamChunk>;
 }

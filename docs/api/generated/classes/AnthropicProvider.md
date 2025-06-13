@@ -6,7 +6,7 @@
 
 # Class: AnthropicProvider
 
-Defined in: [providers/anthropic.ts:131](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L131)
+Defined in: [providers/anthropic.ts:130](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L130)
 
 The bridge to Anthropic's world of Claude.
 This class translates AIKit's universal language into Anthropic's specific API dialect.
@@ -14,13 +14,13 @@ It's the kind of diplomat who is fluent in both cultures and always knows the ri
 
 ## Implements
 
-- [`AIProvider`](../interfaces/AIProvider.md)\<[`AnthropicGenerationOptions`](../interfaces/AnthropicGenerationOptions.md)\>
+- [`AIProvider`](../interfaces/AIProvider.md)\<[`AnthropicOptions`](../interfaces/AnthropicOptions.md)\>
 
 ## Constructors
 
 ### Constructor
 
-> **new AnthropicProvider**(`config`): `AnthropicProvider`
+> **new AnthropicProvider**(`options`): `AnthropicProvider`
 
 Defined in: [providers/anthropic.ts:138](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L138)
 
@@ -28,11 +28,11 @@ Initializes the Anthropic provider.
 
 #### Parameters
 
-##### config
+##### options
 
-[`AnthropicConfig`](../interfaces/AnthropicConfig.md)
+[`AnthropicOptions`](../interfaces/AnthropicOptions.md)
 
-Your Anthropic API credentials and settings.
+Your Anthropic API credentials and default generation settings.
 
 #### Returns
 
@@ -44,7 +44,7 @@ Your Anthropic API credentials and settings.
 
 > **generate**(`messages`, `options`): `AsyncIterable`\<[`StreamChunk`](../interfaces/StreamChunk.md)\>
 
-Defined in: [providers/anthropic.ts:162](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L162)
+Defined in: [providers/anthropic.ts:174](https://github.com/chinmaymk/aikit/blob/main/src/providers/anthropic.ts#L174)
 
 Orchestrates the generation process with Anthropic's API.
 It transforms the request, makes the call, and then processes the
@@ -60,9 +60,9 @@ The conversation history.
 
 ##### options
 
-[`AnthropicGenerationOptions`](../interfaces/AnthropicGenerationOptions.md)
+[`AnthropicOptions`](../interfaces/AnthropicOptions.md) = `{}`
 
-Generation options for the request.
+Generation options for the request (optional, will use defaults from constructor).
 
 #### Returns
 

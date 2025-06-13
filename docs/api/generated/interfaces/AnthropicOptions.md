@@ -2,14 +2,15 @@
 
 ---
 
-[aikit](../README.md) / AnthropicGenerationOptions
+[aikit](../README.md) / AnthropicOptions
 
-# Interface: AnthropicGenerationOptions
+# Interface: AnthropicOptions
 
-Defined in: [types.ts:269](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L269)
+Defined in: [types.ts:286](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L286)
 
-Anthropic-specific settings. For when you're feeling a bit more... anthropic.
-These are the special levers for Claude models.
+Anthropic-specific configuration and generation options.
+These can be provided at construction time or generation time.
+Generation time options will override construction time options.
 
 ## Extends
 
@@ -17,9 +18,9 @@ These are the special levers for Claude models.
 
 ## Properties
 
-### model
+### model?
 
-> **model**: `string`
+> `optional` **model**: `string`
 
 Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
 
@@ -122,11 +123,61 @@ How the model should choose which tool to use.
 
 ---
 
+### apiKey?
+
+> `optional` **apiKey**: `string`
+
+Defined in: [types.ts:288](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L288)
+
+Your Anthropic API key. Don't tell anyone.
+
+---
+
+### baseURL?
+
+> `optional` **baseURL**: `string`
+
+Defined in: [types.ts:290](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L290)
+
+A custom base URL for the API. You know the drill.
+
+---
+
+### timeout?
+
+> `optional` **timeout**: `number`
+
+Defined in: [types.ts:292](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L292)
+
+How long to wait for a response before your patience wears out, in milliseconds.
+
+---
+
+### maxRetries?
+
+> `optional` **maxRetries**: `number`
+
+Defined in: [types.ts:294](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L294)
+
+How many times to try again. Third time's the charm?
+
+---
+
+### beta?
+
+> `optional` **beta**: `string`[]
+
+Defined in: [types.ts:296](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L296)
+
+For enabling beta features. Live on the edge.
+
+---
+
 ### topK?
 
 > `optional` **topK**: `number`
 
-Defined in: [types.ts:274](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L274)
+Defined in: [types.ts:301](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L301)
 
 Top-k sampling. See `GenerationOptions` for the juicy gossip.
 It's here because Anthropic supports it too.

@@ -1,6 +1,6 @@
 import { AnthropicProvider } from '../../src/providers/anthropic';
 import { MessageTransformer } from '../../src/providers/utils';
-import type { Message, GenerationOptions, AnthropicConfig, StreamChunk } from '../../src/types';
+import type { Message, GenerationOptions, AnthropicOptions, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
 import {
@@ -56,7 +56,7 @@ function mockAnthropicGeneration(
 }
 
 describe('AnthropicProvider', () => {
-  const mockConfig: AnthropicConfig = {
+  const mockConfig: AnthropicOptions = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.anthropic.com/v1',
     timeout: 30000,
@@ -84,7 +84,7 @@ describe('AnthropicProvider', () => {
     });
 
     it('should handle beta configuration', () => {
-      const configWithBeta: AnthropicConfig = {
+      const configWithBeta: AnthropicOptions = {
         apiKey: 'test-api-key',
         beta: ['message-batches-2024-09-24', 'prompt-caching-2024-07-31'],
       };

@@ -1,8 +1,7 @@
 import type {
   AIProvider,
   Message,
-  OpenAIConfig,
-  OpenAIGenerationOptions,
+  OpenAIOptions,
   StreamChunk,
   Tool,
   ToolCall,
@@ -52,14 +51,19 @@ interface CompletedEvent {
  *
  * @group Providers
  */
-export class OpenAIProvider implements AIProvider {
+export class OpenAIProvider implements AIProvider<OpenAIOptions> {
   private client: APIClient;
+  private defaultOptions: OpenAIOptions;
 
   /**
    * Sets up the OpenAI provider with your configuration.
-   * @param config - Your OpenAI API credentials and settings.
+   * @param options - Your OpenAI API credentials and default generation settings.
    */
-  constructor(config: OpenAIConfig) {
+  constructor(options: OpenAIOptions) {
+    if (!options.apiKey) {
+      throw new Error('OpenAI API key is required');
+    }
+
     const {
       apiKey,
       baseURL = 'https://api.openai.com/v1',
@@ -67,7 +71,8 @@ export class OpenAIProvider implements AIProvider {
       project,
       timeout,
       maxRetries,
-    } = config;
+      ...defaultGenerationOptions
+    } = options;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -77,6 +82,7 @@ export class OpenAIProvider implements AIProvider {
     if (project) headers['OpenAI-Project'] = project;
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
+    this.defaultOptions = { apiKey, ...defaultGenerationOptions };
   }
 
   /**
@@ -84,29 +90,40 @@ export class OpenAIProvider implements AIProvider {
    * It builds the request, sends it to OpenAI, and then processes the
    * response stream, yielding chunks as they come in.
    * @param messages - The conversation history.
-   * @param options - The generation options.
+   * @param options - The generation options (optional, will use defaults from constructor).
    * @returns An async iterable of stream chunks.
    */
-  async *generate(
-    messages: Message[],
-    options: OpenAIGenerationOptions
-  ): AsyncIterable<StreamChunk> {
-    const params = this.buildRequestParams(messages, options);
+  async *generate(messages: Message[], options: OpenAIOptions = {}): AsyncIterable<StreamChunk> {
+    const mergedOptions = this.mergeOptions(options);
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required. Provide it at construction time or generation time.');
+    }
+
+    const params = this.buildRequestParams(messages, mergedOptions);
     const stream = await this.client.stream('/responses', params);
     const lineStream = this.client.processStreamAsLines(stream);
     yield* this.processStream(lineStream);
   }
 
   /**
+   * Merges default options with generation-time options.
+   * Generation-time options take precedence over construction-time options.
+   */
+  private mergeOptions(generationOptions: OpenAIOptions): OpenAIOptions {
+    return {
+      ...this.defaultOptions,
+      ...generationOptions,
+    };
+  }
+
+  /**
    * Builds request parameters for the OpenAI Responses API.
    * Handles message transformation, tool formatting, and optional parameters.
    */
-  private buildRequestParams(
-    messages: Message[],
-    options: OpenAIGenerationOptions
-  ): ResponsesCreateParams {
+  private buildRequestParams(messages: Message[], options: OpenAIOptions): ResponsesCreateParams {
     const params: ResponsesCreateParams = {
-      model: options.model,
+      model: options.model!,
       input: this.transformMessages(messages),
       stream: true,
       max_output_tokens: options.maxTokens,
@@ -222,7 +239,7 @@ export class OpenAIProvider implements AIProvider {
   /**
    * Adds optional parameters to the request.
    */
-  private addOptionalParams(params: ResponsesCreateParams, options: OpenAIGenerationOptions) {
+  private addOptionalParams(params: ResponsesCreateParams, options: OpenAIOptions) {
     const optionalFields = [
       'background',
       'include',
@@ -250,7 +267,7 @@ export class OpenAIProvider implements AIProvider {
   /**
    * Adds tool-related parameters to the request.
    */
-  private addToolParams(params: ResponsesCreateParams, options: OpenAIGenerationOptions) {
+  private addToolParams(params: ResponsesCreateParams, options: OpenAIOptions) {
     if (options.tools) {
       params.tools = this.formatTools(options.tools);
       if (options.toolChoice) {
@@ -275,7 +292,7 @@ export class OpenAIProvider implements AIProvider {
    * Formats tool choice for OpenAI API.
    */
   private formatToolChoice(
-    toolChoice: OpenAIGenerationOptions['toolChoice']
+    toolChoice: OpenAIOptions['toolChoice']
   ): 'auto' | 'required' | { type: 'function'; name: string } {
     if (!toolChoice) return 'auto';
     if (typeof toolChoice === 'object') {

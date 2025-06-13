@@ -79,6 +79,33 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
 }
 ```
 
+## Configuration Flexibility
+
+AIKit uses a flexible configuration system where you can set defaults at construction time and override them at generation time. This gives you maximum flexibility while maintaining clean, readable code.
+
+```typescript
+// Set defaults at construction
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
+  temperature: 0.7,
+  maxTokens: 200,
+});
+
+// Use defaults
+const result1 = await generate(provider, [userText('Hello!')]);
+
+// Override specific options
+const result2 = await generate(provider, [userText('Be creative!')], {
+  temperature: 0.9, // Higher creativity
+  maxTokens: 100, // Shorter response
+});
+```
+
+::: tip
+For detailed configuration patterns, provider-specific types, and advanced options, see the [Configuration Guide](./configuration.md).
+:::
+
 ## Provider Switching
 
 The beauty of AIKit? Same code, different AI. Switch providers with one line.

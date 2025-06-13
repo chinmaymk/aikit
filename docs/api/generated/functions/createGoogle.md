@@ -6,20 +6,20 @@
 
 # Function: createGoogle()
 
-> **createGoogle**(`config`): [`AIProvider`](../interfaces/AIProvider.md)
+> **createGoogle**(`options`): [`AIProvider`](../interfaces/AIProvider.md)
 
-Defined in: [factory.ts:81](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L81)
+Defined in: [factory.ts:87](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L87)
 
 Assembles an AIProvider for Google's Gemini.
 Get ready for some of that Google magic.
 
 ## Parameters
 
-### config
+### options
 
-[`GoogleConfig`](../interfaces/GoogleConfig.md)
+[`GoogleOptions`](../interfaces/GoogleOptions.md)
 
-The keys to the Google AI kingdom.
+The configuration and default generation options for Google's API.
 
 ## Returns
 
@@ -32,5 +32,7 @@ An AIProvider, geared up for Gemini.
 ```typescript
 const google = createGoogle({
   apiKey: process.env.GOOGLE_API_KEY!,
+  model: 'gemini-1.5-pro', // Default model
+  temperature: 0.8, // Default temperature
 });
 ```

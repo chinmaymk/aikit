@@ -1,8 +1,7 @@
 import type {
   AIProvider,
   Message,
-  AnthropicConfig,
-  AnthropicGenerationOptions,
+  AnthropicOptions,
   StreamChunk,
   ToolCall,
   Tool,
@@ -128,15 +127,27 @@ interface ErrorEvent extends AnthropicStreamEvent {
  *
  * @group Providers
  */
-export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions> {
+export class AnthropicProvider implements AIProvider<AnthropicOptions> {
   private readonly client: APIClient;
+  private readonly defaultOptions: AnthropicOptions;
 
   /**
    * Initializes the Anthropic provider.
-   * @param config - Your Anthropic API credentials and settings.
+   * @param options - Your Anthropic API credentials and default generation settings.
    */
-  constructor(config: AnthropicConfig) {
-    const { apiKey, baseURL = 'https://api.anthropic.com/v1', timeout, maxRetries } = config;
+  constructor(options: AnthropicOptions) {
+    if (!options.apiKey) {
+      throw new Error('Anthropic API key is required');
+    }
+
+    const {
+      apiKey,
+      baseURL = 'https://api.anthropic.com/v1',
+      timeout,
+      maxRetries,
+      beta,
+      ...defaultGenerationOptions
+    } = options;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -144,11 +155,12 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
       'anthropic-version': '2023-06-01',
     };
 
-    if (config.beta && config.beta.length > 0) {
-      headers['anthropic-beta'] = config.beta.join(',');
+    if (beta && beta.length > 0) {
+      headers['anthropic-beta'] = beta.join(',');
     }
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
+    this.defaultOptions = { apiKey, beta, ...defaultGenerationOptions };
   }
 
   /**
@@ -156,18 +168,32 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
    * It transforms the request, makes the call, and then processes the
    * server-sent events stream into a format AIKit can understand.
    * @param messages - The conversation history.
-   * @param options - Generation options for the request.
+   * @param options - Generation options for the request (optional, will use defaults from constructor).
    * @returns An async iterable of stream chunks.
    */
-  async *generate(
-    messages: Message[],
-    options: AnthropicGenerationOptions
-  ): AsyncIterable<StreamChunk> {
-    const params = this.buildRequestParams(messages, options);
+  async *generate(messages: Message[], options: AnthropicOptions = {}): AsyncIterable<StreamChunk> {
+    const mergedOptions = this.mergeOptions(options);
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required. Provide it at construction time or generation time.');
+    }
+
+    const params = this.buildRequestParams(messages, mergedOptions);
     const stream = await this.client.stream('/messages', params);
     const lineStream = this.client.processStreamAsLines(stream);
     const sseStream = extractDataLines(lineStream);
     yield* this.processStream(sseStream);
+  }
+
+  /**
+   * Merges default options with generation-time options.
+   * Generation-time options take precedence over construction-time options.
+   */
+  private mergeOptions(generationOptions: AnthropicOptions): AnthropicOptions {
+    return {
+      ...this.defaultOptions,
+      ...generationOptions,
+    };
   }
 
   /**
@@ -176,12 +202,12 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
    */
   private buildRequestParams(
     messages: Message[],
-    options: AnthropicGenerationOptions
+    options: AnthropicOptions
   ): AnthropicCreateMessageRequest {
     const { systemMessage, anthropicMessages } = this.transformMessages(messages);
 
     const params: AnthropicCreateMessageRequest = {
-      model: options.model,
+      model: options.model!,
       messages: anthropicMessages,
       max_tokens: options.maxTokens || 1024,
       stream: true,
@@ -407,9 +433,7 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
   /**
    * Formats tool choice for Anthropic API.
    */
-  private formatToolChoice(
-    toolChoice: AnthropicGenerationOptions['toolChoice']
-  ): AnthropicToolChoice {
+  private formatToolChoice(toolChoice: AnthropicOptions['toolChoice']): AnthropicToolChoice {
     if (toolChoice === 'required') return { type: 'any' };
     if (toolChoice === 'auto') return { type: 'auto' };
     if (typeof toolChoice === 'object') {

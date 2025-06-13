@@ -6,9 +6,9 @@
 
 # Function: createProvider()
 
-> **createProvider**\<`T`\>(`type`, `config`): `ProviderMap`\[`T`\]
+> **createProvider**\<`T`\>(`type`, `options`): `ProviderMap`\[`T`\]
 
-Defined in: [factory.ts:107](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L107)
+Defined in: [factory.ts:115](https://github.com/chinmaymk/aikit/blob/main/src/factory.ts#L115)
 
 The one function to rule them all.
 A generic way to create any provider with type safety.
@@ -28,11 +28,11 @@ It's like a universal remote for AI.
 
 The flavor of AI you're in the mood for: 'openai', 'anthropic', or 'google'.
 
-### config
+### options
 
-`ConfigMap`\[`T`\]
+`OptionsMap`\[`T`\]
 
-The configuration for your chosen flavor.
+The configuration and default generation options for your chosen flavor.
 
 ## Returns
 
@@ -45,9 +45,11 @@ The specific provider instance for the chosen type.
 ```typescript
 const openaiProvider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
 });
 
 const anthropicProvider = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
+  model: 'claude-3-5-sonnet-20240620',
 });
 ```

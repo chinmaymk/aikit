@@ -13,15 +13,15 @@ These are the options that all providers understand.
 
 ## Extended by
 
-- [`OpenAIGenerationOptions`](OpenAIGenerationOptions.md)
-- [`GoogleGenerationOptions`](GoogleGenerationOptions.md)
-- [`AnthropicGenerationOptions`](AnthropicGenerationOptions.md)
+- [`OpenAIOptions`](OpenAIOptions.md)
+- [`GoogleOptions`](GoogleOptions.md)
+- [`AnthropicOptions`](AnthropicOptions.md)
 
 ## Properties
 
-### model
+### model?
 
-> **model**: `string`
+> `optional` **model**: `string`
 
 Defined in: [types.ts:144](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L144)
 

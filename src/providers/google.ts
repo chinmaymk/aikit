@@ -1,12 +1,4 @@
-import type {
-  AIProvider,
-  Message,
-  GoogleConfig,
-  GoogleGenerationOptions,
-  StreamChunk,
-  ToolCall,
-  Tool,
-} from '../types';
+import type { AIProvider, Message, GoogleOptions, StreamChunk, ToolCall, Tool } from '../types';
 
 import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
 import { APIClient } from './api';
@@ -67,20 +59,26 @@ interface StreamGenerateContentChunk {
  *
  * @group Providers
  */
-export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions> {
+export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
   private readonly client: APIClient;
-  private readonly apiKey: string;
+  private readonly defaultOptions: GoogleOptions;
 
   /**
    * Initializes the Google Gemini provider.
-   * @param config - Your Google API credentials.
+   * @param options - Your Google API credentials and default generation settings.
    */
-  constructor(config: GoogleConfig) {
+  constructor(options: GoogleOptions) {
+    if (!options.apiKey) {
+      throw new Error('Google API key is required');
+    }
+
     const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
     const headers = { 'Content-Type': 'application/json' };
 
     this.client = new APIClient(baseUrl, headers);
-    this.apiKey = config.apiKey;
+
+    const { apiKey, ...defaultGenerationOptions } = options;
+    this.defaultOptions = { apiKey, ...defaultGenerationOptions };
   }
 
   /**
@@ -88,14 +86,17 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
    * It transforms the request, makes the call, and processes the stream of
    * consciousness that comes back.
    * @param messages - The conversation history.
-   * @param options - Generation options for the request.
+   * @param options - Generation options for the request (optional, will use defaults from constructor).
    * @returns An async iterable of stream chunks.
    */
-  async *generate(
-    messages: Message[],
-    options: GoogleGenerationOptions
-  ): AsyncIterable<StreamChunk> {
-    const { endpoint, payload } = this.buildRequest(messages, options);
+  async *generate(messages: Message[], options: GoogleOptions = {}): AsyncIterable<StreamChunk> {
+    const mergedOptions = this.mergeOptions(options);
+
+    if (!mergedOptions.model) {
+      throw new Error('Model is required. Provide it at construction time or generation time.');
+    }
+
+    const { endpoint, payload } = this.buildRequest(messages, mergedOptions);
 
     const stream = await this.client.stream(endpoint, payload);
     const lineStream = this.client.processStreamAsLines(stream);
@@ -104,11 +105,22 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   }
 
   /**
+   * Merges default options with generation-time options.
+   * Generation-time options take precedence over construction-time options.
+   */
+  private mergeOptions(generationOptions: GoogleOptions): GoogleOptions {
+    return {
+      ...this.defaultOptions,
+      ...generationOptions,
+    };
+  }
+
+  /**
    * Builds the complete request for the Google API, including the endpoint and payload.
    */
   private buildRequest(
     messages: Message[],
-    options: GoogleGenerationOptions
+    options: GoogleOptions
   ): { endpoint: string; payload: GenerateContentRequestBody } {
     const { systemInstruction, googleMessages } = this.transformMessages(messages);
     const modelConfig = this.buildModelConfig(systemInstruction, options);
@@ -119,7 +131,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
     };
 
     // The key is passed as a query parameter, which is a bit different from other providers.
-    const endpoint = `/models/${options.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+    const endpoint = `/models/${options.model!}:streamGenerateContent?key=${options.apiKey}&alt=sse`;
 
     return { endpoint, payload };
   }
@@ -326,10 +338,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   /**
    * Builds the model configuration for the Google API.
    */
-  private buildModelConfig(
-    systemInstruction: string,
-    options: GoogleGenerationOptions
-  ): ModelConfig {
+  private buildModelConfig(systemInstruction: string, options: GoogleOptions): ModelConfig {
     const config: ModelConfig = {
       generationConfig: {
         temperature: options.temperature,
@@ -369,7 +378,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   /**
    * Formats tool choice for Google API.
    */
-  private formatToolChoice(toolChoice: GoogleGenerationOptions['toolChoice']) {
+  private formatToolChoice(toolChoice: GoogleOptions['toolChoice']) {
     const build = (mode: GoogleFunctionCallingMode) => ({
       functionCallingConfig: { mode },
     });

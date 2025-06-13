@@ -27,12 +27,9 @@
 ## Interfaces
 
 - [GenerationOptions](interfaces/GenerationOptions.md)
-- [OpenAIGenerationOptions](interfaces/OpenAIGenerationOptions.md)
-- [GoogleGenerationOptions](interfaces/GoogleGenerationOptions.md)
-- [AnthropicGenerationOptions](interfaces/AnthropicGenerationOptions.md)
-- [OpenAIConfig](interfaces/OpenAIConfig.md)
-- [AnthropicConfig](interfaces/AnthropicConfig.md)
-- [GoogleConfig](interfaces/GoogleConfig.md)
+- [OpenAIOptions](interfaces/OpenAIOptions.md)
+- [GoogleOptions](interfaces/GoogleOptions.md)
+- [AnthropicOptions](interfaces/AnthropicOptions.md)
 - [AIProvider](interfaces/AIProvider.md)
 
 ## Content Helpers
