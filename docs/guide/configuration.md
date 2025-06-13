@@ -139,9 +139,32 @@ const config: AnthropicOptions = {
   baseURL: 'https://api.anthropic.com', // Custom endpoint
   timeout: 60000, // 60 seconds
   maxRetries: 2,
+  anthropicVersion: '2023-06-01', // API version
 
   // Anthropic-specific options
   beta: ['computer-use-2024-10-22'], // Enable beta features
+
+  // Advanced options
+  container: 'my-container-id', // Container for reuse across requests
+  mcpServers: [
+    {
+      name: 'my-mcp-server',
+      url: 'https://my-server.com/mcp',
+      authorization_token: 'token123',
+      tool_configuration: {
+        enabled: true,
+        allowed_tools: ['search', 'calculator'],
+      },
+    },
+  ],
+  metadata: {
+    user_id: 'user-12345', // External user identifier
+  },
+  serviceTier: 'auto', // 'auto' or 'standard_only'
+  thinking: {
+    type: 'enabled',
+    budget_tokens: 2048, // Tokens for extended thinking
+  },
 };
 
 const provider = createProvider('anthropic', config);
@@ -316,10 +339,16 @@ All providers support these basic generation options:
 
 ### Anthropic-Specific Options
 
-| Option | Type       | Description              |
-| ------ | ---------- | ------------------------ |
-| `topK` | `number`   | Top-k sampling parameter |
-| `beta` | `string[]` | Enable beta features     |
+| Option             | Type       | Description                                         |
+| ------------------ | ---------- | --------------------------------------------------- |
+| `topK`             | `number`   | Top-k sampling parameter                            |
+| `beta`             | `string[]` | Enable beta features                                |
+| `anthropicVersion` | `string`   | API version (default: '2023-06-01')                 |
+| `container`        | `string`   | Container identifier for reuse across requests      |
+| `mcpServers`       | `array`    | MCP servers configuration for tool execution        |
+| `metadata`         | `object`   | Request metadata including user identifier          |
+| `serviceTier`      | `string`   | Service tier preference ('auto' or 'standard_only') |
+| `thinking`         | `object`   | Extended thinking configuration with budget tokens  |
 
 ### Google-Specific Options
 

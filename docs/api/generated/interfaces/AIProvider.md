@@ -6,7 +6,7 @@
 
 # Interface: AIProvider\<GenOpts\>
 
-Defined in: [types.ts:309](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L309)
+Defined in: [types.ts:344](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L344)
 
 The core interface that all AI providers must implement.
 It's the social contract that holds this whole library together.
@@ -23,7 +23,7 @@ It's the social contract that holds this whole library together.
 
 > **generate**(`messages`, `options?`): `AsyncIterable`\<[`StreamChunk`](StreamChunk.md)\>
 
-Defined in: [types.ts:317](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L317)
+Defined in: [types.ts:352](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L352)
 
 The main event. This is where the magic happens.
 Give it a list of messages and some options, and it'll give you back a stream of consciousness.

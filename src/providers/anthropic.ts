@@ -75,6 +75,29 @@ interface AnthropicCreateMessageRequest {
   tools?: AnthropicTool[];
   tool_choice?: AnthropicToolChoice;
   stream: true;
+  container?: string;
+  mcp_servers?: Array<{
+    name: string;
+    type: 'url';
+    url: string;
+    authorization_token?: string;
+    tool_configuration?: {
+      enabled?: boolean;
+      allowed_tools?: string[];
+    };
+  }>;
+  metadata?: {
+    user_id?: string;
+  };
+  service_tier?: 'auto' | 'standard_only';
+  thinking?:
+    | {
+        type: 'enabled';
+        budget_tokens: number;
+      }
+    | {
+        type: 'disabled';
+      };
 }
 
 // Streaming event types
@@ -104,7 +127,13 @@ interface ContentBlockDeltaEvent extends AnthropicStreamEvent {
 interface MessageDeltaEvent extends AnthropicStreamEvent {
   type: 'message_delta';
   delta: {
-    stop_reason?: 'end_turn' | 'max_tokens' | 'stop_sequence' | 'tool_use';
+    stop_reason?:
+      | 'end_turn'
+      | 'max_tokens'
+      | 'stop_sequence'
+      | 'tool_use'
+      | 'pause_turn'
+      | 'refusal';
     stop_sequence?: string | null;
   };
   usage?: {
@@ -146,13 +175,14 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
       timeout,
       maxRetries,
       beta,
+      anthropicVersion = '2023-06-01',
       ...defaultGenerationOptions
     } = options;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'anthropic-version': anthropicVersion,
     };
 
     if (beta && beta.length > 0) {
@@ -160,7 +190,7 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
     }
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.defaultOptions = { apiKey, beta, ...defaultGenerationOptions };
+    this.defaultOptions = { apiKey, beta, anthropicVersion, ...defaultGenerationOptions };
   }
 
   /**
@@ -228,6 +258,21 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
       }
     }
 
+    // Add new options
+    if (options.container) params.container = options.container;
+    if (options.mcpServers && options.mcpServers.length > 0) {
+      params.mcp_servers = options.mcpServers.map(server => ({
+        name: server.name,
+        type: 'url' as const,
+        url: server.url,
+        authorization_token: server.authorization_token,
+        tool_configuration: server.tool_configuration,
+      }));
+    }
+    if (options.metadata) params.metadata = options.metadata;
+    if (options.serviceTier) params.service_tier = options.serviceTier;
+    if (options.thinking) params.thinking = options.thinking;
+
     return params;
   }
 
@@ -268,6 +313,11 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
               if (toolCallId) {
                 toolCallStates[toolCallId].arguments += deltaEvent.delta.partial_json;
               }
+            } else if (deltaEvent.delta.type === 'thinking_delta') {
+              // Handle thinking deltas - for now we don't expose thinking content
+              // in the standard stream, but could be added as a feature in the future
+            } else if (deltaEvent.delta.type === 'signature_delta') {
+              // Handle signature deltas for thinking blocks
             }
             break;
           }
@@ -470,6 +520,10 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
         return 'tool_use';
       case 'stop_sequence':
         return 'stop';
+      case 'pause_turn':
+        return 'stop'; // Treat pause as stop for now
+      case 'refusal':
+        return 'error'; // Treat refusal as error
       default:
         return undefined;
     }

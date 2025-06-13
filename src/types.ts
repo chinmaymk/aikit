@@ -299,6 +299,41 @@ export interface AnthropicOptions extends GenerationOptions {
    * It's here because Anthropic supports it too.
    */
   topK?: number;
+  /** Container identifier for reuse across requests. */
+  container?: string;
+  /** MCP servers to be utilized in this request. */
+  mcpServers?: Array<{
+    name: string;
+    url: string;
+    authorization_token?: string;
+    tool_configuration?: {
+      enabled?: boolean;
+      allowed_tools?: string[];
+    };
+  }>;
+  /** An object describing metadata about the request. */
+  metadata?: {
+    user_id?: string;
+  };
+  /**
+   * Determines whether to use priority capacity (if available) or standard capacity for this request.
+   * 'auto' | 'standard_only'
+   */
+  serviceTier?: 'auto' | 'standard_only';
+  /**
+   * Configuration for enabling Claude's extended thinking.
+   * When enabled, responses include thinking content blocks showing Claude's thinking process.
+   */
+  thinking?:
+    | {
+        type: 'enabled';
+        budget_tokens: number;
+      }
+    | {
+        type: 'disabled';
+      };
+  /** The version of the Anthropic API you want to use. */
+  anthropicVersion?: string;
 }
 
 /**

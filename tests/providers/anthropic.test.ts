@@ -298,6 +298,66 @@ describe('AnthropicProvider', () => {
       });
     });
 
+    it('should handle new Anthropic-specific options', async () => {
+      const anthropicOptions: AnthropicOptions = {
+        ...mockOptions,
+        container: 'container-123',
+        mcpServers: [
+          {
+            name: 'test-server',
+            url: 'https://example.com/mcp',
+            authorization_token: 'token123',
+            tool_configuration: {
+              enabled: true,
+              allowed_tools: ['search', 'calculator'],
+            },
+          },
+        ],
+        metadata: {
+          user_id: 'user-456',
+        },
+        serviceTier: 'auto',
+        thinking: {
+          type: 'enabled',
+          budget_tokens: 2048,
+        },
+      };
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hello with new options!'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, anthropicOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.container).toBe('container-123');
+      expect(requestBody.mcp_servers).toEqual([
+        {
+          name: 'test-server',
+          type: 'url',
+          url: 'https://example.com/mcp',
+          authorization_token: 'token123',
+          tool_configuration: {
+            enabled: true,
+            allowed_tools: ['search', 'calculator'],
+          },
+        },
+      ]);
+      expect(requestBody.metadata).toEqual({
+        user_id: 'user-456',
+      });
+      expect(requestBody.service_tier).toBe('auto');
+      expect(requestBody.thinking).toEqual({
+        type: 'enabled',
+        budget_tokens: 2048,
+      });
+    });
+
     it('should handle different tool choice options', async () => {
       const toolOptions: GenerationOptions = {
         ...mockOptions,

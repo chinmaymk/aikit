@@ -185,3 +185,93 @@ It's here because Anthropic supports it too.
 #### Overrides
 
 [`GenerationOptions`](GenerationOptions.md).[`topK`](GenerationOptions.md#topk)
+
+---
+
+### container?
+
+> `optional` **container**: `string`
+
+Defined in: [types.ts:303](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L303)
+
+Container identifier for reuse across requests.
+
+---
+
+### mcpServers?
+
+> `optional` **mcpServers**: `object`[]
+
+Defined in: [types.ts:305](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L305)
+
+MCP servers to be utilized in this request.
+
+#### name
+
+> **name**: `string`
+
+#### url
+
+> **url**: `string`
+
+#### authorization_token?
+
+> `optional` **authorization_token**: `string`
+
+#### tool_configuration?
+
+> `optional` **tool_configuration**: `object`
+
+##### tool_configuration.enabled?
+
+> `optional` **enabled**: `boolean`
+
+##### tool_configuration.allowed_tools?
+
+> `optional` **allowed_tools**: `string`[]
+
+---
+
+### metadata?
+
+> `optional` **metadata**: `object`
+
+Defined in: [types.ts:315](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L315)
+
+An object describing metadata about the request.
+
+#### user_id?
+
+> `optional` **user_id**: `string`
+
+---
+
+### serviceTier?
+
+> `optional` **serviceTier**: `"auto"` \| `"standard_only"`
+
+Defined in: [types.ts:322](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L322)
+
+Determines whether to use priority capacity (if available) or standard capacity for this request.
+'auto' | 'standard_only'
+
+---
+
+### thinking?
+
+> `optional` **thinking**: \{ `type`: `"enabled"`; `budget_tokens`: `number`; \} \| \{ `type`: `"disabled"`; \}
+
+Defined in: [types.ts:327](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L327)
+
+Configuration for enabling Claude's extended thinking.
+When enabled, responses include thinking content blocks showing Claude's thinking process.
+
+---
+
+### anthropicVersion?
+
+> `optional` **anthropicVersion**: `string`
+
+Defined in: [types.ts:336](https://github.com/chinmaymk/aikit/blob/main/src/types.ts#L336)
+
+The version of the Anthropic API you want to use.
