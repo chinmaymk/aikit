@@ -21,8 +21,8 @@ import { extractDataLines } from './api';
  */
 export class OpenAIProvider implements AIProvider {
   private client: APIClient;
-  private transformer: OpenAIResponseTransformer;
-  private streamProcessor: OpenAIResponseStreamProcessor;
+  private transformer: OpenAIRequestBuilder;
+  private streamProcessor: OpenAIStreamProcessor;
 
   /**
    * Sets up the OpenAI provider with your configuration.
@@ -42,16 +42,12 @@ export class OpenAIProvider implements AIProvider {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     };
-    if (organization) {
-      headers['OpenAI-Organization'] = organization;
-    }
-    if (project) {
-      headers['OpenAI-Project'] = project;
-    }
+    if (organization) headers['OpenAI-Organization'] = organization;
+    if (project) headers['OpenAI-Project'] = project;
 
     this.client = new APIClient(baseURL, headers, timeout, maxRetries);
-    this.transformer = new OpenAIResponseTransformer();
-    this.streamProcessor = new OpenAIResponseStreamProcessor();
+    this.transformer = new OpenAIRequestBuilder();
+    this.streamProcessor = new OpenAIStreamProcessor();
   }
 
   /**
@@ -74,59 +70,73 @@ export class OpenAIProvider implements AIProvider {
 }
 
 /**
- * A dedicated class for transforming messages and options into the format
- * the OpenAI Responses API expects. It's the meticulous diplomat of the provider.
+ * Builds request parameters for the OpenAI Responses API.
  * @internal
  */
-class OpenAIResponseTransformer {
-  /**
-   * Constructs the complete request payload for the OpenAI Responses API.
-   * @param messages - The AIKit messages.
-   * @param options - The AIKit generation options.
-   * @returns A payload that will make the Responses API happy.
-   */
+class OpenAIRequestBuilder {
+  private messageTransformer = new OpenAIMessageTransformer();
+  private toolFormatter = new OpenAIToolFormatter();
+
   buildRequestParams(messages: Message[], options: OpenAIGenerationOptions): ResponsesCreateParams {
-    const input = this.transformMessages(messages);
     const params: ResponsesCreateParams = {
       model: options.model,
-      input,
+      input: this.messageTransformer.transformMessages(messages),
       stream: true,
       max_output_tokens: options.maxTokens,
       temperature: options.temperature,
       top_p: options.topP,
     };
 
-    // Add optional parameters if provided
-    if (options.background !== undefined) params.background = options.background;
-    if (options.include) params.include = options.include;
-    if (options.instructions) params.instructions = options.instructions;
-    if (options.metadata) params.metadata = options.metadata;
-    if (options.parallelToolCalls !== undefined)
-      params.parallel_tool_calls = options.parallelToolCalls;
-    if (options.previousResponseId) params.previous_response_id = options.previousResponseId;
-    if (options.reasoning) params.reasoning = options.reasoning;
-    if (options.serviceTier) params.service_tier = options.serviceTier;
-    if (options.store !== undefined) params.store = options.store;
-    if (options.text) params.text = options.text;
-    if (options.truncation) params.truncation = options.truncation;
-    if (options.user) params.user = options.user;
-
-    if (options.tools) {
-      params.tools = this.formatTools(options.tools);
-      if (options.toolChoice) {
-        params.tool_choice = this.formatToolChoice(options.toolChoice);
-      }
-    }
+    this.addOptionalParams(params, options);
+    this.addToolParams(params, options);
 
     return params;
   }
 
-  /**
-   * Formats AIKit tools into the structure the Responses API expects.
-   * @param tools - An array of AIKit tools.
-   * @returns An array of tools formatted for the Responses API.
-   */
-  private formatTools(tools: Tool[]): ResponsesAPITool[] {
+  private addOptionalParams(params: ResponsesCreateParams, options: OpenAIGenerationOptions) {
+    const optionalFields = [
+      'background', 'include', 'instructions', 'metadata', 'parallelToolCalls',
+      'previousResponseId', 'reasoning', 'serviceTier', 'store', 'text', 'truncation', 'user'
+    ] as const;
+
+    optionalFields.forEach(field => {
+      const value = options[field];
+      if (value !== undefined) {
+        const paramKey = this.getParamKey(field);
+        (params as any)[paramKey] = value;
+      }
+    });
+  }
+
+  private addToolParams(params: ResponsesCreateParams, options: OpenAIGenerationOptions) {
+    if (options.tools) {
+      params.tools = this.toolFormatter.formatTools(options.tools);
+      if (options.toolChoice) {
+        params.tool_choice = this.toolFormatter.formatToolChoice(options.toolChoice);
+      }
+    }
+  }
+
+  private getParamKey(field: string): string {
+    switch (field) {
+      case 'parallelToolCalls':
+        return 'parallel_tool_calls';
+      case 'previousResponseId':
+        return 'previous_response_id';
+      case 'serviceTier':
+        return 'service_tier';
+      default:
+        return field;
+    }
+  }
+}
+
+/**
+ * Handles tool formatting for the OpenAI Responses API.
+ * @internal
+ */
+class OpenAIToolFormatter {
+  formatTools(tools: Tool[]): ResponsesAPITool[] {
     return tools.map(tool => ({
       type: 'function',
       name: tool.name,
@@ -135,274 +145,224 @@ class OpenAIResponseTransformer {
     }));
   }
 
-  /**
-   * Formats the tool choice option for the Responses API.
-   * @param toolChoice - The AIKit tool choice option.
-   * @returns A tool choice option that the Responses API can understand.
-   */
-  private formatToolChoice(
+  formatToolChoice(
     toolChoice: OpenAIGenerationOptions['toolChoice']
   ): 'auto' | 'required' | { type: 'function'; name: string } {
-    if (!toolChoice) {
-      return 'auto';
-    }
+    if (!toolChoice) return 'auto';
     if (typeof toolChoice === 'object') {
-      // Support specific tool selection
       return { type: 'function', name: toolChoice.name };
     }
-    // The Responses API doesn't support 'none' for tool_choice
     return toolChoice === 'required' ? 'required' : 'auto';
   }
+}
 
-  /**
-   * Transforms an array of AIKit messages into the Responses API input format.
-   * The Responses API accepts messages in a similar format but with some differences.
-   * @param messages - The messages to transform.
-   * @returns An array of Responses API-compatible input messages.
-   */
-  private transformMessages(messages: Message[]): ResponsesAPIMessage[] {
+/**
+ * Transforms AIKit messages to OpenAI Responses API format.
+ * @internal
+ */
+class OpenAIMessageTransformer {
+  transformMessages(messages: Message[]): ResponsesAPIMessage[] {
     return messages.flatMap(msg => this.mapMessage(msg));
   }
 
-  /**
-   * Converts one of our internal `Message` objects into one or more Responses API
-   * message objects. Always returns an array so callers can safely `flatMap`.
-   */
   private mapMessage(msg: Message): ResponsesAPIMessage[] {
     switch (msg.role) {
       case 'system':
-        return [
-          {
-            role: 'system',
-            content: [
-              {
-                type: 'input_text',
-                text: MessageTransformer.extractTextContent(msg.content),
-              },
-            ],
-          },
-        ];
-
-      case 'tool': {
-        const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-        return toolResults.map(
-          content =>
-            ({
-              type: 'function_call_output',
-              call_id: content.toolCallId,
-              output: content.result,
-            }) as ResponsesAPIFunctionCallOutput
-        );
-      }
-
+        return this.handleSystemMessage(msg);
+      case 'tool':
+        return this.handleToolMessage(msg);
       case 'user':
-        return [
-          {
-            role: 'user',
-            content: this.buildContentParts(msg.content),
-          },
-        ];
-
-      case 'assistant': {
-        const messages: ResponsesAPIMessage[] = [];
-
-        // Add text content if present
-        const textContent = MessageTransformer.extractTextContent(msg.content);
-        if (textContent) {
-          messages.push({
-            role: 'assistant',
-            content: [
-              {
-                type: 'output_text',
-                text: textContent,
-              },
-            ],
-          });
-        }
-
-        // Add tool calls as separate input items (not as assistant message content)
-        if (msg.toolCalls) {
-          msg.toolCalls.forEach(tc => {
-            messages.push({
-              type: 'function_call',
-              call_id: tc.id,
-              name: tc.name,
-              arguments: JSON.stringify(tc.arguments),
-            } as ResponsesAPIFunctionCall);
-          });
-        }
-
-        return messages;
-      }
-
+        return this.handleUserMessage(msg);
+      case 'assistant':
+        return this.handleAssistantMessage(msg);
       default:
         return [];
     }
   }
 
-  /**
-   * Builds the content parts for a message, handling both text and images.
-   * @param content - The content array from an AIKit message.
-   * @returns An array of content parts for a Responses API message.
-   */
+  private handleSystemMessage(msg: Message): ResponsesAPIMessage[] {
+    return [{
+      role: 'system',
+      content: [{
+        type: 'input_text',
+        text: MessageTransformer.extractTextContent(msg.content),
+      }],
+    }];
+  }
+
+  private handleToolMessage(msg: Message): ResponsesAPIMessage[] {
+    const { toolResults } = MessageTransformer.groupContentByType(msg.content);
+    return toolResults.map(content => ({
+      type: 'function_call_output',
+      call_id: content.toolCallId,
+      output: content.result,
+    } as ResponsesAPIFunctionCallOutput));
+  }
+
+  private handleUserMessage(msg: Message): ResponsesAPIMessage[] {
+    return [{
+      role: 'user',
+      content: this.buildContentParts(msg.content),
+    }];
+  }
+
+  private handleAssistantMessage(msg: Message): ResponsesAPIMessage[] {
+    const messages: ResponsesAPIMessage[] = [];
+
+    const textContent = MessageTransformer.extractTextContent(msg.content);
+    if (textContent) {
+      messages.push({
+        role: 'assistant',
+        content: [{ type: 'output_text', text: textContent }],
+      });
+    }
+
+    if (msg.toolCalls) {
+      msg.toolCalls.forEach(tc => {
+        messages.push({
+          type: 'function_call',
+          call_id: tc.id,
+          name: tc.name,
+          arguments: JSON.stringify(tc.arguments),
+        } as ResponsesAPIFunctionCall);
+      });
+    }
+
+    return messages;
+  }
+
   private buildContentParts(content: Message['content']): ResponsesAPIContentPart[] {
-    const parts = content
+    return content
       .map(c => {
-        if (c.type === 'text') {
-          return { type: 'input_text' as const, text: c.text };
-        }
-        if (c.type === 'image') {
-          return { type: 'input_image' as const, image_url: c.image };
-        }
+        if (c.type === 'text') return { type: 'input_text' as const, text: c.text };
+        if (c.type === 'image') return { type: 'input_image' as const, image_url: c.image };
         return null;
       })
-      .filter(Boolean);
-
-    return parts as ResponsesAPIContentPart[];
+      .filter(Boolean) as ResponsesAPIContentPart[];
   }
 }
 
 /**
- * A processor that handles the incoming stream of data from the Responses API.
- * It parses the server-sent events, extracts the relevant data, and
- * reconstructs the response, including tool calls.
+ * Processes streaming responses from the OpenAI API.
  * @internal
  */
-class OpenAIResponseStreamProcessor {
-  /**
-   * Processes the raw line stream from the Responses API and yields structured chunks.
-   * @param lineStream - An async iterable of raw data lines.
-   * @returns An async iterable of AIKit stream chunks.
-   */
+class OpenAIStreamProcessor {
   async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    let content = '';
-    const toolCalls: Record<string, ToolCall> = {}; // Track by call_id
-    const accumulatingArgs: Record<string, string> = {}; // Accumulate arguments by call_id
-    const outputIndexToCallId: Record<number, string> = {}; // Map output_index to call_id
-    let hasToolCalls = false;
-
+    const state = new StreamState();
+    
     for await (const data of extractDataLines(lineStream)) {
-      if (data.trim() === '[DONE]') {
-        return;
-      }
+      if (data.trim() === '[DONE]') return;
 
       try {
         const event: ResponsesAPIStreamEvent = JSON.parse(data);
-
-        switch (event.type) {
-          case 'response.output_text.delta':
-            content += event.delta;
-            yield {
-              content,
-              delta: event.delta,
-              toolCalls: hasToolCalls ? Object.values(toolCalls) : undefined,
-            };
-            break;
-
-          case 'response.output_item.added':
-            // Handle function calls when they are added as output items
-            if (event.item && event.item.type === 'function_call') {
-              const callId = event.item.call_id;
-              toolCalls[callId] = {
-                id: callId, // Use call_id as the id for AIKit compatibility
-                name: event.item.name,
-                arguments: {}, // Will be populated by argument events
-              };
-              hasToolCalls = true;
-              // Map output_index to call_id for argument delta events
-              outputIndexToCallId[event.output_index] = callId;
-              // Initialize arguments accumulator for this call
-              accumulatingArgs[callId] = '';
-
-              // Yield immediately when tool call is detected
-              yield {
-                content,
-                delta: '',
-                toolCalls: Object.values(toolCalls),
-              };
-            }
-            break;
-
-          case 'response.function_call_arguments.delta': {
-            // Accumulate function call arguments using call_id
-            const deltaCallId = event.call_id || outputIndexToCallId[event.output_index];
-            if (deltaCallId && toolCalls[deltaCallId]) {
-              if (!accumulatingArgs[deltaCallId]) {
-                accumulatingArgs[deltaCallId] = '';
-              }
-              accumulatingArgs[deltaCallId] += event.delta;
-
-              // Yield progress with partially accumulated args
-              yield {
-                content,
-                delta: '',
-                toolCalls: Object.values(toolCalls),
-              };
-            }
-            break;
-          }
-
-          case 'response.function_call_arguments.done': {
-            // Parse the accumulated arguments and update the tool call
-            const doneCallId = event.call_id || outputIndexToCallId[event.output_index];
-            const completedToolCall = doneCallId ? toolCalls[doneCallId] : undefined;
-            if (completedToolCall && doneCallId) {
-              const argsString = accumulatingArgs[doneCallId] || event.arguments || '{}';
-              try {
-                completedToolCall.arguments = JSON.parse(argsString);
-                // Clean up the accumulation
-                delete accumulatingArgs[doneCallId];
-                yield {
-                  content,
-                  delta: '',
-                  toolCalls: Object.values(toolCalls),
-                };
-              } catch {
-                // If parsing fails, keep as empty object
-                completedToolCall.arguments = {};
-                delete accumulatingArgs[doneCallId];
-                yield {
-                  content,
-                  delta: '',
-                  toolCalls: Object.values(toolCalls),
-                };
-              }
-            }
-            break;
-          }
-
-          case 'response.completed': {
-            // Determine finish reason based on response status and presence of tool calls
-            let finishReason: 'stop' | 'length' | 'tool_use';
-
-            if (hasToolCalls) {
-              finishReason = 'tool_use';
-            } else {
-              finishReason = this.mapFinishReason(event.response?.status || 'completed');
-            }
-
-            yield {
-              content,
-              delta: '',
-              finishReason,
-              toolCalls: hasToolCalls ? Object.values(toolCalls) : undefined,
-            };
-            break;
-          }
-        }
+        const chunk = this.processEvent(event, state);
+        if (chunk) yield chunk;
       } catch (error) {
-        // Skip malformed JSON lines but log for debugging
         console.warn('Failed to parse OpenAI stream event:', error);
         continue;
       }
     }
   }
 
-  /**
-   * Maps the finish reason from the Responses API to our vocabulary.
-   * @param status - The status from the Responses API.
-   * @returns The corresponding AIKit finish reason.
-   */
+  private processEvent(event: ResponsesAPIStreamEvent, state: StreamState): StreamChunk | null {
+    switch (event.type) {
+      case 'response.output_text.delta':
+        return this.handleTextDelta(event, state);
+      case 'response.output_item.added':
+        return this.handleOutputItemAdded(event, state);
+      case 'response.function_call_arguments.delta':
+        return this.handleArgsDelta(event, state);
+      case 'response.function_call_arguments.done':
+        return this.handleArgsDone(event, state);
+      case 'response.completed':
+        return this.handleCompleted(event, state);
+      default:
+        return null;
+    }
+  }
+
+  private handleTextDelta(event: any, state: StreamState): StreamChunk {
+    state.content += event.delta;
+    return {
+      content: state.content,
+      delta: event.delta,
+      toolCalls: state.hasToolCalls ? Object.values(state.toolCalls) : undefined,
+    };
+  }
+
+  private handleOutputItemAdded(event: any, state: StreamState): StreamChunk | null {
+    if (event.item?.type === 'function_call') {
+      const callId = event.item.call_id;
+      state.toolCalls[callId] = {
+        id: callId,
+        name: event.item.name,
+        arguments: {},
+      };
+      state.hasToolCalls = true;
+      state.outputIndexToCallId[event.output_index] = callId;
+      state.accumulatingArgs[callId] = '';
+
+      return {
+        content: state.content,
+        delta: '',
+        toolCalls: Object.values(state.toolCalls),
+      };
+    }
+    return null;
+  }
+
+  private handleArgsDelta(event: any, state: StreamState): StreamChunk | null {
+    const deltaCallId = event.call_id || state.outputIndexToCallId[event.output_index];
+    if (deltaCallId && state.toolCalls[deltaCallId]) {
+      if (!state.accumulatingArgs[deltaCallId]) {
+        state.accumulatingArgs[deltaCallId] = '';
+      }
+      state.accumulatingArgs[deltaCallId] += event.delta;
+
+      return {
+        content: state.content,
+        delta: '',
+        toolCalls: Object.values(state.toolCalls),
+      };
+    }
+    return null;
+  }
+
+  private handleArgsDone(event: any, state: StreamState): StreamChunk | null {
+    const doneCallId = event.call_id || state.outputIndexToCallId[event.output_index];
+    const completedToolCall = doneCallId ? state.toolCalls[doneCallId] : undefined;
+    
+    if (completedToolCall && doneCallId) {
+      const argsString = state.accumulatingArgs[doneCallId] || event.arguments || '{}';
+      try {
+        completedToolCall.arguments = JSON.parse(argsString);
+      } catch {
+        completedToolCall.arguments = {};
+      }
+      delete state.accumulatingArgs[doneCallId];
+      
+      return {
+        content: state.content,
+        delta: '',
+        toolCalls: Object.values(state.toolCalls),
+      };
+    }
+    return null;
+  }
+
+  private handleCompleted(event: any, state: StreamState): StreamChunk {
+    const finishReason = state.hasToolCalls 
+      ? 'tool_use' as const
+      : this.mapFinishReason(event.response?.status || 'completed');
+
+    return {
+      content: state.content,
+      delta: '',
+      finishReason,
+      toolCalls: state.hasToolCalls ? Object.values(state.toolCalls) : undefined,
+    };
+  }
+
   private mapFinishReason(status: string): 'stop' | 'length' | 'tool_use' {
     switch (status) {
       case 'completed':
@@ -420,12 +380,21 @@ class OpenAIResponseStreamProcessor {
   }
 }
 
-// These are the internal types that mirror the OpenAI Responses API.
-// They are not exposed to the user, but they are essential for
-// the provider to function correctly.
+/**
+ * Manages the state during stream processing.
+ * @internal
+ */
+class StreamState {
+  content = '';
+  toolCalls: Record<string, ToolCall> = {};
+  accumulatingArgs: Record<string, string> = {};
+  outputIndexToCallId: Record<number, string> = {};
+  hasToolCalls = false;
+}
+
+// Type definitions for OpenAI Responses API
 // @internal
 
-/** @internal */
 type ResponsesCreateParams = {
   model: string;
   input: ResponsesAPIMessage[];
@@ -441,9 +410,7 @@ type ResponsesCreateParams = {
   metadata?: Record<string, string>;
   parallel_tool_calls?: boolean;
   previous_response_id?: string;
-  reasoning?: {
-    effort?: 'low' | 'medium' | 'high';
-  };
+  reasoning?: { effort?: 'low' | 'medium' | 'high' };
   service_tier?: 'auto' | 'default' | 'flex';
   store?: boolean;
   text?: {
@@ -456,16 +423,11 @@ type ResponsesCreateParams = {
   user?: string;
 };
 
-/** @internal */
 type ResponsesAPIMessage =
-  | {
-      role: 'system' | 'user' | 'assistant';
-      content: ResponsesAPIContentPart[];
-    }
+  | { role: 'system' | 'user' | 'assistant'; content: ResponsesAPIContentPart[] }
   | ResponsesAPIFunctionCall
   | ResponsesAPIFunctionCallOutput;
 
-/** @internal */
 type ResponsesAPIFunctionCall = {
   type: 'function_call';
   call_id: string;
@@ -473,14 +435,12 @@ type ResponsesAPIFunctionCall = {
   arguments: string;
 };
 
-/** @internal */
 type ResponsesAPIFunctionCallOutput = {
   type: 'function_call_output';
   call_id: string;
   output: string;
 };
 
-/** @internal */
 type ResponsesAPIContentPart =
   | { type: 'input_text'; text: string }
   | { type: 'input_image'; image_url: string }
@@ -488,7 +448,6 @@ type ResponsesAPIContentPart =
   | { type: 'function_call'; call_id: string; name: string; arguments: Record<string, unknown> }
   | { type: 'function_call_output'; call_id: string; output: string };
 
-/** @internal */
 type ResponsesAPITool = {
   type: 'function';
   name: string;
@@ -496,12 +455,8 @@ type ResponsesAPITool = {
   parameters: Record<string, unknown>;
 };
 
-/** @internal */
 type ResponsesAPIStreamEvent =
-  | {
-      type: 'response.output_text.delta';
-      delta: string;
-    }
+  | { type: 'response.output_text.delta'; delta: string }
   | {
       type: 'response.output_item.added';
       response_id: string;
@@ -532,7 +487,5 @@ type ResponsesAPIStreamEvent =
     }
   | {
       type: 'response.completed';
-      response: {
-        status: string;
-      };
+      response: { status: string };
     };
