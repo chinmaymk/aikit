@@ -67,7 +67,7 @@ interface AnthropicCreateMessageRequest {
   model: string;
   messages: AnthropicMessageParam[];
   max_tokens: number;
-  system?: string;
+  system?: string | Array<{ type: 'text'; text: string }>;
   temperature?: number;
   top_p?: number;
   top_k?: number;
@@ -239,11 +239,17 @@ export class AnthropicProvider implements AIProvider<AnthropicOptions> {
     const params: AnthropicCreateMessageRequest = {
       model: options.model!,
       messages: anthropicMessages,
-      max_tokens: options.maxTokens || 1024,
+      max_tokens: options.maxOutputTokens || 1024,
       stream: true,
     };
 
-    if (systemMessage) params.system = systemMessage;
+    // Handle system message - prioritize options.system over extracted system message
+    if (options.system) {
+      params.system = options.system;
+    } else if (systemMessage) {
+      params.system = systemMessage;
+    }
+
     if (options.temperature !== undefined) params.temperature = options.temperature;
     if (options.topP !== undefined) params.top_p = options.topP;
     if (options.topK !== undefined) params.top_k = options.topK;

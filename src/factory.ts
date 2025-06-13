@@ -1,6 +1,13 @@
-import type { AIProvider, OpenAIOptions, AnthropicOptions, GoogleOptions } from './types';
+import type {
+  AIProvider,
+  OpenAIOptions,
+  OpenAIResponsesOptions,
+  AnthropicOptions,
+  GoogleOptions,
+} from './types';
 
-import { OpenAIProvider } from './providers/openai';
+import { OpenAIProvider } from './providers/openai_completions';
+import { OpenAIProvider as OpenAIResponsesProvider } from './providers/openai_responses';
 import { AnthropicProvider } from './providers/anthropic';
 import { GoogleGeminiProvider } from './providers/google';
 
@@ -9,6 +16,7 @@ import { GoogleGeminiProvider } from './providers/google';
  */
 type ProviderMap = {
   openai: OpenAIProvider;
+  openai_responses: OpenAIResponsesProvider;
   anthropic: AnthropicProvider;
   google: GoogleGeminiProvider;
 };
@@ -18,15 +26,16 @@ type ProviderMap = {
  */
 type OptionsMap = {
   openai: OpenAIOptions;
+  openai_responses: OpenAIResponsesOptions;
   anthropic: AnthropicOptions;
   google: GoogleOptions;
 };
 
 /**
- * Summons an AIProvider that speaks fluent OpenAI.
+ * Summons an AIProvider that speaks fluent OpenAI using the Chat Completions API (default).
  * Just give it your credentials and it'll be ready to chat.
  *
- * @param options - The configuration and default generation options for the OpenAI API.
+ * @param options - The configuration and default generation options for the OpenAI Chat Completions API.
  * @returns An AIProvider, ready to do your bidding with OpenAI's models.
  *
  * @example
@@ -42,6 +51,28 @@ type OptionsMap = {
  */
 export function createOpenAI(options: OpenAIOptions): AIProvider {
   return new OpenAIProvider(options);
+}
+
+/**
+ * Creates an OpenAI provider using the Responses API.
+ * This is an alternative to the default Chat Completions API.
+ *
+ * @param options - The configuration and default generation options for the OpenAI Responses API.
+ * @returns An AIProvider using OpenAI's Responses API.
+ *
+ * @example
+ * ```typescript
+ * const openaiResponses = createOpenAIResponses({
+ *   apiKey: process.env.OPENAI_API_KEY!,
+ *   model: 'gpt-4o',
+ *   reasoning: { effort: 'high' },
+ * });
+ * ```
+ *
+ * @group Factory Functions
+ */
+export function createOpenAIResponses(options: OpenAIResponsesOptions): AIProvider {
+  return new OpenAIResponsesProvider(options);
 }
 
 /**
@@ -119,6 +150,8 @@ export function createProvider<T extends keyof ProviderMap>(
   switch (type) {
     case 'openai':
       return createOpenAI(options as OpenAIOptions) as ProviderMap[T];
+    case 'openai_responses':
+      return createOpenAIResponses(options as OpenAIResponsesOptions) as ProviderMap[T];
     case 'anthropic':
       return createAnthropic(options as AnthropicOptions) as ProviderMap[T];
     case 'google':

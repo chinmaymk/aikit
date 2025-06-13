@@ -79,6 +79,12 @@ describe('AnthropicProvider', () => {
   });
 
   describe('constructor', () => {
+    it('should throw error when API key is missing', () => {
+      expect(() => {
+        new AnthropicProvider({} as AnthropicOptions);
+      }).toThrow('Anthropic API key is required');
+    });
+
     it('should have correct provider configuration', () => {
       expect(provider).toBeInstanceOf(AnthropicProvider);
     });
@@ -120,7 +126,7 @@ describe('AnthropicProvider', () => {
 
     const mockOptions: GenerationOptions = {
       model: 'claude-3-5-sonnet-20241022',
-      maxTokens: 100,
+      maxOutputTokens: 100,
       temperature: 0.7,
     };
 
@@ -242,6 +248,39 @@ describe('AnthropicProvider', () => {
       }
     });
 
+    it('should throw error when model is missing', async () => {
+      const optionsWithoutModel = { ...mockOptions };
+      delete optionsWithoutModel.model;
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, optionsWithoutModel)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+    });
+
+    it('should handle stop sequences', async () => {
+      const optionsWithStopSequences: GenerationOptions = {
+        ...mockOptions,
+        stopSequences: ['STOP', 'END'],
+      };
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Response'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, optionsWithStopSequences)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.stop_sequences).toEqual(['STOP', 'END']);
+    });
+
     it('should handle tools configuration', async () => {
       const toolOptions: GenerationOptions = {
         ...mockOptions,
@@ -321,6 +360,7 @@ describe('AnthropicProvider', () => {
           type: 'enabled',
           budget_tokens: 2048,
         },
+        system: 'You are a helpful assistant.',
       };
 
       let requestBody: any;
@@ -356,6 +396,34 @@ describe('AnthropicProvider', () => {
         type: 'enabled',
         budget_tokens: 2048,
       });
+      expect(requestBody.system).toBe('You are a helpful assistant.');
+    });
+
+    it('should handle system option as array of text blocks', async () => {
+      const anthropicOptions: AnthropicOptions = {
+        ...mockOptions,
+        system: [
+          { type: 'text', text: 'You are a helpful assistant.' },
+          { type: 'text', text: 'Please be concise.' },
+        ],
+      };
+
+      let requestBody: any;
+      const scope = mockAnthropicGeneration(
+        anthropicTextResponse('Hello!'),
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, anthropicOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.system).toEqual([
+        { type: 'text', text: 'You are a helpful assistant.' },
+        { type: 'text', text: 'Please be concise.' },
+      ]);
     });
 
     it('should handle different tool choice options', async () => {

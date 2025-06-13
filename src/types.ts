@@ -94,8 +94,8 @@ export interface ToolCall {
  * @group Types
  */
 export interface Message {
-  /** Who's talking? A user, the assistant, the system, or a tool. */
-  role: 'user' | 'assistant' | 'system' | 'tool';
+  /** Who's talking? A user, the assistant, the system, a developer, or a tool. */
+  role: 'user' | 'assistant' | 'system' | 'developer' | 'tool';
   /** The actual content of the message. It's an array, because life is complicated. */
   content: Content[];
   /** If the assistant is calling a tool, the details will be in here. */
@@ -142,8 +142,8 @@ export interface StreamResult {
 export interface GenerationOptions {
   /** The specific model you want to use. e.g., 'gpt-4o' or 'claude-3-5-sonnet-20240620'. */
   model?: string;
-  /** The maximum number of tokens to generate. Don't want it to ramble on forever, do you? */
-  maxTokens?: number;
+  /** The maximum number of output tokens to generate. Don't want it to ramble on forever, do you? */
+  maxOutputTokens?: number;
   /**
    * The sampling temperature. Higher values (e.g., 0.8) make the output more random,
    * while lower values (e.g., 0.2) make it more focused and deterministic.
@@ -175,23 +175,112 @@ export interface GenerationOptions {
 }
 
 /**
- * OpenAI-specific configuration and generation options.
+ * Base interface for provider-specific configuration options.
+ * Contains common options shared across all AI providers.
+ */
+export interface ProviderOptions extends GenerationOptions {
+  /** API key for authentication with the provider. */
+  apiKey?: string;
+  /** Custom base URL for the API endpoint. */
+  baseURL?: string;
+  /** Request timeout in milliseconds. */
+  timeout?: number;
+  /** Maximum number of retry attempts for failed requests. */
+  maxRetries?: number;
+}
+
+/**
+ * OpenAI Responses API configuration and generation options.
  * These can be provided at construction time or generation time.
  * Generation time options will override construction time options.
  */
-export interface OpenAIOptions extends GenerationOptions {
-  /** Your OpenAI API key. Keep it secret, keep it safe. */
-  apiKey?: string;
-  /** A custom base URL for the API. For proxies and other fun stuff. */
-  baseURL?: string;
+export interface OpenAIResponsesOptions extends ProviderOptions {
   /** Your OpenAI organization ID. For when you're part of a fancy club. */
   organization?: string;
   /** Your OpenAI project ID. For even fancier clubs. */
   project?: string;
-  /** How long to wait for a response before giving up, in milliseconds. */
-  timeout?: number;
-  /** How many times to retry a failed request. Because sometimes the internet blinks. */
-  maxRetries?: number;
+  /**
+   * Whether to run the model response in the background.
+   * When true, the request is processed asynchronously and can be polled for status.
+   */
+  background?: boolean;
+  /**
+   * Specify additional output data to include in the model response.
+   * For example: ["reasoning.encrypted_content"] to include encrypted reasoning traces.
+   */
+  include?: string[];
+  /**
+   * Inserts a system (or developer) message as the first item in the model's context.
+   * This provides high-level instructions that take precedence over user messages.
+   */
+  instructions?: string;
+  /**
+   * Set of key-value pairs that can be attached to an object for metadata purposes.
+   */
+  metadata?: Record<string, string>;
+  /**
+   * Whether to allow the model to run tool calls in parallel.
+   */
+  parallelToolCalls?: boolean;
+  /**
+   * The unique ID of the previous response to the model for multi-turn conversations.
+   * This enables conversation state management by chaining responses together.
+   */
+  previousResponseId?: string;
+  /**
+   * Configuration options for reasoning models (o-series models only).
+   * Controls the reasoning effort level for enhanced problem-solving capabilities.
+   */
+  reasoning?: {
+    effort?: 'low' | 'medium' | 'high';
+  };
+  /**
+   * Specifies the latency tier to use for processing the request.
+   * 'auto' lets OpenAI choose, 'default' uses standard tier, 'flex' uses flexible tier.
+   */
+  serviceTier?: 'auto' | 'default' | 'flex';
+  /**
+   * Whether to store the generated model response for later retrieval via API.
+   * Defaults to true. Set to false for stateless requests.
+   */
+  store?: boolean;
+  /**
+   * Configuration options for a text response from the model.
+   * Controls the format and structure of text outputs.
+   */
+  text?: {
+    format?: {
+      type: 'text' | 'json_object' | 'json_schema';
+      json_schema?: {
+        name?: string;
+        description?: string;
+        schema?: Record<string, unknown>;
+        strict?: boolean;
+      };
+    };
+  };
+  /**
+   * The truncation strategy to use for the model response.
+   * 'auto' lets the model decide, 'disabled' prevents truncation.
+   */
+  truncation?: 'auto' | 'disabled';
+  /**
+   * A stable identifier for your end-users.
+   * Helps OpenAI monitor and detect abuse.
+   */
+  user?: string;
+}
+
+/**
+ * OpenAI Chat Completions API configuration and generation options (default OpenAI implementation).
+ * These can be provided at construction time or generation time.
+ * Generation time options will override construction time options.
+ */
+export interface OpenAIOptions extends ProviderOptions {
+  /** Your OpenAI organization ID. For when you're part of a fancy club. */
+  organization?: string;
+  /** Your OpenAI project ID. For even fancier clubs. */
+  project?: string;
   /**
    * Presence penalty. Positive values penalize new tokens based on whether they
    * appear in the text so far, increasing the model's likelihood to talk about new topics.
@@ -205,60 +294,70 @@ export interface OpenAIOptions extends GenerationOptions {
    */
   frequencyPenalty?: number;
   /**
-   * Whether to run the model response in the background.
+   * A stable identifier for your end-users.
    */
-  background?: boolean;
+  user?: string;
   /**
-   * Specify additional output data to include in the model response.
+   * Whether to return log probabilities of the output tokens or not.
+   * If true, returns the log probabilities of each output token returned in the content of message.
+   * This feature is available on gpt-4.1, gpt-4o, gpt-4o-mini, gpt-3.5-turbo, and other supported models.
    */
-  include?: string[];
+  logprobs?: boolean;
   /**
-   * Inserts a system (or developer) message as the first item in the model's context.
+   * An integer between 0 and 20 specifying the number of most likely tokens to return at each token position,
+   * each with an associated log probability. logprobs must be set to true if this parameter is used.
    */
-  instructions?: string;
+  topLogprobs?: number;
   /**
-   * Set of key-value pairs that can be attached to an object.
+   * This feature is in Beta. If specified, our system will make a best effort to sample deterministically,
+   * such that repeated requests with the same seed and parameters should return the same result.
+   * Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter
+   * to monitor changes in the backend.
    */
-  metadata?: Record<string, string>;
+  seed?: number;
+  /**
+   * An object specifying the format that the model must output.
+   * Compatible with GPT-4.1, GPT-4o, GPT-4o-mini, GPT-3.5 Turbo, and all GPT-4 Turbo models newer than gpt-4-turbo-2024-04-09.
+   * Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
+   * Important: when using JSON mode, you must also instruct the model to produce JSON yourself via a system or user message.
+   * Without this, the model may generate an unending stream of whitespace until the generation reaches the token limit,
+   * resulting in a long-running and seemingly "stuck" request. Also note that the message content may be partially cut off
+   * if finish_reason="length", which indicates the generation exceeded max_tokens or the conversation exceeded the max context length.
+   */
+  responseFormat?: {
+    type: 'text' | 'json_object' | 'json_schema';
+    json_schema?: {
+      name: string;
+      description?: string;
+      schema?: Record<string, unknown>;
+      strict?: boolean;
+    };
+  };
+  /**
+   * Modify the likelihood of specified tokens appearing in the completion.
+   * Accepts a JSON object that maps tokens (specified by their token ID in the tokenizer) to an associated bias value from -100 to 100.
+   * Mathematically, the bias is added to the logits generated by the model prior to sampling.
+   * The exact effect will vary per model, but values between -1 and 1 should decrease or increase likelihood of selection;
+   * values like -100 or 100 should result in a ban or exclusive selection of the relevant token.
+   */
+  logitBias?: Record<string, number>;
+  /**
+   * How many chat completion choices to generate for each input message.
+   * Note that you will be charged based on the number of generated tokens across all of the choices.
+   * Keep n as 1 to minimize costs.
+   */
+  n?: number;
+  /**
+   * Options for streaming response. Only set this when you set stream: true.
+   * When streaming, the stream will include usage data.
+   */
+  streamOptions?: {
+    includeUsage?: boolean;
+  };
   /**
    * Whether to allow the model to run tool calls in parallel.
    */
   parallelToolCalls?: boolean;
-  /**
-   * The unique ID of the previous response to the model for multi-turn conversations.
-   */
-  previousResponseId?: string;
-  /**
-   * Configuration options for reasoning models (o-series models only).
-   */
-  reasoning?: {
-    effort?: 'low' | 'medium' | 'high';
-  };
-  /**
-   * Specifies the latency tier to use for processing the request.
-   */
-  serviceTier?: 'auto' | 'default' | 'flex';
-  /**
-   * Whether to store the generated model response for later retrieval via API.
-   */
-  store?: boolean;
-  /**
-   * Configuration options for a text response from the model.
-   */
-  text?: {
-    format?: {
-      type: 'text' | 'json_object' | 'json_schema';
-      json_schema?: Record<string, unknown>;
-    };
-  };
-  /**
-   * The truncation strategy to use for the model response.
-   */
-  truncation?: 'auto' | 'disabled';
-  /**
-   * A stable identifier for your end-users.
-   */
-  user?: string;
 }
 
 /**
@@ -266,9 +365,7 @@ export interface OpenAIOptions extends GenerationOptions {
  * These can be provided at construction time or generation time.
  * Generation time options will override construction time options.
  */
-export interface GoogleOptions extends GenerationOptions {
-  /** Your Google AI API key. The key to the kingdom. */
-  apiKey?: string;
+export interface GoogleOptions extends ProviderOptions {
   /**
    * Top-k sampling. See `GenerationOptions` for the details.
    * It's here because Google supports it.
@@ -276,6 +373,62 @@ export interface GoogleOptions extends GenerationOptions {
   topK?: number;
   /** How many different responses to generate. More candidates, more problems. */
   candidateCount?: number;
+  /**
+   * Presence penalty. Positive values penalize new tokens based on whether they
+   * appear in the text so far, increasing the model's likelihood to talk about new topics.
+   */
+  presencePenalty?: number;
+  /**
+   * Frequency penalty. Positive values penalize new tokens based on their
+   * existing frequency in the text so far, decreasing the model's likelihood to
+   * repeat the same line verbatim.
+   */
+  frequencyPenalty?: number;
+  /**
+   * The MIME type of the generated candidate text.
+   * Supported values: 'text/plain' (default), 'application/json'
+   */
+  responseMimeType?: 'text/plain' | 'application/json';
+  /**
+   * Output schema of the generated candidate text when responseMimeType is set to 'application/json'.
+   * Schema must be a subset of the OpenAPI schema and can be objects, primitives or arrays.
+   */
+  responseSchema?: Record<string, unknown>;
+  /**
+   * This feature is in Beta. If specified, our system will make a best effort to sample deterministically,
+   * such that repeated requests with the same seed and parameters should return the same result.
+   */
+  seed?: number;
+  /**
+   * Whether to return log probabilities of the output tokens or not.
+   * If true, returns the log probabilities of each output token returned in the content of message.
+   */
+  responseLogprobs?: boolean;
+  /**
+   * An integer between 1 and 20 specifying the number of most likely tokens to return at each token position,
+   * each with an associated log probability. responseLogprobs must be set to true if this parameter is used.
+   */
+  logprobs?: number;
+  /**
+   * Whether to include audio timestamp information in the response.
+   * Only applicable for audio generation models.
+   */
+  audioTimestamp?: boolean;
+  /**
+   * Safety settings for content filtering.
+   * Configure safety thresholds for different harm categories.
+   */
+  safetySettings?: Array<{
+    /** The category of harmful content to filter */
+    category:
+      | 'HARM_CATEGORY_HARASSMENT'
+      | 'HARM_CATEGORY_HATE_SPEECH'
+      | 'HARM_CATEGORY_SEXUALLY_EXPLICIT'
+      | 'HARM_CATEGORY_DANGEROUS_CONTENT'
+      | 'HARM_CATEGORY_CIVIC_INTEGRITY';
+    /** The threshold for blocking content */
+    threshold: 'BLOCK_NONE' | 'BLOCK_ONLY_HIGH' | 'BLOCK_MEDIUM_AND_ABOVE' | 'BLOCK_LOW_AND_ABOVE';
+  }>;
 }
 
 /**
@@ -283,15 +436,7 @@ export interface GoogleOptions extends GenerationOptions {
  * These can be provided at construction time or generation time.
  * Generation time options will override construction time options.
  */
-export interface AnthropicOptions extends GenerationOptions {
-  /** Your Anthropic API key. Don't tell anyone. */
-  apiKey?: string;
-  /** A custom base URL for the API. You know the drill. */
-  baseURL?: string;
-  /** How long to wait for a response before your patience wears out, in milliseconds. */
-  timeout?: number;
-  /** How many times to try again. Third time's the charm? */
-  maxRetries?: number;
+export interface AnthropicOptions extends ProviderOptions {
   /** For enabling beta features. Live on the edge. */
   beta?: string[];
   /**
@@ -323,6 +468,7 @@ export interface AnthropicOptions extends GenerationOptions {
   /**
    * Configuration for enabling Claude's extended thinking.
    * When enabled, responses include thinking content blocks showing Claude's thinking process.
+   * Requires a minimum budget of 1,024 tokens.
    */
   thinking?:
     | {
@@ -332,8 +478,17 @@ export interface AnthropicOptions extends GenerationOptions {
     | {
         type: 'disabled';
       };
-  /** The version of the Anthropic API you want to use. */
+  /**
+   * The version of the Anthropic API you want to use.
+   * Read more about versioning and version history at https://docs.anthropic.com/en/api/versioning
+   */
   anthropicVersion?: string;
+  /**
+   * System prompt content. Can be a string or an array of text blocks.
+   * Provides context and instructions to Claude, such as specifying a particular goal or role.
+   * See the guide to system prompts: https://docs.anthropic.com/en/docs/system-prompts
+   */
+  system?: string | Array<{ type: 'text'; text: string }>;
 }
 
 /**

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { OpenAIProvider } from '../../src/providers/openai';
+import { OpenAIProvider } from '../../src/providers/openai_responses';
 import type { Message, GenerationOptions, OpenAIOptions, StreamChunk } from '../../src/types';
 import nock from 'nock';
 import { Readable } from 'node:stream';
@@ -99,7 +99,7 @@ describe('OpenAIProvider', () => {
 
     const mockOptions: GenerationOptions = {
       model: 'gpt-4o',
-      maxTokens: 100,
+      maxOutputTokens: 100,
       temperature: 0.7,
     };
 
@@ -237,7 +237,7 @@ describe('OpenAIProvider', () => {
     it('should handle all generation options', async () => {
       const detailedOptions: GenerationOptions = {
         model: 'gpt-4',
-        maxTokens: 500,
+        maxOutputTokens: 500,
         temperature: 0.8,
         topP: 0.9,
       };

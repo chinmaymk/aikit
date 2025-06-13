@@ -1,17 +1,28 @@
 import {
   createOpenAI,
+  createOpenAIResponses,
   createAnthropic,
   createGoogle,
   createProvider,
   getAvailableProvider,
 } from '../src/factory';
-import { OpenAIProvider } from '../src/providers/openai';
+import { OpenAIProvider } from '../src/providers/openai_completions';
+import { OpenAIProvider as OpenAIResponsesProvider } from '../src/providers/openai_responses';
 import { AnthropicProvider } from '../src/providers/anthropic';
 import { GoogleGeminiProvider } from '../src/providers/google';
-import type { OpenAIOptions, AnthropicOptions, GoogleOptions } from '../src/types';
+import type {
+  OpenAIOptions,
+  OpenAIResponsesOptions,
+  AnthropicOptions,
+  GoogleOptions,
+} from '../src/types';
 
 describe('Factory Functions', () => {
   const mockOpenAIOptions: OpenAIOptions = {
+    apiKey: 'test-openai-key',
+  };
+
+  const mockOpenAIResponsesOptions: OpenAIResponsesOptions = {
     apiKey: 'test-openai-key',
   };
 
@@ -27,6 +38,13 @@ describe('Factory Functions', () => {
     it('should create an OpenAI provider instance', () => {
       const provider = createOpenAI(mockOpenAIOptions);
       expect(provider).toBeInstanceOf(OpenAIProvider);
+    });
+  });
+
+  describe('createOpenAIResponses', () => {
+    it('should create an OpenAI Responses provider instance', () => {
+      const provider = createOpenAIResponses(mockOpenAIResponsesOptions);
+      expect(provider).toBeInstanceOf(OpenAIResponsesProvider);
     });
   });
 
@@ -48,6 +66,11 @@ describe('Factory Functions', () => {
     it('should create OpenAI provider when type is "openai"', () => {
       const provider = createProvider('openai', mockOpenAIOptions);
       expect(provider).toBeInstanceOf(OpenAIProvider);
+    });
+
+    it('should create OpenAI Responses provider when type is "openai_responses"', () => {
+      const provider = createProvider('openai_responses', mockOpenAIResponsesOptions);
+      expect(provider).toBeInstanceOf(OpenAIResponsesProvider);
     });
 
     it('should create Anthropic provider when type is "anthropic"', () => {

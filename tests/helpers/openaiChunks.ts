@@ -126,3 +126,77 @@ export const completionChunk = (status: string = 'completed') => ({
     status,
   },
 });
+
+// Chat Completions API format chunks (for openai_completions.ts tests)
+
+/**
+ * Build a text delta chunk for Chat Completions API.
+ * @param content Partial content string emitted by the model
+ * @param finishReason Optional finish reason (e.g. 'stop')
+ */
+export const chatTextChunk = (content: string, finishReason: string | null = null) => ({
+  choices: [
+    {
+      delta: {
+        content,
+      },
+      finish_reason: finishReason,
+    },
+  ],
+});
+
+/**
+ * Build a stop chunk for Chat Completions API.
+ */
+export const chatStopChunk = () => ({
+  choices: [
+    {
+      delta: {},
+      finish_reason: 'stop',
+    },
+  ],
+});
+
+/**
+ * Build a tool call chunk for Chat Completions API.
+ */
+export const chatToolCallChunk = (
+  {
+    index = 0,
+    id,
+    name,
+    args,
+  }: {
+    index?: number;
+    id?: string;
+    name?: string;
+    args?: string;
+  },
+  finishReason: string | null = null
+) => ({
+  choices: [
+    {
+      delta: {
+        tool_calls: [
+          {
+            index,
+            id,
+            type: 'function',
+            function: {
+              name,
+              arguments: args,
+            },
+          },
+        ],
+      },
+      finish_reason: finishReason,
+    },
+  ],
+});
+
+/**
+ * Build an empty chunk for Chat Completions API (for handling empty responses).
+ */
+export const chatEmptyChunk = () => ({
+  choices: [],
+});

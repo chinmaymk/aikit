@@ -69,7 +69,7 @@ describe('GoogleGeminiProvider', () => {
 
     const mockOptions: GoogleOptions = {
       model: 'gemini-1.5-pro',
-      maxTokens: 100,
+      maxOutputTokens: 100,
       temperature: 0.7,
     };
 
@@ -464,7 +464,7 @@ describe('GoogleGeminiProvider', () => {
     it('should handle all generation options', async () => {
       const fullOptions: GoogleOptions = {
         model: 'gemini-1.5-pro',
-        maxTokens: 200,
+        maxOutputTokens: 200,
         temperature: 0.8,
         topP: 0.9,
         topK: 40,

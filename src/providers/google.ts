@@ -34,10 +34,22 @@ interface ModelConfig {
     maxOutputTokens?: number;
     stopSequences?: string[];
     candidateCount?: number;
+    presencePenalty?: number;
+    frequencyPenalty?: number;
+    responseMimeType?: string;
+    responseSchema?: Record<string, unknown>;
+    seed?: number;
+    responseLogprobs?: boolean;
+    logprobs?: number;
+    audioTimestamp?: boolean;
   };
   systemInstruction?: string;
   tools?: Array<{ functionDeclarations: FunctionDeclaration[] }>;
   toolConfig?: DynamicParams;
+  safetySettings?: Array<{
+    category: string;
+    threshold: string;
+  }>;
 }
 
 interface GenerateContentRequestBody extends ModelConfig {
@@ -72,10 +84,10 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
       throw new Error('Google API key is required');
     }
 
-    const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+    const baseUrl = options.baseURL || 'https://generativelanguage.googleapis.com/v1beta';
     const headers = { 'Content-Type': 'application/json' };
 
-    this.client = new APIClient(baseUrl, headers);
+    this.client = new APIClient(baseUrl, headers, options.timeout, options.maxRetries);
 
     const { apiKey, ...defaultGenerationOptions } = options;
     this.defaultOptions = { apiKey, ...defaultGenerationOptions };
@@ -344,9 +356,17 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
         temperature: options.temperature,
         topP: options.topP,
         topK: options.topK,
-        maxOutputTokens: options.maxTokens,
+        maxOutputTokens: options.maxOutputTokens,
         stopSequences: options.stopSequences,
         candidateCount: options.candidateCount,
+        presencePenalty: options.presencePenalty,
+        frequencyPenalty: options.frequencyPenalty,
+        responseMimeType: options.responseMimeType,
+        responseSchema: options.responseSchema,
+        seed: options.seed,
+        responseLogprobs: options.responseLogprobs,
+        logprobs: options.logprobs,
+        audioTimestamp: options.audioTimestamp,
       },
     };
 
@@ -359,6 +379,10 @@ export class GoogleGeminiProvider implements AIProvider<GoogleOptions> {
       if (options.toolChoice) {
         config.toolConfig = this.formatToolChoice(options.toolChoice);
       }
+    }
+
+    if (options.safetySettings) {
+      config.safetySettings = options.safetySettings;
     }
 
     return config;
