@@ -1,4 +1,47 @@
-<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" fill="#2563eb" rx="4"/>
-  <text x="16" y="22" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">AI</text>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Vibrant gradients optimized for favicon -->
+    <radialGradient id="faviconCore" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" style="stop-color:#f0abfc" />
+      <stop offset="40%" style="stop-color:#a855f7" />
+      <stop offset="80%" style="stop-color:#3b82f6" />
+      <stop offset="100%" style="stop-color:#1e40af" />
+    </radialGradient>
+    
+    <linearGradient id="faviconFlow1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4" />
+      <stop offset="100%" style="stop-color:#8b5cf6" />
+    </linearGradient>
+    
+    <linearGradient id="faviconFlow2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b" />
+      <stop offset="100%" style="stop-color:#ec4899" />
+    </linearGradient>
+    
+    <linearGradient id="faviconSpark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24" />
+      <stop offset="100%" style="stop-color:#f59e0b" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="32" height="32" fill="url(#faviconCore)" rx="6"/>
+  
+  <!-- Flowing generation streams (simplified for favicon) -->
+  <path d="M6 12 Q10 6, 16 9 Q22 12, 26 8" stroke="url(#faviconFlow1)" stroke-width="1.5" fill="none" opacity="0.8"/>
+  <path d="M6 20 Q12 14, 20 18 Q26 22, 29 16" stroke="url(#faviconFlow2)" stroke-width="1.2" fill="none" opacity="0.7"/>
+  <path d="M4 16 Q12 24, 20 20 Q28 16, 30 24" stroke="url(#faviconFlow1)" stroke-width="1.3" fill="none" opacity="0.6"/>
+  
+  <!-- Central generative core -->
+  <circle cx="16" cy="16" r="3" fill="url(#faviconSpark)" opacity="0.9"/>
+  <circle cx="16" cy="16" r="2" fill="white" opacity="0.8"/>
+  <circle cx="16" cy="16" r="0.8" fill="url(#faviconSpark)"/>
+  
+  <!-- Generative particles -->
+  <circle cx="22" cy="10" r="1.2" fill="url(#faviconSpark)" opacity="0.9"/>
+  <circle cx="26" cy="16" r="0.8" fill="white" opacity="0.8"/>
+  <circle cx="22" cy="22" r="1" fill="url(#faviconFlow1)" opacity="0.7"/>
+  <circle cx="10" cy="22" r="0.8" fill="url(#faviconFlow2)" opacity="0.8"/>
+  <circle cx="6" cy="16" r="1" fill="white" opacity="0.6"/>
+  <circle cx="10" cy="10" r="0.6" fill="url(#faviconSpark)" opacity="0.9"/>
 </svg> 

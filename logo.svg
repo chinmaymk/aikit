@@ -1,0 +1,123 @@
+<svg width="240" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Ultra-vibrant gradients for maximum impact -->
+    <radialGradient id="heroCore" cx="40%" cy="20%" r="90%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#f0abfc;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </radialGradient>
+    
+    <linearGradient id="heroFlow1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.9" />
+      <stop offset="30%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#8b5cf6;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:0.6" />
+    </linearGradient>
+    
+    <linearGradient id="heroFlow2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.7" />
+      <stop offset="30%" style="stop-color:#ef4444;stop-opacity:0.9" />
+      <stop offset="70%" style="stop-color:#ec4899;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0.6" />
+    </linearGradient>
+    
+    <linearGradient id="heroFlow3" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#06b6d4;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:0.7" />
+    </linearGradient>
+    
+    <radialGradient id="heroSpark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#ef4444;stop-opacity:0.6" />
+    </radialGradient>
+    
+    <linearGradient id="heroTextGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e293b" />
+      <stop offset="30%" style="stop-color:#3b82f6" />
+      <stop offset="70%" style="stop-color:#8b5cf6" />
+      <stop offset="100%" style="stop-color:#ec4899" />
+    </linearGradient>
+    
+    <linearGradient id="heroKit" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6" />
+      <stop offset="50%" style="stop-color:#8b5cf6" />
+      <stop offset="100%" style="stop-color:#ec4899" />
+    </linearGradient>
+    
+    <linearGradient id="heroTagline" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#64748b" />
+      <stop offset="50%" style="stop-color:#3b82f6" />
+      <stop offset="100%" style="stop-color:#8b5cf6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Logo icon (left side) with enhanced generative elements -->
+  <g transform="translate(10, 10)">
+    <!-- Main background circle -->
+    <circle cx="30" cy="30" r="28" fill="url(#heroCore)" opacity="0.95"/>
+    
+    <!-- Multiple layered flowing streams representing the continuous interplay -->
+    <!-- Human thought streams -->
+    <path d="M8 20 Q15 8, 30 15 Q45 22, 55 12" stroke="url(#heroFlow1)" stroke-width="2.5" fill="none" opacity="0.8"/>
+    <path d="M5 35 Q20 25, 35 30 Q50 35, 58 25" stroke="url(#heroFlow2)" stroke-width="2" fill="none" opacity="0.7"/>
+    <path d="M8 48 Q25 38, 40 45 Q55 52, 62 42" stroke="url(#heroFlow3)" stroke-width="2.2" fill="none" opacity="0.6"/>
+    
+    <!-- AI processing streams -->
+    <path d="M2 30 Q18 45, 35 40 Q52 35, 60 50" stroke="url(#heroFlow1)" stroke-width="1.8" fill="none" opacity="0.7"/>
+    <path d="M12 8 Q25 18, 40 12 Q55 6, 65 16" stroke="url(#heroFlow2)" stroke-width="1.5" fill="none" opacity="0.8"/>
+    
+    <!-- Code generation streams -->
+    <path d="M20 5 Q35 12, 50 8 Q65 4, 70 14" stroke="url(#heroFlow3)" stroke-width="1.3" fill="none" opacity="0.6"/>
+    <path d="M5 55 Q22 48, 38 52 Q54 56, 62 48" stroke="url(#heroFlow1)" stroke-width="1.6" fill="none" opacity="0.5"/>
+    
+    <!-- Central generative nexus (the AI core) -->
+    <circle cx="30" cy="30" r="6" fill="url(#heroSpark)" opacity="0.95"/>
+    <circle cx="30" cy="30" r="4" fill="white" opacity="0.9"/>
+    <circle cx="30" cy="30" r="2.5" fill="url(#heroSpark)" opacity="0.8"/>
+    <circle cx="30" cy="30" r="1.2" fill="white"/>
+    
+    <!-- Generative particles emanating outward -->
+    <circle cx="45" cy="15" r="2" fill="url(#heroSpark)" opacity="0.9"/>
+    <circle cx="50" cy="20" r="1.5" fill="white" opacity="0.8"/>
+    <circle cx="48" cy="45" r="1.8" fill="url(#heroFlow1)" opacity="0.7"/>
+    <circle cx="15" cy="45" r="1.5" fill="url(#heroFlow2)" opacity="0.8"/>
+    <circle cx="12" cy="30" r="1.7" fill="white" opacity="0.7"/>
+    <circle cx="15" cy="15" r="1.2" fill="url(#heroSpark)" opacity="0.9"/>
+    <circle cx="42" cy="8" r="1" fill="url(#heroFlow3)" opacity="0.8"/>
+    <circle cx="8" cy="12" r="1.3" fill="white" opacity="0.6"/>
+    <circle cx="52" cy="52" r="1.1" fill="url(#heroFlow2)" opacity="0.7"/>
+    <circle cx="18" cy="52" r="0.9" fill="url(#heroSpark)" opacity="0.8"/>
+    
+    <!-- Abstract code/data fragments -->
+    <rect x="40" y="10" width="3" height="3" fill="white" opacity="0.8" rx="0.5"/>
+    <rect x="45" y="7" width="2.5" height="2.5" fill="url(#heroSpark)" opacity="0.9" rx="0.3"/>
+    <rect x="8" y="50" width="2.8" height="2.8" fill="url(#heroFlow2)" opacity="0.7" rx="0.4"/>
+    <rect x="12" y="47" width="2" height="2" fill="white" opacity="0.6" rx="0.3"/>
+    <rect x="48" y="48" width="2.2" height="2.2" fill="url(#heroFlow1)" opacity="0.8" rx="0.3"/>
+    
+    <!-- Tiny sparkles for extra pizzazz -->
+    <circle cx="25" cy="10" r="0.5" fill="url(#heroSpark)"/>
+    <circle cx="35" cy="8" r="0.6" fill="white" opacity="0.9"/>
+    <circle cx="55" cy="35" r="0.7" fill="url(#heroFlow3)"/>
+    <circle cx="8" cy="25" r="0.5" fill="white" opacity="0.8"/>
+    <circle cx="52" cy="30" r="0.6" fill="url(#heroSpark)"/>
+  </g>
+  
+  <!-- Enhanced text with gradients -->
+  <g transform="translate(80, 0)">
+    <text x="0" y="45" fill="url(#heroTextGrad)" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="800" letter-spacing="-0.03em">AI</text>
+    <text x="60" y="45" fill="url(#heroKit)" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="500" letter-spacing="-0.02em">Kit</text>
+    
+    <!-- Tagline with gradient -->
+    <text x="0" y="60" fill="url(#heroTagline)" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" letter-spacing="0.1em">UNIFIED AI GENERATION</text>
+    
+    <!-- Decorative elements -->
+    <circle cx="140" cy="20" r="1.5" fill="url(#heroSpark)" opacity="0.6"/>
+    <circle cx="148" cy="25" r="1" fill="url(#heroFlow1)" opacity="0.5"/>
+    <circle cx="135" cy="65" r="1.2" fill="url(#heroFlow2)" opacity="0.4"/>
+  </g>
+</svg> 

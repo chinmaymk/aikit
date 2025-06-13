@@ -1,4 +1,6 @@
-# AIKit
+<div align="center">
+  <img src="logo.svg" alt="AIKit Logo" width="320"/>
+</div>
 
 [![CI](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml/badge.svg)](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/chinmaymk/aikit/branch/main/graph/badge.svg)](https://codecov.io/gh/chinmaymk/aikit)

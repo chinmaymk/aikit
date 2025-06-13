@@ -4,9 +4,9 @@ export default defineConfig({
   title: 'AIKit',
   description: 'Lightweight generation abstraction for OpenAI, Anthropic and Google Gemini',
   base: '/aikit/',
-  head: [['link', { rel: 'icon', href: '/aikit/favicon.ico' }]],
+  head: [['link', { rel: 'icon', href: '/aikit/favicon.svg' }]],
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/aikit-logo.svg',
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'API', link: '/api/generated/README' },
