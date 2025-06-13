@@ -36,11 +36,9 @@ describe('GoogleEmbeddingProvider', () => {
 
     it('should generate embeddings for single text', async () => {
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3, -0.1, -0.2],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3, -0.1, -0.2],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -59,19 +57,15 @@ describe('GoogleEmbeddingProvider', () => {
 
     it('should generate embeddings for multiple texts', async () => {
       const mockResponse1 = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
       };
 
       const mockResponse2 = {
-        embeddings: [
-          {
-            values: [0.4, 0.5, 0.6],
-          },
-        ],
+        embedding: {
+          values: [0.4, 0.5, 0.6],
+        },
       };
 
       const scope1 = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -95,11 +89,9 @@ describe('GoogleEmbeddingProvider', () => {
 
     it('should handle Google-specific embedding options correctly', async () => {
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -126,11 +118,9 @@ describe('GoogleEmbeddingProvider', () => {
 
     it('should handle task type mapping correctly', async () => {
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -153,11 +143,9 @@ describe('GoogleEmbeddingProvider', () => {
 
     it('should handle output data type correctly', async () => {
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -208,11 +196,9 @@ describe('GoogleEmbeddingProvider', () => {
       });
 
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
       };
 
       const scope = nock('https://custom.googleapis.com/v1beta')
@@ -235,11 +221,9 @@ describe('GoogleEmbeddingProvider', () => {
       });
 
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')
@@ -270,11 +254,9 @@ describe('GoogleEmbeddingProvider', () => {
       });
 
       const mockResponse = {
-        embeddings: [
-          {
-            values: [0.1, 0.2, 0.3],
-          },
-        ],
+        embedding: {
+          values: [0.1, 0.2, 0.3],
+        },
       };
 
       const scope = nock('https://generativelanguage.googleapis.com/v1beta')

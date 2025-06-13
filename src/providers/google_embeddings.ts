@@ -55,10 +55,10 @@ export class GoogleEmbeddingProvider {
       const response = (await this.client.post(
         `/models/${cleanModel}:embedContent?key=${finalOptions.apiKey}`,
         requestBody
-      )) as { embeddings: Array<{ values: number[] }> };
+      )) as { embedding: { values: number[] } };
 
       embeddings.push({
-        values: response.embeddings[0].values,
+        values: response.embedding.values,
         index: i,
       });
     }

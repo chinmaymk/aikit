@@ -9,6 +9,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:results": "JEST_JUNIT_CLASSNAME=\"{filepath}\" jest --reporters=jest-junit",
+    "test:smoke": "jest --config tests/smoke/jest.config.js --verbose",
     "dev": "ts-node test.ts",
     "test:basic": "ts-node tests/basic.ts",
     "test:compatibility": "ts-node tests/compatibility.ts",
