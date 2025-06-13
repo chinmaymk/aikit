@@ -53,19 +53,19 @@ const messages = [userText('Hello!')];
 
 // Simple approach - print directly to console
 await printStream(
-  openai.generate(messages, {
-    model: 'gpt-4o'
+  openai(messages, {
+    model: 'gpt-4o',
   })
 );
 
 // Or use the classic streaming approach
-for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
+for await (const chunk of openai(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
+```
 
 > **💡 Helper Functions are Optional**
 > AIKit provides helper functions like `userText()`, `systemText()`, and `userImage()` for convenience, but they're completely optional. You can always construct message objects manually or mix approaches as you prefer. The helpers just make common patterns more readable.
-```
 
 ## Streaming, Natively
 
@@ -174,7 +174,7 @@ const anthropic = createProvider('anthropic', {
 
 // Generate with reasoning enabled
 const result = await collectDeltas(
-  anthropic.generate([userText('Solve this math problem step by step: 2x + 5 = 15')], {
+  anthropic([userText('Solve this math problem step by step: 2x + 5 = 15')], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: {
       type: 'enabled',
@@ -188,7 +188,7 @@ console.log('Reasoning:', result.reasoning); // Access the model's thinking proc
 
 // Stream reasoning in real-time
 await processStream(
-  anthropic.generate([userText('Explain quantum entanglement')], {
+  anthropic([userText('Explain quantum entanglement')], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: {
       type: 'enabled',
@@ -211,7 +211,7 @@ const openai = createProvider('openai', {
 });
 
 const o1Result = await collectDeltas(
-  openai.generate([userText('Design a simple algorithm for sorting')], {
+  openai([userText('Design a simple algorithm for sorting')], {
     model: 'o1-mini',
     reasoning: {
       effort: 'medium',

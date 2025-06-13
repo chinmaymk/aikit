@@ -54,7 +54,7 @@ const provider = createProvider('openai', {
 const messages = [userText('Hello, world!')];
 
 // Get a complete response
-const result = await provider.generate(messages, {
+const result = await provider(messages, {
   model: 'gpt-4o',
 });
 
@@ -94,13 +94,13 @@ const messages = [userText('Tell me a very short story.')];
 
 // Simple streaming - print directly to console
 await printStream(
-  provider.generate(messages, {
+  provider(messages, {
     model: 'gpt-4o',
   })
 );
 
 // Or handle the stream manually
-for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
+for await (const chunk of provider(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
 ```
@@ -119,10 +119,10 @@ const provider = createProvider('openai', {
 });
 
 // Use defaults
-const result1 = await provider.generate([userText('Hello!')]);
+const result1 = await provider([userText('Hello!')]);
 
 // Override specific options
-const result2 = await provider.generate([userText('Be creative!')], {
+const result2 = await provider([userText('Be creative!')], {
   temperature: 0.9, // Higher creativity
   maxOutputTokens: 100, // Shorter response
 });
@@ -143,7 +143,7 @@ const options = { temperature: 0.7, maxOutputTokens: 100 };
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
-const openaiResult = await openai.generate(question, {
+const openaiResult = await openai(question, {
   ...options,
   model: 'gpt-4o',
 });
@@ -152,7 +152,7 @@ const openaiResult = await openai.generate(question, {
 const anthropic = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
-const anthropicResult = await anthropic.generate(question, {
+const anthropicResult = await anthropic(question, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
@@ -161,7 +161,7 @@ const anthropicResult = await anthropic.generate(question, {
 const google = createProvider('google', {
   apiKey: process.env.GOOGLE_API_KEY!,
 });
-const googleResult = await google.generate(question, {
+const googleResult = await google(question, {
   ...options,
   model: 'gemini-1.5-pro',
 });
@@ -177,18 +177,18 @@ import { createProvider, userText } from '@chinmaymk/aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 // Use any model the provider supports
-await provider.generate([userText('Hello!')], { model: 'gpt-4o' });
-await provider.generate([userText('Hello!')], { model: 'gpt-4o-mini' });
-await provider.generate([userText('Hello!')], { model: 'your-custom-fine-tuned-model' });
+await provider([userText('Hello!')], { model: 'gpt-4o' });
+await provider([userText('Hello!')], { model: 'gpt-4o-mini' });
+await provider([userText('Hello!')], { model: 'your-custom-fine-tuned-model' });
 
 // Same for other providers
 const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
-await anthropic.generate([userText('Hello!')], { model: 'claude-3-5-sonnet-20241022' });
-await anthropic.generate([userText('Hello!')], { model: 'claude-3-5-haiku-20241022' });
+await anthropic([userText('Hello!')], { model: 'claude-3-5-sonnet-20241022' });
+await anthropic([userText('Hello!')], { model: 'claude-3-5-haiku-20241022' });
 
 const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
-await google.generate([userText('Hello!')], { model: 'gemini-2.0-flash' });
-await google.generate([userText('Hello!')], { model: 'gemini-1.5-pro' });
+await google([userText('Hello!')], { model: 'gemini-2.0-flash' });
+await google([userText('Hello!')], { model: 'gemini-1.5-pro' });
 ```
 
 _AIKit includes a reference list of available models per provider for informational purposes, but you're not limited to those models._
@@ -208,7 +208,7 @@ const message = userImage(
   'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...' // Your base64 image
 );
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 
 // Multiple images
@@ -220,7 +220,7 @@ const multiMessage = userMultipleImages('Compare these images. What are the diff
   imageData3,
 ]);
 
-const comparison = await provider.generate([multiMessage], { model: 'gpt-4o' });
+const comparison = await provider([multiMessage], { model: 'gpt-4o' });
 console.log(comparison.content);
 ```
 
@@ -256,7 +256,7 @@ const toolServices = {
 };
 
 // Use the tool
-const result = await provider.generate([userText("What's the weather like in Tokyo?")], {
+const result = await provider([userText("What's the weather like in Tokyo?")], {
   model: 'gpt-4o',
   tools: [weatherTool],
 });
@@ -285,14 +285,14 @@ const messages = conversation()
   .user('What is the difference between let and const?')
   .build();
 
-const response1 = await provider.generate(messages, { model: 'gpt-4o' });
+const response1 = await provider(messages, { model: 'gpt-4o' });
 console.log('AI:', response1.content);
 
 // Continue the conversation
 messages.push(assistantText(response1.content));
 messages.push(userText('Can you show me an example?'));
 
-const response2 = await provider.generate(messages, { model: 'gpt-4o' });
+const response2 = await provider(messages, { model: 'gpt-4o' });
 console.log('AI:', response2.content);
 ```
 
@@ -311,7 +311,7 @@ const options = {
   stopSequences: ['END'], // Stop generation at these strings
 };
 
-const result = await provider.generate(messages, options);
+const result = await provider(messages, options);
 ```
 
 ## Error Handling
@@ -324,7 +324,7 @@ import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 try {
-  const stream = provider.generate([userText('Hello!')], { model: 'gpt-4o' });
+  const stream = provider([userText('Hello!')], { model: 'gpt-4o' });
 
   // Collect the full response
   const result = await collectDeltas(stream);
@@ -346,16 +346,14 @@ Need to fake an LLM call in CI? Providers in AIKit are plain async generators, s
 
 ```typescript
 // Mock provider for testing
-const mockProvider = {
-  async *generate(messages, options) {
-    yield { delta: 'Hello ' };
-    yield { delta: 'test!' };
-    yield { delta: '', finishReason: 'stop', content: 'Hello test!' };
-  },
+const mockProvider = async function* (messages, options) {
+  yield { delta: 'Hello ' };
+  yield { delta: 'test!' };
+  yield { delta: '', finishReason: 'stop', content: 'Hello test!' };
 };
 
 // Use it just like a real provider
-for await (const chunk of mockProvider.generate(messages, options)) {
+for await (const chunk of mockProvider(messages, options)) {
   process.stdout.write(chunk.delta);
 }
 ```

@@ -80,7 +80,7 @@ const embeddings = createGoogleEmbeddings({
 ### Single Text
 
 ```typescript
-const result = await embeddings.embed(['The quick brown fox']);
+const result = await embeddings(['The quick brown fox']);
 console.log(result.embeddings[0].values.length); // However many dimensions
 console.log(result.usage?.totalTokens); // How much it cost you
 ```
@@ -90,7 +90,7 @@ console.log(result.usage?.totalTokens); // How much it cost you
 ```typescript
 const texts = ['Machine learning is cool', 'I prefer TypeScript', 'Coffee makes everything better'];
 
-const results = await embeddings.embed(texts);
+const results = await embeddings(texts);
 // OpenAI: Up to 2048 texts in one go
 // Google: One at a time, but AIKit handles it
 ```
@@ -107,11 +107,11 @@ const docs = [
 ];
 
 // Get embeddings for all docs
-const docEmbeddings = await embeddings.embed(docs);
+const docEmbeddings = await embeddings(docs);
 
 // Search query
 const query = 'AI and neural networks';
-const queryEmbedding = await embeddings.embed([query]);
+const queryEmbedding = await embeddings([query]);
 
 // Find similar docs using cosine similarity
 function similarity(a: number[], b: number[]): number {
@@ -136,7 +136,7 @@ console.log('Best match:', matches[0]); // Probably about neural networks
 ### OpenAI Extras
 
 ```typescript
-const result = await embeddings.embed(['Hello'], {
+const result = await embeddings(['Hello'], {
   dimensions: 512, // Smaller vectors
   encodingFormat: 'float', // or 'base64' if you're feeling fancy
   user: 'user-123', // For tracking
@@ -147,13 +147,13 @@ const result = await embeddings.embed(['Hello'], {
 
 ```typescript
 // For documents you want to search
-await embeddings.embed(['Important document'], {
+await embeddings(['Important document'], {
   taskType: 'RETRIEVAL_DOCUMENT',
   title: 'The Document Title',
 });
 
 // For search queries
-await embeddings.embed(['find something'], {
+await embeddings(['find something'], {
   taskType: 'RETRIEVAL_QUERY',
 });
 ```
@@ -172,6 +172,10 @@ const openai = createProvider('openai_embeddings', {
 const google = createProvider('google_embeddings', {
   apiKey: process.env.GOOGLE_API_KEY!,
 });
+
+// Use them like any other embedding function
+const openaiResult = await openai(['Hello, world!']);
+const googleResult = await google(['Hello, world!']);
 ```
 
 ## Response Format
@@ -219,8 +223,11 @@ const response = await openai.embeddings.create({
 });
 
 // After
-const embeddings = createOpenAIEmbeddings({ apiKey: 'key' });
-const response = await embeddings.embed(['Hello']);
+const embeddings = createOpenAIEmbeddings({
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'text-embedding-3-small',
+});
+const response = await embeddings(['Hello']);
 ```
 
 Much cleaner, right?

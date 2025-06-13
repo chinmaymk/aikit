@@ -50,10 +50,10 @@ const openai = createProvider('openai', {
 const messages = [userText('Hello!')];
 
 // Simple approach - print directly to console
-await printStream(openai.generate(messages, { model: 'gpt-4o' }));
+await printStream(openai(messages, { model: 'gpt-4o' }));
 
 // Or use the classic streaming approach
-for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
+for await (const chunk of openai(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
 ```
@@ -68,7 +68,7 @@ const embeddings = createOpenAIEmbeddings({
 });
 
 // Turn text into vectors
-const result = await embeddings.embed(['Hello, world!', 'How are you?']);
+const result = await embeddings(['Hello, world!', 'How are you?']);
 console.log(result.embeddings[0].values); // [0.123, -0.456, ...]
 ```
 
