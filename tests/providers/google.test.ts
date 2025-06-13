@@ -601,5 +601,69 @@ describe('GoogleGeminiProvider', () => {
       // Second part should be the image inlineData with default mimeType image/jpeg
       expect(parts[1].inlineData.mimeType).toBe('image/jpeg');
     });
+
+    it('should throw error when no model is provided', async () => {
+      const providerWithoutModel = new GoogleGeminiProvider({ apiKey: 'test-key' });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+    });
+
+    it('should handle safety-related finish reasons', async () => {
+      const safetyReasons = ['SAFETY', 'RECITATION', 'OTHER'];
+
+      for (const reason of safetyReasons) {
+        const chunk = {
+          candidates: [
+            {
+              finishReason: reason,
+              content: { parts: [{ text: 'stopped for safety' }] },
+            },
+          ],
+        };
+
+        const scope = mockGoogleGeneration('gemini-1.5-pro', [chunk], () => {});
+
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        expect(chunks[0].finishReason).toBe('stop'); // All safety reasons map to 'stop'
+        nock.cleanAll();
+      }
+    });
+
+    it('should handle tool results with empty responses', async () => {
+      const emptyToolResults: Message[] = [
+        userText('Call tool'),
+        assistantWithToolCalls('I will call the tool.', [
+          { id: 'call_123', name: 'test_tool', arguments: { param: 'value' } },
+        ]),
+        toolResult('call_123', ''), // Empty tool result
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Got empty result'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(emptyToolResults, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should include the empty function response
+      const toolResponseContent = requestBody.contents.find((c: any) => c.role === 'function');
+      expect(toolResponseContent.parts[0].functionResponse.response).toEqual({ result: '' });
+    });
   });
 });

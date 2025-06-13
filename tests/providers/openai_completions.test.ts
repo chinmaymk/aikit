@@ -713,5 +713,118 @@ describe('OpenAIProvider', () => {
       // When toolChoice is null/falsy, tool_choice should not be set
       expect(requestBody.tool_choice).toBeUndefined();
     });
+
+    it('should handle developer role messages', async () => {
+      const messagesWithDeveloper: Message[] = [
+        {
+          role: 'developer',
+          content: [{ type: 'text', text: 'Developer instruction' }],
+        },
+        userText('Hello'),
+      ];
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [chatTextChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(messagesWithDeveloper, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.messages[0]).toEqual({
+        role: 'developer',
+        content: 'Developer instruction',
+      });
+    });
+
+    it('should handle missing model at construction time', async () => {
+      const providerWithoutModel = new OpenAIProvider({ apiKey: 'test-key' });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+    });
+
+    it('should handle tool calls with function choice object', async () => {
+      const toolOptions: OpenAIOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'get_weather',
+            description: 'Get weather info',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: { name: 'get_weather' },
+      };
+
+      let requestBody: any;
+      const scope = mockChatCompletion(
+        [chatTextChunk('Response', 'stop')],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual({
+        type: 'function',
+        function: { name: 'get_weather' },
+      });
+    });
+
+    it('should handle tool calls without arguments', async () => {
+      const scope = mockChatCompletion(
+        [
+          chatToolCallChunk(
+            { index: 0, id: 'call_123', name: 'simple_tool' }, // No args provided
+            'tool_calls'
+          ),
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      const last = chunks[chunks.length - 1];
+      expect(last.toolCalls).toEqual([{ id: 'call_123', name: 'simple_tool', arguments: {} }]);
+    });
+
+    it('should handle partial tool call deltas with missing properties', async () => {
+      const scope = mockChatCompletion(
+        [
+          chatToolCallChunk({ index: 0 }, null), // Minimal delta with only index
+          chatToolCallChunk({ index: 0, id: 'call_123' }, null), // Add ID
+          chatToolCallChunk({ index: 0, name: 'test_tool' }, null), // Add name
+          chatToolCallChunk({ index: 0, args: '{"param": "value"}' }, 'tool_calls'), // Add args
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      const last = chunks[chunks.length - 1];
+      expect(last.toolCalls).toEqual([
+        { id: 'call_123', name: 'test_tool', arguments: { param: 'value' } },
+      ]);
+    });
   });
 });

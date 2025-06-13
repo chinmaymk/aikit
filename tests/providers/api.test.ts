@@ -129,6 +129,23 @@ describe('APIClient', () => {
       nock.cleanAll(); // Clean up manually since delay may prevent auto-cleanup
       expect(_scope.isDone()).toBe(true);
     });
+
+    it('should handle retry exhaustion with proper error', async () => {
+      const retryClient = new APIClient(baseUrl, headers, undefined, 3);
+
+      const scope = nock(baseUrl)
+        .post('/test')
+        .reply(500, 'First error')
+        .post('/test')
+        .reply(500, 'Second error')
+        .post('/test')
+        .reply(500, 'Third error');
+
+      await expect(retryClient.stream('/test', {})).rejects.toThrow(
+        'API error: 500 Internal Server Error - Third error'
+      );
+      expect(scope.isDone()).toBe(true);
+    });
   });
 
   describe('processStreamAsLines', () => {

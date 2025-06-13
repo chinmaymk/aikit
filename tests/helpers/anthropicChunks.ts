@@ -1,7 +1,14 @@
 // Utilities to build Anthropic streaming chunks for tests
 // Keeping test definitions concise and readable
 
-type AnthropicFinish = 'end_turn' | 'max_tokens' | 'stop_sequence' | 'tool_use' | null;
+type AnthropicFinish =
+  | 'end_turn'
+  | 'max_tokens'
+  | 'stop_sequence'
+  | 'tool_use'
+  | 'pause_turn'
+  | 'refusal'
+  | null;
 
 /**
  * Build a message start chunk.

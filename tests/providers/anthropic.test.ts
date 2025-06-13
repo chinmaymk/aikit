@@ -756,5 +756,121 @@ describe('AnthropicProvider', () => {
       expect(requestBody.messages).toHaveLength(1);
       expect(requestBody.messages[0].role).toBe('user');
     });
+
+    it('should handle thinking_delta and signature_delta events', async () => {
+      const thinkingChunks = [
+        anthropicMessageStartChunk(),
+        anthropicContentBlockStartChunk(0, 'text'),
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'thinking_delta', thinking: 'Let me think...' },
+        },
+        {
+          type: 'content_block_delta',
+          index: 0,
+          delta: { type: 'signature_delta', signature: 'signature_data' },
+        },
+        anthropicTextDeltaChunk('Response'),
+        anthropicContentBlockStopChunk(0),
+        anthropicMessageDeltaChunk('end_turn'),
+        anthropicMessageStopChunk(),
+      ];
+
+      const scope = mockAnthropicGeneration(thinkingChunks, () => {});
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[1].content).toBe('Response');
+    });
+
+    it('should handle pause_turn and refusal finish reasons', async () => {
+      const finishReasons = [
+        { reason: 'pause_turn' as const, expected: 'stop' },
+        { reason: 'refusal' as const, expected: 'error' },
+      ];
+
+      for (const { reason, expected } of finishReasons) {
+        const chunks = [
+          anthropicMessageStartChunk(),
+          anthropicContentBlockStartChunk(0, 'text'),
+          anthropicTextDeltaChunk('Test'),
+          anthropicContentBlockStopChunk(0),
+          anthropicMessageDeltaChunk(reason),
+          anthropicMessageStopChunk(),
+        ];
+
+        const scope = mockAnthropicGeneration(chunks, () => {});
+
+        const results: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          results.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        const finalChunk = results[results.length - 1];
+        expect(finalChunk.finishReason).toBe(expected);
+        nock.cleanAll();
+      }
+    });
+
+    it('should handle malformed stream data gracefully', async () => {
+      const scope = nock('https://api.anthropic.com')
+        .post('/v1/messages')
+        .reply(200, () => {
+          const stream = new Readable({ read() {} });
+          // Send malformed data that will cause JSON parsing errors
+          stream.push('data: {"type": "invalid_json", "malformed":}\n\n');
+          stream.push('data: {"type": "message_start", "message": {"id": "msg_123"}}\n\n');
+          stream.push(
+            'data: {"type": "content_block_start", "index": 0, "content_block": {"type": "text", "text": ""}}\n\n'
+          );
+          stream.push(
+            'data: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Hello"}}\n\n'
+          );
+          stream.push('data: {"type": "content_block_stop", "index": 0}\n\n');
+          stream.push('data: {"type": "message_delta", "delta": {"stop_reason": "end_turn"}}\n\n');
+          stream.push('data: {"type": "message_stop"}\n\n');
+          stream.push(null);
+          return stream;
+        });
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks).toHaveLength(2);
+      expect(chunks[1].content).toBe('Hello');
+    });
+
+    it('should re-throw API errors from stream', async () => {
+      const scope = nock('https://api.anthropic.com')
+        .post('/v1/messages')
+        .reply(200, () => {
+          const stream = new Readable({ read() {} });
+          stream.push('data: {"type": "message_start", "message": {"id": "msg_123"}}\n\n');
+          stream.push(
+            'data: {"type": "error", "error": {"type": "rate_limit_error", "message": "Rate limit exceeded"}}\n\n'
+          );
+          stream.push(null);
+          return stream;
+        });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Anthropic API error: rate_limit_error - Rate limit exceeded');
+
+      expect(scope.isDone()).toBe(true);
+    });
   });
 });

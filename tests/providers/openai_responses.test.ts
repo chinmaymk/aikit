@@ -771,5 +771,136 @@ describe('OpenAIProvider', () => {
       expect(scope.isDone()).toBe(true);
       // The input should only contain function_call items, no assistant output_text
     });
+
+    it('should throw error when no model is provided', async () => {
+      const providerWithoutModel = new OpenAIProvider({ apiKey: 'test-key' });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of providerWithoutModel.generate(mockMessages, {})) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Model is required. Provide it at construction time or generation time.');
+    });
+
+    it('should handle malformed function call arguments', async () => {
+      const scope = mockResponsesAPI(
+        [
+          {
+            type: 'response.output_item.added',
+            response_id: 'resp_123',
+            output_index: 0,
+            item: {
+              type: 'function_call',
+              id: 'call_1',
+              call_id: 'call_1',
+              name: 'get_weather',
+              arguments: '',
+            },
+          },
+          {
+            type: 'response.function_call_arguments.delta',
+            response_id: 'resp_123',
+            item_id: 'call_1',
+            output_index: 0,
+            call_id: 'call_1',
+            delta: '{"invalid": json',
+          },
+          {
+            type: 'response.function_call_arguments.done',
+            response_id: 'resp_123',
+            item_id: 'call_1',
+            output_index: 0,
+            call_id: 'call_1',
+            arguments: '{"invalid": json',
+          },
+          completionChunk('tool_calls_required'),
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should handle malformed JSON gracefully
+      const lastChunk = chunks[chunks.length - 1];
+      expect(lastChunk.toolCalls).toBeDefined();
+    });
+
+    it('should handle error and cancelled completion statuses', async () => {
+      const statuses = ['error', 'cancelled'];
+
+      for (const status of statuses) {
+        const scope = mockResponsesAPI([textDelta('Hello'), completionChunk(status)], () => {});
+
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+          chunks.push(chunk);
+        }
+
+        expect(scope.isDone()).toBe(true);
+        const lastChunk = chunks[chunks.length - 1];
+        expect(lastChunk.finishReason).toBe('stop'); // Both map to 'stop' in the default case
+        nock.cleanAll();
+      }
+    });
+
+    it('should handle function calls without id or name', async () => {
+      const scope = mockResponsesAPI(
+        [
+          {
+            type: 'response.output_item.added',
+            response_id: 'resp_123',
+            output_index: 0,
+            item: {
+              type: 'function_call',
+              // Missing id and name fields
+              arguments: '',
+            },
+          },
+          completionChunk('tool_calls_required'),
+        ],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should handle missing fields gracefully
+    });
+
+    it('should handle tool choice object format', async () => {
+      const toolOptions: GenerationOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'specific_tool',
+            description: 'A specific tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: { name: 'specific_tool' },
+      };
+
+      let requestBody: any;
+      const scope = mockResponsesAPI([textChunk('Response', 'stop')], body => (requestBody = body));
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider.generate(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.tool_choice).toEqual({
+        type: 'function',
+        name: 'specific_tool',
+      });
+    });
   });
 });
