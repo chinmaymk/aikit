@@ -6,6 +6,7 @@ import type {
   StreamChunk,
   Tool,
   ToolCall,
+  FinishReason,
 } from '../types';
 import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
 import { APIClient } from './api';
@@ -400,7 +401,7 @@ export class OpenAIProvider implements AIProvider {
     );
   }
 
-  private mapFinishReason(status: string): 'stop' | 'length' | 'tool_use' {
+  private mapFinishReason(status: string): FinishReason {
     switch (status) {
       case 'completed':
         return 'stop';

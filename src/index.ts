@@ -8,3 +8,6 @@ export { createOpenAI, createAnthropic, createGoogle, createProvider } from './f
 export { OpenAIProvider } from './providers/openai';
 export { AnthropicProvider } from './providers/anthropic';
 export { GoogleGeminiProvider } from './providers/google';
+
+// Export utility functions
+export * from './utils';

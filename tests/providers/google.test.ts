@@ -7,8 +7,8 @@ import {
   systemText,
   userImage,
   assistantWithToolCalls,
-  toolResult as toolResultMsg,
-} from '../../src/createFuncs';
+  toolResult,
+} from '../../src/utils';
 import { googleTextChunk, googleStopChunk, googleToolCallChunk } from '../helpers/googleChunks';
 
 /**
@@ -331,12 +331,14 @@ describe('GoogleGeminiProvider', () => {
     it('should handle assistant messages with tool calls', async () => {
       const messagesWithToolCalls: Message[] = [
         userText('What is the weather in SF?'),
-        assistantWithToolCalls('I will check the weather for you.', {
-          id: 'call_123',
-          name: 'get_weather',
-          arguments: { location: 'SF' },
-        }),
-        toolResultMsg('call_123', 'Sunny, 72°F'),
+        assistantWithToolCalls('I will check the weather for you.', [
+          {
+            id: 'call_123',
+            name: 'get_weather',
+            arguments: { location: 'SF' },
+          },
+        ]),
+        toolResult('call_123', 'Sunny, 72°F'),
       ];
 
       let requestBody: any;

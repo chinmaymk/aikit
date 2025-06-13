@@ -13,31 +13,35 @@ Use **AIKit** for: Generation & streaming, multimodal prompts (text + images), t
 
 _Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
 
-| Feature                 | What That Means                                       |
-| ----------------------- | ----------------------------------------------------- |
-| **Small but Mighty**    | Just a slim wrapper over HTTP—no bloat.               |
-| **Zero Dependencies**   | Uses only the built-in `fetch`; no freeloaders.       |
-| **No Surprises**        | Every provider option is right there—no secret sauce. |
-| **Multimodal**          | Text and images get equal treatment.                  |
-| **Embeddings Included** | Vectors are first-class citizens.                     |
-| **Tool-Friendly**       | Helpers for tool and function calls, ready to go.     |
-| **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.       |
-| **Type-Safe**           | Exhaustive TypeScript types for requests & responses. |
-| **Streaming**           | `for await` over tokens or deltas.                    |
+| Feature                 | What That Means                                                        |
+| ----------------------- | ---------------------------------------------------------------------- |
+| **Zero Dependencies**   | Uses only the built-in `fetch`; no freeloaders.                        |
+| **No Surprises**        | Every provider option is right there—no secret sauce.                  |
+| **Multimodal**          | Text and images get equal treatment.                                   |
+| **Embeddings Included** | Vectors are first-class citizens.                                      |
+| **Tool-Friendly**       | Utilities for tool and function calls, ready to go.                    |
+| **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.                        |
+| **Type-Safe**           | Exhaustive TypeScript types for requests & responses.                  |
+| **Streaming**           | `for await` over tokens or deltas.                                     |
+| **Utility Functions**   | Helper functions for messages, tools, and content, and stream handling |
 
 ---
 
 ## Quick Start
 
 ```ts
-import { createProvider } from 'aikit';
+import { createProvider, userText, printStream } from 'aikit';
 
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hello!' }] }];
+const messages = [userText('Hello!')];
 
+// Simple approach - print directly to console
+await printStream(openai.generate(messages, { model: 'gpt-4o' }));
+
+// Or use the classic streaming approach
 for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
   process.stdout.write(chunk.delta);
 }
@@ -48,6 +52,10 @@ for await (const chunk of openai.generate(messages, { model: 'gpt-4o' })) {
 ## FAQ
 
 <details>
+<summary><strong>How does this work?</strong></summary>
+
+AIKit directly calls apis of underlying llm providers, and maps responses to a unified result stream and consistent types.
+
 <summary><strong>How does this differ from the official SDKs?</strong></summary>
 
 AIKit focuses only on **generation** features across providers. That narrow focus lets us ship a smaller,

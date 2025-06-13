@@ -12,6 +12,12 @@
  */
 
 /**
+ * Why did the generation stop? The suspense is killing us.
+ * @group Types
+ */
+export type FinishReason = 'stop' | 'length' | 'tool_use' | 'error';
+
+/**
  * Just good old-fashioned text. The bread and butter of language models.
  * @group Types
  */
@@ -110,8 +116,22 @@ export interface StreamChunk {
    * If the generation is done, this tells you why.
    * Did it stop gracefully, run out of tokens, or decide to use a tool? The suspense is killing us.
    */
-  finishReason?: 'stop' | 'length' | 'tool_use' | 'error';
+  finishReason?: FinishReason;
   /** Any tool calls that came through in this chunk. The plot thickens. */
+  toolCalls?: ToolCall[];
+}
+
+/**
+ * The final result of collecting a stream of chunks.
+ * Everything you need to know about what the AI just generated.
+ * @group Types
+ */
+export interface StreamResult {
+  /** The complete generated content. */
+  content: string;
+  /** Why the generation stopped, if it did. */
+  finishReason?: FinishReason;
+  /** Any tool calls that were made during generation. */
   toolCalls?: ToolCall[];
 }
 

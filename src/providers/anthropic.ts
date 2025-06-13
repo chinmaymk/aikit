@@ -7,6 +7,7 @@ import type {
   ToolCall,
   Tool,
   ToolResultContent,
+  FinishReason,
 } from '../types';
 
 import { MessageTransformer, StreamUtils, DynamicParams } from './utils';
@@ -435,7 +436,7 @@ export class AnthropicProvider implements AIProvider<AnthropicGenerationOptions>
   /**
    * Maps Anthropic's finish reasons to AIKit format.
    */
-  private mapFinishReason(reason?: string): 'stop' | 'length' | 'tool_use' | undefined {
+  private mapFinishReason(reason?: string): FinishReason | undefined {
     switch (reason) {
       case 'end_turn':
         return 'stop';

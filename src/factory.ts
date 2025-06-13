@@ -121,3 +121,56 @@ export function createProvider<T extends keyof ProviderMap>(
       throw new Error(`Unknown provider type: ${type}. How did you do that?`);
   }
 }
+
+/**
+ * Gets the first available AI provider constructed with default options.
+ * Checks for API keys in order: OpenAI, Anthropic, Google and returns a ready-to-use provider.
+ * @returns A constructed provider instance, or null if no API keys are available
+ * @group Factory Functions
+ * @example
+ * ```typescript
+ * const { provider } = getAvailableProvider();
+ * if (!provider) throw new Error('No API keys found, configure it manually');
+ * // Provider is ready to use
+ * const response = await generate(provider, messages, options);
+ * ```
+ */
+export function getAvailableProvider(): {
+  provider: AIProvider | null;
+  type: keyof ProviderMap | null;
+  name: string | null;
+} {
+  const providerConfigs = [
+    {
+      type: 'openai' as const,
+      name: 'OpenAI',
+      key: 'OPENAI_API_KEY',
+      envVar: process.env.OPENAI_API_KEY,
+    },
+    {
+      type: 'anthropic' as const,
+      name: 'Anthropic',
+      key: 'ANTHROPIC_API_KEY',
+      envVar: process.env.ANTHROPIC_API_KEY,
+    },
+    {
+      type: 'google' as const,
+      name: 'Google',
+      key: 'GOOGLE_API_KEY',
+      envVar: process.env.GOOGLE_API_KEY,
+    },
+  ];
+
+  const availableConfig = providerConfigs.find(p => p.envVar);
+  if (!availableConfig) {
+    return { provider: null, type: null, name: null };
+  }
+
+  return {
+    provider: createProvider(availableConfig.type, {
+      apiKey: availableConfig.envVar!,
+    }),
+    type: availableConfig.type,
+    name: availableConfig.name,
+  };
+}

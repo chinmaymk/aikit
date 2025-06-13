@@ -6,10 +6,12 @@ import { Readable } from 'node:stream';
 import {
   userText,
   systemText,
+  assistantText,
   userImage,
   assistantWithToolCalls,
-  toolResult as toolResultMsg,
-} from '../../src/createFuncs';
+  toolResult,
+  createTool,
+} from '../../src/utils';
 import { textChunk, toolCallChunk, textDelta, completionChunk } from '../helpers/openaiChunks';
 
 /**
@@ -179,11 +181,13 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle assistant messages with tool calls', async () => {
-      const assistantMsg: Message = assistantWithToolCalls('I need to check the weather', {
-        id: 'call_123',
-        name: 'get_weather',
-        arguments: { location: 'San Francisco' },
-      });
+      const assistantMsg: Message = assistantWithToolCalls('I need to check the weather', [
+        {
+          id: 'call_123',
+          name: 'get_weather',
+          arguments: { location: 'San Francisco' },
+        },
+      ]);
 
       const scope = mockResponsesAPI([textChunk('Let me check...', 'stop')], () => {});
 
@@ -196,7 +200,7 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle tool result messages', async () => {
-      const toolResult: Message = toolResultMsg(
+      const toolResultMessage: Message = toolResult(
         'call_123',
         '{"temperature": 72, "condition": "sunny"}'
       );
@@ -204,7 +208,7 @@ describe('OpenAIProvider', () => {
       const scope = mockResponsesAPI([textChunk('The weather is sunny', 'stop')], () => {});
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of provider.generate([toolResult], mockOptions)) {
+      for await (const chunk of provider.generate([toolResultMessage], mockOptions)) {
         chunks.push(chunk);
       }
 
@@ -746,11 +750,13 @@ describe('OpenAIProvider', () => {
     });
 
     it('should handle assistant with only tool calls and no text', async () => {
-      const assistantToolOnly: Message = assistantWithToolCalls('', {
-        id: 'call_999',
-        name: 'dummy_tool',
-        arguments: { foo: 'bar' },
-      });
+      const assistantToolOnly: Message = assistantWithToolCalls('', [
+        {
+          id: 'call_999',
+          name: 'dummy_tool',
+          arguments: { foo: 'bar' },
+        },
+      ]);
 
       const scope = mockResponsesAPI(
         [toolCallChunk({ id: 'call_999', name: 'dummy_tool', args: '{"foo":"bar"}' })],

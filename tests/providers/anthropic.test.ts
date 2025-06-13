@@ -5,11 +5,11 @@ import nock from 'nock';
 import { Readable } from 'node:stream';
 import {
   userText,
-  systemText,
   userImage,
+  systemText,
   assistantWithToolCalls,
-  toolResult as toolResultMsg,
-} from '../../src/createFuncs';
+  toolResult,
+} from '../../src/utils';
 import {
   anthropicTextResponse,
   anthropicToolCallResponse,
@@ -393,12 +393,14 @@ describe('AnthropicProvider', () => {
     it('should handle tool result messages', async () => {
       const toolResultMessages: Message[] = [
         userText('What is the weather in SF?'),
-        assistantWithToolCalls('I need to check the weather for you.', {
-          id: 'call_123',
-          name: 'get_weather',
-          arguments: { location: 'SF' },
-        }),
-        toolResultMsg('call_123', 'The weather in SF is sunny, 72°F'),
+        assistantWithToolCalls('I need to check the weather for you.', [
+          {
+            id: 'call_123',
+            name: 'get_weather',
+            arguments: { location: 'SF' },
+          },
+        ]),
+        toolResult('call_123', 'The weather in SF is sunny, 72°F'),
       ];
 
       let requestBody: any;

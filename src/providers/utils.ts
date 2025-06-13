@@ -5,6 +5,7 @@ import type {
   ToolResultContent,
   ToolCall,
   StreamChunk,
+  FinishReason,
 } from '../types';
 
 /**
@@ -116,7 +117,7 @@ export class MessageTransformer {
     content: string,
     delta: string,
     toolCalls?: ToolCall[],
-    finishReason?: 'stop' | 'length' | 'tool_use' | 'error'
+    finishReason?: FinishReason
   ): StreamChunk {
     return { content, delta, toolCalls, finishReason };
   }
