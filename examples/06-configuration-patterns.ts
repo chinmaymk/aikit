@@ -10,10 +10,16 @@
  * - Compile-time error prevention
  */
 
-import { createProvider } from '../src/factory';
-import { userText, generate } from '../src/utils';
+import {
+  createProvider,
+  userText,
+  generate,
+  type AIProvider,
+  type OpenAIOptions,
+  type AnthropicOptions,
+  type GoogleOptions,
+} from '@chinmaymk/aikit';
 import { printDelimiter, printSectionHeader } from './utils';
-import type { AIProvider, OpenAIOptions, AnthropicOptions, GoogleOptions } from '../src/types';
 
 async function pattern1_BasicConfiguration() {
   printSectionHeader('Pattern 1: Basic Configuration - Everything at Generation Time');

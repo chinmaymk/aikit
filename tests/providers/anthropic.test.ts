@@ -1,21 +1,19 @@
-import { AnthropicProvider } from '../../src/providers/anthropic';
-import { MessageTransformer } from '../../src/providers/utils';
-import type {
-  Message,
-  GenerationOptions,
-  AnthropicOptions,
-  StreamChunk,
-  FinishReason,
-} from '../../src/types';
-import nock from 'nock';
-import { Readable } from 'node:stream';
 import {
+  AnthropicProvider,
   userText,
   userImage,
   systemText,
   assistantWithToolCalls,
   toolResult,
-} from '../../src/utils';
+  type Message,
+  type GenerationOptions,
+  type AnthropicOptions,
+  type StreamChunk,
+  type FinishReason,
+} from '@chinmaymk/aikit';
+import { MessageTransformer } from '@chinmaymk/aikit/providers/utils';
+import nock from 'nock';
+import { Readable } from 'node:stream';
 import { createAnthropicSSEStream } from '../helpers/stream';
 import {
   anthropicTextResponse,

@@ -14,7 +14,7 @@ import {
   processStream,
   AnthropicOptions,
   OpenAIOptions,
-} from '../src/index.js';
+} from '@chinmaymk/aikit';
 import { printSectionHeader } from './utils.js';
 
 async function demonstrateAnthropicReasoning() {

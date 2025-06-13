@@ -1,14 +1,16 @@
-import type { Message, OpenAIOptions, StreamChunk, GenerationOptions } from '../../src/types';
-import { OpenAIProvider } from '../../src/providers/openai_completions';
-import nock from 'nock';
-import { Readable } from 'node:stream';
 import {
+  OpenAIProvider,
   userText,
   systemText,
   userImage,
   assistantWithToolCalls,
   toolResult as toolResultMsg,
-} from '../../src/utils';
+  type Message,
+  type OpenAIOptions,
+  type StreamChunk,
+  type GenerationOptions,
+} from '@chinmaymk/aikit';
+import nock from 'nock';
 import { chatTextChunk, chatStopChunk, chatToolCallChunk } from '../helpers/openaiChunks';
 import { createOpenAISSEStream as createSSEStream } from '../helpers/stream';
 

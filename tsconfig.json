@@ -8,6 +8,11 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@chinmaymk/aikit": ["./src/index.ts"],
+      "@chinmaymk/aikit/*": ["./src/*"]
+    },
     "strict": true,
     "noImplicitAny": true,
     "moduleResolution": "node",
@@ -16,6 +21,6 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*", "scripts/**/*", "examples/**/*"],
+  "include": ["src/**/*", "scripts/**/*", "examples/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
 }

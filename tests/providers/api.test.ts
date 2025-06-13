@@ -1,4 +1,4 @@
-import { APIClient, extractDataLines } from '../../src/providers/api';
+import { APIClient, extractDataLines } from '@chinmaymk/aikit/providers/api';
 import nock from 'nock';
 import { Readable } from 'node:stream';
 

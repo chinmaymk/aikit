@@ -10,8 +10,8 @@
  * - Error handling for tools
  */
 
-import { getAvailableProvider } from '../src/factory';
 import {
+  getAvailableProvider,
   conversation,
   createTool,
   generate,
@@ -19,7 +19,7 @@ import {
   assistantWithToolCalls,
   toolResult,
   userText,
-} from '../src/utils';
+} from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader } from './utils';
 
 // === Tool Service Functions ===

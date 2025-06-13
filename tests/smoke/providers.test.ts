@@ -5,15 +5,17 @@
  * with the AIKit interface for basic generation, tool calling, reasoning, and embeddings.
  */
 
-import { createProvider, createOpenAIEmbeddings, createGoogleEmbeddings } from '../../src/factory';
 import {
+  createProvider,
+  createOpenAIEmbeddings,
+  createGoogleEmbeddings,
   conversation,
   createTool,
   assistantWithToolCalls,
   toolResult,
   printStream,
-} from '../../src/utils';
-import type { GenerationProviderType } from '../../src/index';
+  type GenerationProviderType,
+} from '@chinmaymk/aikit';
 
 interface ProviderConfig {
   type: GenerationProviderType;

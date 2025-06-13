@@ -9,8 +9,8 @@
  * 5. Best practices and tips
  */
 
-import { getAvailableProvider } from '../src/factory';
 import {
+  getAvailableProvider,
   userText,
   userImage,
   userMultipleImages,
@@ -19,7 +19,7 @@ import {
   textContent,
   generate,
   conversation,
-} from '../src/utils';
+} from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createValidSampleImage } from './utils';
 
 async function step1_SingleImageAnalysis() {

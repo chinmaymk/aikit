@@ -1,5 +1,4 @@
-import { OpenAIEmbeddingProvider } from '../../src/providers/openai_embeddings';
-import type { OpenAIEmbeddingOptions } from '../../src/types';
+import { OpenAIEmbeddingProvider, type OpenAIEmbeddingOptions } from '@chinmaymk/aikit';
 import nock from 'nock';
 
 describe('OpenAIEmbeddingProvider', () => {

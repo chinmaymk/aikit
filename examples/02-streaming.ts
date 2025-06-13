@@ -8,15 +8,15 @@
  * 4. Comparing streaming vs non-streaming approaches
  */
 
-import { getAvailableProvider } from '../src/factory';
 import {
+  getAvailableProvider,
   userText,
   systemText,
   conversation,
   processStream,
   collectDeltas,
   printStream,
-} from '../src/utils';
+} from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader } from './utils';
 
 async function step1_BasicStreaming() {

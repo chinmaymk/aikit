@@ -1,8 +1,15 @@
-import { AnthropicProvider } from '../../src/providers/anthropic';
-import { OpenAIProvider } from '../../src/providers/openai_completions';
-import { GoogleGeminiProvider } from '../../src/providers/google';
-import type { StreamChunk, AnthropicOptions, OpenAIOptions, GoogleOptions } from '../../src/types';
-import { userText, collectDeltas, processStream } from '../../src/utils';
+import {
+  AnthropicProvider,
+  OpenAIProvider,
+  GoogleGeminiProvider,
+  userText,
+  collectDeltas,
+  processStream,
+  type StreamChunk,
+  type AnthropicOptions,
+  type OpenAIOptions,
+  type GoogleOptions,
+} from '@chinmaymk/aikit';
 import {
   anthropicTextResponseWithReasoning,
   anthropicReasoningDeltaChunk,

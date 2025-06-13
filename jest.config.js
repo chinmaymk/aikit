@@ -7,6 +7,10 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  moduleNameMapper: {
+    '^@chinmaymk/aikit$': '<rootDir>/src/index.ts',
+    '^@chinmaymk/aikit/(.*)$': '<rootDir>/src/$1',
+  },
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

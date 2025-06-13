@@ -20,7 +20,7 @@
     "lint:fix": "eslint src scripts examples --ext .ts,.js --fix",
     "typecheck": "tsc --noEmit",
     "build": "npm run lint && npm run typecheck && npm run format:check && npm run test && npm run compile",
-    "compile": "tsc --build",
+    "compile": "tsc --build tsconfig.build.json",
     "prepublishOnly": "npm run build",
     "docs:generate": "typedoc",
     "docs:dev": "vitepress dev docs",

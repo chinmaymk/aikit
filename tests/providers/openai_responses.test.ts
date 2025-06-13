@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { OpenAIProvider } from '../../src/providers/openai_responses';
-import type { Message, GenerationOptions, OpenAIOptions, StreamChunk } from '../../src/types';
-import nock from 'nock';
-import { Readable } from 'node:stream';
 import {
+  OpenAIResponsesProvider,
   userText,
   systemText,
-  assistantText,
   userImage,
   assistantWithToolCalls,
   toolResult,
-  createTool,
-} from '../../src/utils';
+  type Message,
+  type GenerationOptions,
+  type OpenAIOptions,
+  type StreamChunk,
+} from '@chinmaymk/aikit';
+import nock from 'nock';
 import { textChunk, toolCallChunk, textDelta, completionChunk } from '../helpers/openaiChunks';
 import { createOpenAISSEStream as createSSEStream } from '../helpers/stream';
 
@@ -30,14 +30,14 @@ function mockResponsesAPI(expectedChunks: any[], captureBody: (body: any) => voi
     });
 }
 
-describe('OpenAIProvider', () => {
+describe('OpenAIResponsesProvider', () => {
   const mockConfig: OpenAIOptions = {
     apiKey: 'test-api-key',
     baseURL: 'https://api.openai.com/v1',
     timeout: 30000,
   };
 
-  let provider: OpenAIProvider;
+  let provider: OpenAIResponsesProvider;
 
   // Ensure no real HTTP requests are made
   beforeAll(() => {
@@ -45,7 +45,7 @@ describe('OpenAIProvider', () => {
   });
 
   beforeEach(() => {
-    provider = new OpenAIProvider(mockConfig);
+    provider = new OpenAIResponsesProvider(mockConfig);
     nock.cleanAll();
   });
 
@@ -61,8 +61,8 @@ describe('OpenAIProvider', () => {
         project: 'test-project',
       };
 
-      const providerWithHeaders = new OpenAIProvider(configWithOrgAndProject);
-      expect(providerWithHeaders).toBeInstanceOf(OpenAIProvider);
+      const providerWithHeaders = new OpenAIResponsesProvider(configWithOrgAndProject);
+      expect(providerWithHeaders).toBeInstanceOf(OpenAIResponsesProvider);
     });
 
     it('should initialize with custom configuration', () => {
@@ -73,8 +73,8 @@ describe('OpenAIProvider', () => {
         maxRetries: 5,
       };
 
-      const customProvider = new OpenAIProvider(customConfig);
-      expect(customProvider).toBeInstanceOf(OpenAIProvider);
+      const customProvider = new OpenAIResponsesProvider(customConfig);
+      expect(customProvider).toBeInstanceOf(OpenAIResponsesProvider);
     });
   });
 
@@ -757,7 +757,7 @@ describe('OpenAIProvider', () => {
     });
 
     it('should throw error when no model is provided', async () => {
-      const providerWithoutModel = new OpenAIProvider({ apiKey: 'test-key' });
+      const providerWithoutModel = new OpenAIResponsesProvider({ apiKey: 'test-key' });
 
       await expect(async () => {
         const chunks: StreamChunk[] = [];

@@ -1,5 +1,4 @@
-import { GoogleEmbeddingProvider } from '../../src/providers/google_embeddings';
-import type { GoogleEmbeddingOptions } from '../../src/types';
+import { GoogleEmbeddingProvider, type GoogleEmbeddingOptions } from '@chinmaymk/aikit';
 import nock from 'nock';
 
 describe('GoogleEmbeddingProvider', () => {

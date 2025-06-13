@@ -1,4 +1,4 @@
-import { models } from '../../src/providers/models';
+import { models } from '@chinmaymk/aikit/models';
 
 describe('Models', () => {
   it('should export models array with correct structure', () => {

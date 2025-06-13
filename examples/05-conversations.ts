@@ -8,8 +8,13 @@
  * 4. Structured conversation patterns
  */
 
-import { getAvailableProvider } from '../src/factory';
-import { conversation, generate, userText, assistantText } from '../src/utils';
+import {
+  getAvailableProvider,
+  conversation,
+  generate,
+  userText,
+  assistantText,
+} from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader } from './utils';
 
 async function basicConversationExample() {

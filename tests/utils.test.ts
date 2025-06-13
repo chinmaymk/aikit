@@ -21,8 +21,9 @@ import {
   toReadableStream,
   generate,
   executeToolCall,
-} from '../src/utils';
-import type { Content, StreamChunk } from '../src/types';
+  type Content,
+  type StreamChunk,
+} from '@chinmaymk/aikit';
 
 describe('Utils', () => {
   describe('Message Creation Helpers', () => {

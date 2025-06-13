@@ -1,4 +1,4 @@
-import { createOpenAIEmbeddings, createGoogleEmbeddings } from '../src';
+import { createOpenAIEmbeddings, createGoogleEmbeddings } from '@chinmaymk/aikit';
 
 async function main() {
   console.log('🚀 AIKit Embeddings Demo\n');

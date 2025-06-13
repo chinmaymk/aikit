@@ -16,8 +16,8 @@ import {
   collectDeltas,
   processStream,
   printStream,
-} from '../src/utils';
-import type { Content } from '../src/types';
+  type Content,
+} from '@chinmaymk/aikit';
 
 describe('Utils', () => {
   describe('Message Creation Helpers', () => {

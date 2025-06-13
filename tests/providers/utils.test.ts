@@ -1,5 +1,5 @@
-import { MessageTransformer, StreamUtils, ValidationUtils } from '../../src/providers/utils';
-import type { Content, ToolCall } from '../../src/types';
+import { type Content, type ToolCall } from '@chinmaymk/aikit';
+import { MessageTransformer, StreamUtils, ValidationUtils } from '@chinmaymk/aikit/providers/utils';
 
 describe('MessageTransformer', () => {
   describe('extractTextContent', () => {

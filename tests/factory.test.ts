@@ -5,17 +5,15 @@ import {
   createGoogle,
   createProvider,
   getAvailableProvider,
-} from '../src/factory';
-import { OpenAIProvider } from '../src/providers/openai_completions';
-import { OpenAIProvider as OpenAIResponsesProvider } from '../src/providers/openai_responses';
-import { AnthropicProvider } from '../src/providers/anthropic';
-import { GoogleGeminiProvider } from '../src/providers/google';
-import type {
-  OpenAIOptions,
-  OpenAIResponsesOptions,
-  AnthropicOptions,
-  GoogleOptions,
-} from '../src/types';
+  OpenAIProvider,
+  OpenAIResponsesProvider,
+  AnthropicProvider,
+  GoogleGeminiProvider,
+  type OpenAIOptions,
+  type OpenAIResponsesOptions,
+  type AnthropicOptions,
+  type GoogleOptions,
+} from '@chinmaymk/aikit';
 
 describe('Factory Functions', () => {
   const mockOpenAIOptions: OpenAIOptions = {
