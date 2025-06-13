@@ -8,7 +8,7 @@
 
 > **processStream**(`stream`, `handlers`): `Promise`\<[`StreamResult`](../interfaces/StreamResult.md)\>
 
-Defined in: [utils.ts:304](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L304)
+Defined in: [utils.ts:301](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L301)
 
 Processes a stream with custom handlers for different events.
 The Swiss Army knife of stream processing. Want to do something

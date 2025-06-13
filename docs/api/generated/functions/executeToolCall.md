@@ -8,7 +8,7 @@
 
 > **executeToolCall**(`toolCall`, `services`): `string`
 
-Defined in: [utils.ts:605](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L605)
+Defined in: [utils.ts:602](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L602)
 
 Executes a tool call using provided service functions.
 This is how you bridge the gap between AI tool calls and your actual functions.

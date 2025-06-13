@@ -8,7 +8,7 @@
 
 > **conversation**(): [`ConversationBuilder`](../classes/ConversationBuilder.md)
 
-Defined in: [utils.ts:564](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L564)
+Defined in: [utils.ts:561](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L561)
 
 Factory function for creating a new ConversationBuilder.
 Because sometimes you just want a fresh start.

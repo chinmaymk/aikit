@@ -8,7 +8,7 @@
 
 > **filterStream**\<`T`\>(`stream`, `predicate`): `AsyncGenerator`\<`T`\>
 
-Defined in: [utils.ts:385](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L385)
+Defined in: [utils.ts:382](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L382)
 
 Filters stream chunks based on a predicate function.
 Sometimes you only want certain chunks. Be picky!

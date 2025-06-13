@@ -6,9 +6,9 @@
 
 # Function: createTool()
 
-> **createTool**(`name`, `description`, `properties`, `required`): [`Tool`](../interfaces/Tool.md)
+> **createTool**(`name`, `description`, `parameters`): [`Tool`](../interfaces/Tool.md)
 
-Defined in: [utils.ts:242](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L242)
+Defined in: [utils.ts:244](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L244)
 
 Creates a tool definition for the AI to use.
 This is how you teach the AI about your available functions.
@@ -28,17 +28,11 @@ The name of the tool (should match your function name)
 
 A clear description of what the tool does
 
-### properties
+### parameters
 
-`Record`\<`string`, \{ `type`: `string`; `description?`: `string`; `enum?`: `string`[]; \}\>
+`Record`\<`string`, `unknown`\>
 
-The JSON schema properties for the tool's parameters
-
-### required
-
-`string`[] = `[]`
-
-Array of required parameter names (defaults to empty)
+The parameters schema for the tool
 
 ## Returns
 
@@ -49,13 +43,12 @@ A properly formatted tool definition
 ## Example
 
 ```typescript
-const tool = createTool(
-  'get_weather',
-  'Get current weather for a location',
-  {
+const tool = createTool('get_weather', 'Get current weather for a location', {
+  type: 'object',
+  properties: {
     location: { type: 'string', description: 'City name' },
     unit: { type: 'string', enum: ['celsius', 'fahrenheit'] },
   },
-  ['location']
-);
+  required: ['location'],
+});
 ```

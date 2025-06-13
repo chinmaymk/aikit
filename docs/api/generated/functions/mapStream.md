@@ -8,7 +8,7 @@
 
 > **mapStream**\<`T`, `U`\>(`stream`, `mapper`): `AsyncGenerator`\<`U`\>
 
-Defined in: [utils.ts:411](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L411)
+Defined in: [utils.ts:408](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L408)
 
 Transforms stream chunks using a mapper function.
 Turn chunks into whatever you want. The power is yours!

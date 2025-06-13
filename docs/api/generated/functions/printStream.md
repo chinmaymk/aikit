@@ -8,7 +8,7 @@
 
 > **printStream**(`stream`): `Promise`\<[`StreamResult`](../interfaces/StreamResult.md)\>
 
-Defined in: [utils.ts:363](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L363)
+Defined in: [utils.ts:360](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L360)
 
 Prints stream deltas to stdout as they arrive.
 The classic "typewriter effect" - watch the AI think in real-time!

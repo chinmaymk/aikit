@@ -8,7 +8,7 @@
 
 > **generate**(`provider`, `messages`, `options`): `Promise`\<[`StreamResult`](../interfaces/StreamResult.md)\>
 
-Defined in: [utils.ts:581](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L581)
+Defined in: [utils.ts:578](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L578)
 
 Generates a complete response from an AI provider.
 This is the main function you'll use for getting AI responses.

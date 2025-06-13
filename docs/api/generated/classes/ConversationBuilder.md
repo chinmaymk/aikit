@@ -6,7 +6,7 @@
 
 # Class: ConversationBuilder
 
-Defined in: [utils.ts:468](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L468)
+Defined in: [utils.ts:465](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L465)
 
 A fluent builder for creating conversation message arrays.
 Chain methods together to build complex conversations with ease.
@@ -38,7 +38,7 @@ const messages = new ConversationBuilder()
 
 > **system**(`text`): `this`
 
-Defined in: [utils.ts:476](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L476)
+Defined in: [utils.ts:473](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L473)
 
 Adds a system message to the conversation.
 
@@ -62,7 +62,7 @@ This builder instance for chaining
 
 > **user**(`text`): `this`
 
-Defined in: [utils.ts:486](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L486)
+Defined in: [utils.ts:483](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L483)
 
 Adds a user message to the conversation.
 
@@ -86,7 +86,7 @@ This builder instance for chaining
 
 > **userWithImage**(`text`, `imageData`): `this`
 
-Defined in: [utils.ts:497](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L497)
+Defined in: [utils.ts:494](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L494)
 
 Adds a user message with an image to the conversation.
 
@@ -116,7 +116,7 @@ This builder instance for chaining
 
 > **assistant**(`text`): `this`
 
-Defined in: [utils.ts:507](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L507)
+Defined in: [utils.ts:504](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L504)
 
 Adds an assistant message to the conversation.
 
@@ -140,7 +140,7 @@ This builder instance for chaining
 
 > **tool**(`toolCallId`, `result`): `this`
 
-Defined in: [utils.ts:518](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L518)
+Defined in: [utils.ts:515](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L515)
 
 Adds a tool result message to the conversation.
 
@@ -170,7 +170,7 @@ This builder instance for chaining
 
 > **addMessage**(`message`): `this`
 
-Defined in: [utils.ts:528](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L528)
+Defined in: [utils.ts:525](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L525)
 
 Adds a custom message to the conversation.
 
@@ -194,7 +194,7 @@ This builder instance for chaining
 
 > **build**(): [`Message`](../interfaces/Message.md)[]
 
-Defined in: [utils.ts:537](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L537)
+Defined in: [utils.ts:534](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L534)
 
 Builds and returns the conversation as a message array.
 
@@ -210,7 +210,7 @@ A copy of the constructed message array
 
 > **clear**(): `this`
 
-Defined in: [utils.ts:545](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L545)
+Defined in: [utils.ts:542](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L542)
 
 Clears all messages from the builder.
 

@@ -8,7 +8,7 @@
 
 > **toReadableStream**\<`T`\>(`stream`): `ReadableStream`\<`T`\>
 
-Defined in: [utils.ts:434](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L434)
+Defined in: [utils.ts:431](https://github.com/chinmaymk/aikit/blob/main/src/utils.ts#L431)
 
 Converts an async iterable stream to a Web API ReadableStream.
 For when you need to interface with web APIs that expect ReadableStreams.
