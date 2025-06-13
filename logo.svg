@@ -109,11 +109,10 @@
   
   <!-- Enhanced text with gradients -->
   <g transform="translate(80, 0)">
-    <text x="0" y="45" fill="url(#heroTextGrad)" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="800" letter-spacing="-0.03em">AI</text>
-    <text x="60" y="45" fill="url(#heroKit)" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="500" letter-spacing="-0.02em">Kit</text>
+    <text x="0" y="45" fill="url(#heroTextGrad)" font-family="'Menlo', 'Consolas', 'Fira Code', 'Cascadia Code', monospace" font-size="36" font-weight="700" letter-spacing="-0.02em">AIKit</text>
     
     <!-- Tagline with gradient -->
-    <text x="0" y="60" fill="url(#heroTagline)" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" letter-spacing="0.1em">UNIFIED AI GENERATION</text>
+    <text x="0" y="60" fill="url(#heroTagline)" font-family="'Menlo', 'Consolas', 'Fira Code', 'Cascadia Code', monospace" font-size="12" font-weight="500" letter-spacing="0.1em">UNIFIED AI GENERATION</text>
     
     <!-- Decorative elements -->
     <circle cx="140" cy="20" r="1.5" fill="url(#heroSpark)" opacity="0.6"/>

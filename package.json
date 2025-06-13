@@ -1,6 +1,6 @@
 {
   "name": "aikit",
-  "version": "0.5.0",
+  "version": "0.0.1",
   "description": "Lightweight generation abstraction for OpenAI, Anthropic and Google Gemini",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
