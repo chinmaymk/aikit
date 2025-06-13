@@ -328,7 +328,10 @@ export class OpenAIProvider implements AIProvider {
     );
   }
 
-  private handleOutputItemAdded(event: OutputItemAddedEvent, state: StreamState): StreamChunk | null {
+  private handleOutputItemAdded(
+    event: OutputItemAddedEvent,
+    state: StreamState
+  ): StreamChunk | null {
     if (event.item?.type === 'function_call') {
       const callId = event.item.call_id;
       state.toolCalls[callId] = {

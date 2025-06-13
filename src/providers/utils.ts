@@ -174,11 +174,11 @@ export class ValidationUtils {
    */
   static isValidToolCall(toolCall: unknown): boolean {
     return !!(
-      toolCall && 
-      typeof toolCall === 'object' && 
-      'id' in toolCall && 
+      toolCall &&
+      typeof toolCall === 'object' &&
+      'id' in toolCall &&
       'name' in toolCall &&
-      typeof (toolCall as StringKeyedObject).id === 'string' && 
+      typeof (toolCall as StringKeyedObject).id === 'string' &&
       typeof (toolCall as StringKeyedObject).name === 'string'
     );
   }

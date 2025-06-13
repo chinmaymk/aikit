@@ -129,7 +129,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
    */
   private async *processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
     let currentContent = '';
-    const toolCalls: ToolCall[] = [];
+    let pendingToolCalls: ToolCall[] = [];
 
     for await (const line of lineStream) {
       if (!line.trim() || !line.startsWith('data: ')) continue;
@@ -140,9 +140,13 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
       const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
       if (!chunk) continue;
 
-      const result = this.processChunk(chunk, currentContent, toolCalls);
+      const result = this.processChunk(chunk, currentContent, pendingToolCalls);
       if (result) {
         currentContent = result.content;
+        // Update pendingToolCalls if new tool calls were added
+        if (result.toolCalls) {
+          pendingToolCalls = result.toolCalls;
+        }
         yield result;
       }
     }
@@ -154,33 +158,42 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
   private processChunk(
     chunk: StreamGenerateContentChunk,
     currentContent: string,
-    toolCalls: ToolCall[]
+    pendingToolCalls: ToolCall[]
   ): StreamChunk | null {
     const candidate = chunk.candidates?.[0];
     if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) return null;
 
     let delta = '';
+    const newToolCalls: ToolCall[] = [];
+
     for (const part of candidate.content.parts) {
       if ('text' in part) {
         delta += part.text;
         currentContent += part.text;
       } else if ('functionCall' in part) {
-        toolCalls.push({
-          id: `call_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        // For Google Gemini, we use the function name as the ID since Google doesn't provide explicit IDs
+        const toolCall: ToolCall = {
+          id: part.functionCall.name,
           name: part.functionCall.name,
-          arguments: part.functionCall.args,
-        });
+          arguments: part.functionCall.args || {},
+        };
+        newToolCalls.push(toolCall);
+        pendingToolCalls.push(toolCall);
       }
     }
 
-    const finishReason = candidate.finishReason
-      ? this.mapFinishReason(candidate.finishReason)
-      : undefined;
+    // Determine finish reason - if we have function calls, it's tool_use regardless of what Google says
+    const hasToolCalls = newToolCalls.length > 0;
+    const finishReason = hasToolCalls
+      ? ('tool_use' as const)
+      : candidate.finishReason
+        ? this.mapFinishReason(candidate.finishReason)
+        : undefined;
 
     return MessageTransformer.createStreamChunk(
       currentContent,
       delta,
-      toolCalls.length > 0 ? toolCalls : undefined,
+      hasToolCalls ? pendingToolCalls : undefined,
       finishReason
     );
   }
@@ -196,6 +209,12 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
         return 'length';
       case 'TOOL_CODE_EXECUTED':
         return 'tool_use';
+      case 'SAFETY':
+        return 'stop';
+      case 'RECITATION':
+        return 'stop';
+      case 'OTHER':
+        return 'stop';
       default:
         return 'stop';
     }
@@ -259,7 +278,7 @@ export class GoogleGeminiProvider implements AIProvider<GoogleGenerationOptions>
       parts: [
         {
           functionResponse: {
-            name: 'call',
+            name: result.toolCallId,
             response: { result: result.result },
           },
         },

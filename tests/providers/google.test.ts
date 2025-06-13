@@ -369,7 +369,7 @@ describe('GoogleGeminiProvider', () => {
         parts: [
           {
             functionResponse: {
-              name: 'call',
+              name: 'call_123',
               response: { result: 'Sunny, 72°F' },
             },
           },
