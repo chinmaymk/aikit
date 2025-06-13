@@ -165,11 +165,11 @@ Because consistency is nice:
 ```typescript
 import { createProvider } from 'aikit';
 
-const openai = createProvider('openai-embeddings', {
+const openai = createProvider('openai_embeddings', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const google = createProvider('google-embeddings', {
+const google = createProvider('google_embeddings', {
   apiKey: process.env.GOOGLE_API_KEY!,
 });
 ```

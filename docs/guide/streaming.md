@@ -10,24 +10,45 @@ Streaming provides immediate feedback to users instead of making them wait for c
 
 The simplest way to stream is with `printStream()`. It handles everything and outputs directly to the console.
 
-```typescript
+````typescript
 import { createProvider, userText, printStream } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!
+});
 
+// Prepare message
 const messages = [userText('Tell me a short story about a robot learning to paint.')];
 
 console.log('Streaming story:');
+
+// Stream with configuration
 const result = await printStream(
   provider.generate(messages, {
     model: 'gpt-4o',
-    maxTokens: 200,
+    maxOutputTokens: 200,
     temperature: 0.8,
   })
 );
 
 console.log(`\nCompleted: ${result.finishReason}`);
-```
+
+> **💡 Helper Functions are Optional**
+> Functions like `printStream()` and `processStream()` are convenience helpers for common streaming patterns. You can always handle streams manually:
+>
+> ```typescript
+> // Using helper (recommended)
+> await printStream(stream);
+>
+> // Manual handling (also valid)
+> for await (const chunk of stream) {
+>   process.stdout.write(chunk.delta);
+>   if (chunk.finishReason) {
+>     console.log(`\nFinished: ${chunk.finishReason}`);
+>   }
+> }
+> ```
 
 ## Manual Stream Handling
 
@@ -41,7 +62,7 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 const messages = [userText('Explain photosynthesis step by step.')];
 
 console.log('Manual streaming:');
-for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxTokens: 300 })) {
+for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 300 })) {
   // chunk.delta contains the new text
   process.stdout.write(chunk.delta);
 
@@ -51,7 +72,7 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxToke
     break;
   }
 }
-```
+````
 
 ## Advanced Stream Processing
 
@@ -68,7 +89,7 @@ let wordCount = 0;
 let chunkCount = 0;
 
 const result = await processStream(
-  provider.generate(messages, { model: 'gpt-4o', maxTokens: 400 }),
+  provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 400 }),
   {
     onDelta: delta => {
       // Count words as they arrive
@@ -84,9 +105,6 @@ const result = await processStream(
     },
     onFinish: finishReason => {
       console.log(`\nCompleted: ${finishReason} (${wordCount} words, ${chunkCount} chunks)`);
-    },
-    onError: error => {
-      console.error('Stream error:', error);
     },
   }
 );
@@ -106,7 +124,7 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 const messages = [userText('Write a haiku about programming.')];
 
 console.log('Collecting complete response...');
-const stream = provider.generate(messages, { model: 'gpt-4o', maxTokens: 100 });
+const stream = provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
 
 // This streams internally but returns the complete response
 const result = await collectDeltas(stream);
@@ -129,19 +147,19 @@ const question = [userText('What is machine learning?')];
 // OpenAI streaming
 const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 console.log('OpenAI:');
-await printStream(openai.generate(question, { model: 'gpt-4o', maxTokens: 150 }));
+await printStream(openai.generate(question, { model: 'gpt-4o', maxOutputTokens: 150 }));
 
 // Anthropic streaming
 const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
 console.log('\nAnthropic:');
 await printStream(
-  anthropic.generate(question, { model: 'claude-3-5-sonnet-20241022', maxTokens: 150 })
+  anthropic.generate(question, { model: 'claude-3-5-sonnet-20241022', maxOutputTokens: 150 })
 );
 
 // Google streaming
 const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
 console.log('\nGoogle:');
-await printStream(google.generate(question, { model: 'gemini-1.5-pro', maxTokens: 150 }));
+await printStream(google.generate(question, { model: 'gemini-1.5-pro', maxOutputTokens: 150 }));
 ```
 
 ## Error Handling in Streams
@@ -156,21 +174,18 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 try {
   await processStream(provider.generate([userText('Hello!')], { model: 'gpt-4o' }), {
     onDelta: delta => process.stdout.write(delta),
-    onError: error => {
-      console.error('\nStream error occurred:', error.message);
-      // Handle specific errors
-      if (error.message.includes('rate limit')) {
-        console.log('Too many requests - try again later');
-      } else if (error.message.includes('API key')) {
-        console.log('Check your API key configuration');
-      }
-    },
     onFinish: reason => {
       console.log(`\nStream completed: ${reason}`);
     },
   });
 } catch (error) {
-  console.error('Failed to start stream:', error);
+  console.error('Stream error occurred:', error.message);
+  // Handle specific errors
+  if (error.message.includes('rate limit')) {
+    console.log('Too many requests - try again later');
+  } else if (error.message.includes('API key')) {
+    console.log('Check your API key configuration');
+  }
 }
 ```
 
@@ -187,7 +202,7 @@ const messages = [userText('Write a paragraph about TypeScript benefits.')];
 // Streaming approach - user sees immediate output
 console.log('Streaming approach:');
 const streamStart = Date.now();
-await printStream(provider.generate(messages, { model: 'gpt-4o', maxTokens: 200 }));
+await printStream(provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 }));
 const streamTime = Date.now() - streamStart;
 console.log(`Streaming time: ${streamTime}ms\n`);
 
@@ -195,7 +210,7 @@ console.log(`Streaming time: ${streamTime}ms\n`);
 console.log('Collect-all approach:');
 const collectStart = Date.now();
 const collectResult = await collectDeltas(
-  provider.generate(messages, { model: 'gpt-4o', maxTokens: 200 })
+  provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 })
 );
 const collectTime = Date.now() - collectStart;
 
@@ -246,7 +261,7 @@ async function streamMarkdown(stream: AsyncIterable<any>) {
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const stream = provider.generate(
   [userText('Show me a simple JavaScript function with explanation.')],
-  { model: 'gpt-4o', maxTokens: 300 }
+  { model: 'gpt-4o', maxOutputTokens: 300 }
 );
 
 await streamMarkdown(stream);

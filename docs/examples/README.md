@@ -41,7 +41,7 @@ npx tsx examples/05-conversations.ts
 Your first steps with AIKit. This example progressively introduces:
 
 - Simple text generation
-- Configuration options (temperature, maxTokens)
+- Configuration options (temperature, maxOutputTokens)
 - System messages for behavior control
 - Conversation builder pattern
 - Multiple provider comparison
@@ -138,6 +138,9 @@ Build sophisticated conversation flows:
 npx tsx examples/05-conversations.ts
 ```
 
+**💡 Helper Functions are Optional**  
+All the helper functions you see in these examples (`userText`, `systemText`, `userImage`, `printStream`, `createTool`, etc.) are completely optional. They're provided for convenience and readability, but you can always construct the underlying objects manually. Choose the approach that feels most natural for your use case.
+
 **What you'll learn:**
 
 - Managing conversation state
@@ -174,7 +177,7 @@ const googleResult = await google.generate(question, { model: 'gemini-1.5-pro' }
 const options = {
   model: 'gpt-4o',
   temperature: 0.7, // 0.0 (focused) to 2.0 (creative)
-  maxTokens: 1000, // Response length limit
+  maxOutputTokens: 1000, // Response length limit
   topP: 0.9, // Nucleus sampling
   frequencyPenalty: 0, // Reduce repetition
   presencePenalty: 0, // Encourage topic diversity
@@ -253,18 +256,21 @@ for await (const chunk of mockProvider.generate(messages, options)) {
 import { processStream } from 'aikit';
 
 let wordCount = 0;
-await processStream(stream, {
-  onDelta: delta => {
-    wordCount += delta.split(/\s+/).length;
-    process.stdout.write(delta);
-  },
-  onChunk: chunk => {
-    if (chunk.finishReason) {
-      console.log(`\nCompleted with ${wordCount} words`);
-    }
-  },
-  onError: error => console.error('Stream error:', error),
-});
+try {
+  await processStream(stream, {
+    onDelta: delta => {
+      wordCount += delta.split(/\s+/).length;
+      process.stdout.write(delta);
+    },
+    onChunk: chunk => {
+      if (chunk.finishReason) {
+        console.log(`\nCompleted with ${wordCount} words`);
+      }
+    },
+  });
+} catch (error) {
+  console.error('Stream error:', error);
+}
 ```
 
 ## 🔧 Production Patterns

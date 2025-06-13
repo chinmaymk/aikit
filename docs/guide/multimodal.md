@@ -25,24 +25,48 @@ AIKit accepts images as base64-encoded data URLs:
 const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
 ```
 
-## Single Image Analysis
+## Simple Image Analysis
 
-The simplest case: show an AI one image and ask about it.
+The easiest way to add vision to your AI conversations:
 
 ```typescript
 import { createProvider, userImage } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Simple helper for text + image
 const message = userImage(
-  'What do you see in this image? Describe it in detail.',
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...'
+  'What do you see in this image?',
+  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...' // Your base64 image
 );
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+// Generate response
+const result = await provider.generate([message], {
+  model: 'gpt-4o',
+});
+
 console.log(result.content);
 ```
+
+> **💡 Helper Functions are Optional**  
+> The `userImage()` helper is just for convenience. You can construct multimodal messages manually:
+>
+> ```typescript
+> // Using helper (recommended)
+> const message = userImage('What is this?', imageData);
+>
+> // Manual construction (also valid)
+> const message = {
+>   role: 'user',
+>   content: [
+>     { type: 'text', text: 'What is this?' },
+>     { type: 'image', image: imageData },
+>   ],
+> };
+> ```
 
 ## Manual Content Creation
 
@@ -109,21 +133,21 @@ const messages = conversation()
 // First question with image
 messages.push(userImage('What do you see in this image?', imageData));
 
-const response1 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 200 });
+const response1 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 });
 console.log('AI:', response1.content);
 
 // Continue conversation - AI remembers the image
 messages.push(assistantText(response1.content));
 messages.push(userText('What emotions might this evoke in viewers?'));
 
-const response2 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 150 });
+const response2 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 150 });
 console.log('AI:', response2.content);
 
 // Ask about specific details
 messages.push(assistantText(response2.content));
 messages.push(userText('Can you identify any text or numbers in the image?'));
 
-const response3 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 100 });
+const response3 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
 console.log('AI:', response3.content);
 ```
 
@@ -183,7 +207,7 @@ console.log('Streaming detailed description:');
 await printStream(
   provider.generate([message], {
     model: 'gpt-4o',
-    maxTokens: 500,
+    maxOutputTokens: 500,
     temperature: 0.8,
   })
 );

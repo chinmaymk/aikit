@@ -8,14 +8,17 @@ Single-shot AI interactions are like speed dating—quick, but shallow. Real con
 
 ## Basic Conversation Flow
 
-Start simple with back-and-forth exchanges:
+Every conversation has a beginning. Let's start simple and build up:
 
-```typescript
+````typescript
 import { createProvider, conversation, userText, assistantText } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!
+});
 
-// Build a conversation fluently
+// Build initial conversation
 const messages = conversation()
   .system('You are a helpful programming tutor. Keep explanations concise but clear.')
   .user('What is the difference between let and const in JavaScript?')
@@ -24,7 +27,10 @@ const messages = conversation()
 console.log('User: What is the difference between let and const?');
 
 // First exchange
-const response1 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 200 });
+const response1 = await provider.generate(messages, {
+  model: 'gpt-4o',
+  maxOutputTokens: 200
+});
 console.log('AI:', response1.content);
 
 // Continue the conversation
@@ -33,7 +39,10 @@ messages.push(userText('Can you show me a practical example?'));
 
 console.log('\nUser: Can you show me a practical example?');
 
-const response2 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 250 });
+const response2 = await provider.generate(messages, {
+  model: 'gpt-4o',
+  maxOutputTokens: 250
+});
 console.log('AI:', response2.content);
 
 // Keep going...
@@ -42,9 +51,28 @@ messages.push(userText('What happens if I try to reassign a const variable?'));
 
 console.log('\nUser: What happens if I try to reassign a const?');
 
-const response3 = await provider.generate(messages, { model: 'gpt-4o', maxTokens: 150 });
+const response3 = await provider.generate(messages, {
+  model: 'gpt-4o',
+  maxOutputTokens: 150
+});
 console.log('AI:', response3.content);
-```
+
+> **💡 Helper Functions are Optional**
+> The `conversation()` builder and message helpers are just for convenience. You can build conversations manually:
+>
+> ```typescript
+> // Using helpers (recommended)
+> const messages = conversation()
+>   .system('You are helpful')
+>   .user('Hello')
+>   .build();
+>
+> // Manual construction (also valid)
+> const messages = [
+>   { role: 'system', content: [{ type: 'text', text: 'You are helpful' }] },
+>   { role: 'user', content: [{ type: 'text', text: 'Hello' }] }
+> ];
+> ```
 
 ## Context Preservation
 
@@ -85,7 +113,7 @@ console.log('\nUser: What was my name and what technology am I working with?');
 
 const response3 = await provider.generate(messages, { model: 'gpt-4o' });
 console.log('AI:', response3.content);
-```
+````
 
 ## Memory Management
 
@@ -129,7 +157,7 @@ class ConversationManager {
 
     const response = await provider.generate(this.getMessages(), {
       model: 'gpt-4o',
-      maxTokens: 200,
+      maxOutputTokens: 200,
     });
 
     this.addMessage(assistantText(response.content));
@@ -224,7 +252,7 @@ class InterviewBot {
     this.messages.push(userText(`My answer: ${answer}`));
     const response = await provider.generate(
       [...this.messages, assistantText("Great! That's helpful to know.")],
-      { model: 'gpt-4o', maxTokens: 100 }
+      { model: 'gpt-4o', maxOutputTokens: 100 }
     );
 
     console.log('AI:', response.content);
@@ -297,7 +325,7 @@ class MultiTopicChat {
 
     const response = await provider.generate(messages, {
       model: 'gpt-4o',
-      maxTokens: 200,
+      maxOutputTokens: 200,
     });
 
     messages.push(assistantText(response.content));
@@ -374,7 +402,7 @@ class PersonalityBot {
 
     const response = await provider.generate(this.messages, {
       model: 'gpt-4o',
-      maxTokens: 200,
+      maxOutputTokens: 200,
       temperature: 0.8, // Higher temperature for more personality
     });
 
@@ -459,7 +487,7 @@ async function summarizeContext(provider: any, messages: any[]) {
 
   const summary = await provider.generate(summaryPrompt, {
     model: 'gpt-4o',
-    maxTokens: 200,
+    maxOutputTokens: 200,
   });
 
   return summary.content;

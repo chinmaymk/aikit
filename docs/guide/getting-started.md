@@ -45,17 +45,37 @@ Alright, let's make the magic happen. Here's how to get a simple response from a
 ```typescript
 import { createProvider, userText } from 'aikit';
 
-// Pick your player
+// Create your provider
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
+// Prepare your messages
 const messages = [userText('Hello, world!')];
 
 // Get a complete response
-const result = await provider.generate(messages, { model: 'gpt-4o' });
+const result = await provider.generate(messages, {
+  model: 'gpt-4o',
+});
+
 console.log(result.content);
 ```
+
+> **💡 Helper Functions are Optional**  
+> Functions like `userText()`, `systemText()`, and `createProvider()` are convenience helpers. You can always construct message objects and providers manually if you prefer. For example:
+>
+> ```typescript
+> // Using helpers (recommended)
+> const messages = [userText('Hello!')];
+>
+> // Manual construction (also valid)
+> const messages = [
+>   {
+>     role: 'user',
+>     content: [{ type: 'text', text: 'Hello!' }],
+>   },
+> ];
+> ```
 
 ## Streaming Responses
 
@@ -64,14 +84,20 @@ Who has time to wait for a full response? Let's stream it like it's hot.
 ```typescript
 import { createProvider, userText, printStream } from 'aikit';
 
+// Create provider
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
+// Prepare message
 const messages = [userText('Tell me a very short story.')];
 
 // Simple streaming - print directly to console
-await printStream(provider.generate(messages, { model: 'gpt-4o' }));
+await printStream(
+  provider.generate(messages, {
+    model: 'gpt-4o',
+  })
+);
 
 // Or handle the stream manually
 for await (const chunk of provider.generate(messages, { model: 'gpt-4o' })) {
@@ -89,16 +115,16 @@ const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
   model: 'gpt-4o',
   temperature: 0.7,
-  maxTokens: 200,
+  maxOutputTokens: 200,
 });
 
 // Use defaults
-const result1 = await generate(provider, [userText('Hello!')]);
+const result1 = await provider.generate([userText('Hello!')]);
 
 // Override specific options
-const result2 = await generate(provider, [userText('Be creative!')], {
+const result2 = await provider.generate([userText('Be creative!')], {
   temperature: 0.9, // Higher creativity
-  maxTokens: 100, // Shorter response
+  maxOutputTokens: 100, // Shorter response
 });
 ```
 
@@ -111,22 +137,34 @@ import { createProvider, userText } from 'aikit';
 
 // Define once, use anywhere
 const question = [userText('Explain TypeScript in one sentence.')];
-const options = { temperature: 0.7, maxTokens: 100 };
+const options = { temperature: 0.7, maxOutputTokens: 100 };
 
 // OpenAI
-const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
-const openaiResult = await openai.generate(question, { ...options, model: 'gpt-4o' });
+const openai = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+const openaiResult = await openai.generate(question, {
+  ...options,
+  model: 'gpt-4o',
+});
 
 // Anthropic
-const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
+const anthropic = createProvider('anthropic', {
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
 const anthropicResult = await anthropic.generate(question, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
 
 // Google
-const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
-const googleResult = await google.generate(question, { ...options, model: 'gemini-1.5-pro' });
+const google = createProvider('google', {
+  apiKey: process.env.GOOGLE_API_KEY!,
+});
+const googleResult = await google.generate(question, {
+  ...options,
+  model: 'gemini-1.5-pro',
+});
 ```
 
 ## Model Flexibility
@@ -266,7 +304,7 @@ Fine-tune your AI's personality and behavior.
 const options = {
   model: 'gpt-4o',
   temperature: 0.7, // 0.0 (focused) to 2.0 (creative)
-  maxTokens: 1000, // Response length limit
+  maxOutputTokens: 1000, // Response length limit
   topP: 0.9, // Nucleus sampling
   frequencyPenalty: 0, // Reduce repetition
   presencePenalty: 0, // Encourage topic diversity

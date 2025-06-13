@@ -21,7 +21,10 @@ Let's start with a basic calculator tool:
 ```typescript
 import { createProvider, createTool, userText, executeToolCall } from 'aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+// Create provider
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Define the tool
 const calculatorTool = createTool('calculator', 'Perform basic mathematical operations', {
@@ -32,8 +35,14 @@ const calculatorTool = createTool('calculator', 'Perform basic mathematical oper
       description: 'The operation to perform',
       enum: ['add', 'subtract', 'multiply', 'divide'],
     },
-    a: { type: 'number', description: 'First number' },
-    b: { type: 'number', description: 'Second number' },
+    a: {
+      type: 'number',
+      description: 'First number',
+    },
+    b: {
+      type: 'number',
+      description: 'Second number',
+    },
   },
   required: ['operation', 'a', 'b'],
 });
@@ -49,7 +58,9 @@ const toolServices = {
       case 'multiply':
         return JSON.stringify({ result: a * b });
       case 'divide':
-        return JSON.stringify({ result: b !== 0 ? a / b : 'Cannot divide by zero' });
+        return JSON.stringify({
+          result: b !== 0 ? a / b : 'Cannot divide by zero',
+        });
       default:
         return JSON.stringify({ error: 'Unknown operation' });
     }
@@ -72,6 +83,21 @@ if (result.toolCalls) {
   }
 }
 ```
+
+> **💡 Helper Functions are Optional**  
+> Functions like `createTool()` and `executeToolCall()` are convenience helpers. You can work with tools manually:
+>
+> ```typescript
+> // Using helpers (recommended)
+> const tool = createTool('my_tool', 'Description', schema);
+>
+> // Manual construction (also valid)
+> const tool = {
+>   name: 'my_tool',
+>   description: 'Description',
+>   parameters: schema,
+> };
+> ```
 
 ## Complete Tool Workflow
 
@@ -137,7 +163,7 @@ console.log("User: What's the weather like in Tokyo?");
 const result = await provider.generate(messages, {
   model: 'gpt-4o',
   tools: [weatherTool],
-  maxTokens: 300,
+  maxOutputTokens: 300,
 });
 
 console.log('AI:', result.content);
@@ -162,7 +188,7 @@ if (result.toolCalls && result.toolCalls.length > 0) {
   // Generate final response with tool results
   const finalResult = await provider.generate(messages, {
     model: 'gpt-4o',
-    maxTokens: 200,
+    maxOutputTokens: 200,
   });
 
   console.log('\nAI (final):', finalResult.content);
@@ -232,7 +258,7 @@ const result = await provider.generate(
   {
     model: 'gpt-4o',
     tools: [weatherTool, timeTool, calculatorTool],
-    maxTokens: 400,
+    maxOutputTokens: 400,
   }
 );
 
