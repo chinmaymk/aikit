@@ -313,9 +313,9 @@ export class OpenAIRequestBuilder {
     if (options.webSearchOptions !== undefined)
       extendedParams.web_search_options = options.webSearchOptions;
 
-    if (options.streamOptions) {
+    if (options.includeUsage) {
       additionalParams.stream_options = {
-        include_usage: options.streamOptions.includeUsage,
+        include_usage: true,
       };
     }
 

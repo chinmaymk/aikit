@@ -26,25 +26,6 @@ describe('OpenAIEmbeddingProvider', () => {
     nock.enableNetConnect();
   });
 
-  describe('constructor', () => {
-    it('should create provider successfully', () => {
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should throw error when API key is missing', () => {
-      expect(() => {
-        createOpenAIEmbeddings({} as any);
-      }).toThrow('OpenAI API key is required');
-    });
-
-    it('should validate required options', () => {
-      const options = { apiKey: 'test-key' };
-      expect(() => {
-        createOpenAIEmbeddings(options);
-      }).not.toThrow();
-    });
-  });
-
   describe('embed', () => {
     let provider: OpenAIEmbeddingProvider;
 

@@ -357,7 +357,7 @@ describe('OpenAIUtil', () => {
           maxCompletionTokens: 1000,
           prediction: { type: 'content' as const, content: 'predicted' },
           webSearchOptions: { searchContextSize: 'medium' as const },
-          streamOptions: { includeUsage: true },
+          includeUsage: true,
         };
 
         const result = OpenAIRequestBuilder.buildChatCompletionParams(messages, options);
@@ -565,7 +565,7 @@ describe('OpenAIUtil', () => {
           maxCompletionTokens: 1000,
           prediction: { type: 'content' as const, content: 'predicted' },
           webSearchOptions: { searchContextSize: 'medium' as const },
-          streamOptions: { includeUsage: true },
+          includeUsage: true,
         };
 
         const result = OpenAIRequestBuilder.buildChatCompletionParams(messages, options);
@@ -753,6 +753,55 @@ describe('OpenAIUtil', () => {
         expect(result.encoding_format).toBeUndefined();
         expect(result.user).toBeUndefined();
       });
+    });
+  });
+
+  describe('Edge case coverage tests', () => {
+    it('should handle edge case message transforms', () => {
+      // Test various edge cases to improve branch coverage
+      const messages: Message[] = [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', image: 'invalid-data-url' }, // Invalid image
+            { type: 'image', image: 'data:image/png;base64,iVBOR' }, // Valid image
+          ],
+        },
+      ];
+
+      const result = OpenAIMessageTransformer.toChatCompletions(messages);
+      expect(result).toHaveLength(1);
+      // Both images are passed through - validation happens elsewhere
+      expect(result[0].content).toHaveLength(2);
+    });
+
+    it('should handle empty content arrays', () => {
+      const messages: Message[] = [
+        {
+          role: 'user',
+          content: [], // Empty content
+        },
+      ];
+
+      const result = OpenAIMessageTransformer.toChatCompletions(messages);
+      expect(result).toHaveLength(1);
+      expect(result[0].content).toEqual([]);
+    });
+
+    it('should handle mixed content types', () => {
+      const messages: Message[] = [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Hello' },
+            { type: 'image', image: 'data:image/jpeg;base64,test' },
+            { type: 'text', text: 'World' },
+          ],
+        },
+      ];
+
+      const result = OpenAIMessageTransformer.toChatCompletions(messages);
+      expect(result[0].content).toHaveLength(3);
     });
   });
 });

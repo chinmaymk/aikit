@@ -1,19 +1,3 @@
-import {
-  createProvider,
-  createOpenAIEmbeddings,
-  createGoogleEmbeddings,
-  userText,
-  systemText,
-  collectDeltas,
-  processStream,
-} from '../src';
-import { printSectionHeader } from './utils';
-
-// Mock API keys for demo (use your real keys)
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'demo-key';
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'demo-key';
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || 'demo-key';
-
 /**
  * Usage Tracking Example
  *
@@ -21,246 +5,176 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || 'demo-key';
  * Useful for cost monitoring, optimization, and understanding your AI consumption patterns.
  */
 
+import {
+  createProvider,
+  createOpenAIEmbeddings,
+  userText,
+  collectDeltas,
+  processStream,
+} from '../src';
+import { printSectionHeader } from './utils';
+
 async function demonstrateOpenAIUsageTracking() {
   printSectionHeader('OpenAI Usage Tracking');
 
-  const openai = createProvider('openai', { apiKey: OPENAI_API_KEY });
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.log('⚠️  OPENAI_API_KEY not found in environment variables');
+    return;
+  }
 
-  const messages = [
-    systemText('You are a helpful assistant. Keep responses brief.'),
-    userText('Explain machine learning in 3 sentences.'),
-  ];
+  const openai = createProvider('openai', { apiKey });
 
-  console.log('🔍 Tracking OpenAI usage with streaming...');
-
-  await processStream(
-    openai(messages, {
+  // Basic usage tracking
+  console.log('📊 Basic Usage Tracking:');
+  const result = await collectDeltas(
+    openai([userText('What is TypeScript?')], {
       model: 'gpt-4o-mini',
-      maxOutputTokens: 150,
-      streamOptions: { includeUsage: true }, // Enable usage tracking
-    }),
-    {
-      onDelta: delta => process.stdout.write(delta),
-      onUsage: usage => {
-        console.log('\n\n📊 Usage Information:');
-        console.log(`• Input tokens: ${usage?.inputTokens || 'N/A'}`);
-        console.log(`• Output tokens: ${usage?.outputTokens || 'N/A'}`);
-        console.log(`• Total tokens: ${usage?.totalTokens || 'N/A'}`);
-        console.log(`• Reasoning tokens: ${usage?.reasoningTokens || 'N/A'}`);
-      },
-    }
+      maxOutputTokens: 50,
+      includeUsage: true, // Enable usage tracking
+    })
   );
 
-  // Enable streamOptions.includeUsage for real-time usage data
+  console.log('Response:', result.content);
+  console.log('Usage:', result.usage);
+  // Output includes: inputTokens, outputTokens, totalTokens, timeToFirstToken
+  console.log();
+
+  // Reasoning model usage (more expensive)
+  console.log('🧠 Reasoning Model Usage:');
+  try {
+    const reasoningResult = await collectDeltas(
+      openai([userText('Solve: 2x + 5 = 15')], {
+        model: 'o1-mini',
+        reasoning: { effort: 'low' },
+      })
+    );
+
+    console.log('Reasoning Response:', reasoningResult.content);
+    console.log('Reasoning Usage:', reasoningResult.usage);
+    // Shows reasoningTokens which are more expensive!
+  } catch (error) {
+    console.log('Reasoning model not available:', error);
+  }
+  console.log();
 }
 
 async function demonstrateAnthropicUsageTracking() {
   printSectionHeader('Anthropic Usage Tracking');
 
-  const anthropic = createProvider('anthropic', { apiKey: ANTHROPIC_API_KEY });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.log('⚠️  ANTHROPIC_API_KEY not found in environment variables');
+    return;
+  }
 
-  const messages = [
-    systemText('You are a concise assistant.'),
-    userText('What are the benefits of TypeScript?'),
-  ];
-
-  console.log('🔍 Tracking Anthropic usage...');
+  const anthropic = createProvider('anthropic', { apiKey });
 
   const result = await collectDeltas(
-    anthropic(messages, {
+    anthropic([userText('Write a haiku about programming')], {
       model: 'claude-3-5-haiku-20241022',
       maxOutputTokens: 100,
     })
   );
 
-  console.log(result.content);
-
-  if (result.usage) {
-    console.log('\n📊 Usage Information:');
-    console.log(`• Input tokens: ${result.usage.inputTokens || 'N/A'}`);
-    console.log(`• Output tokens: ${result.usage.outputTokens || 'N/A'}`);
-    console.log(`• Total tokens: ${result.usage.totalTokens || 'N/A'}`);
-  } else {
-    console.log('\n⚠️  No usage information available (provider-dependent)');
-  }
-
-  // Anthropic provides output token counts in stream responses
+  console.log('Response:', result.content);
+  console.log('Usage:', result.usage);
+  // Anthropic typically provides outputTokens and timeToFirstToken
+  console.log();
 }
 
 async function demonstrateGoogleUsageTracking() {
-  printSectionHeader('Google Gemini Usage Tracking');
+  printSectionHeader('Google Usage Tracking');
 
-  const google = createProvider('google', { apiKey: GOOGLE_API_KEY });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    console.log('⚠️  GOOGLE_API_KEY not found in environment variables');
+    return;
+  }
 
-  const messages = [userText('Briefly explain quantum computing.')];
-
-  console.log('🔍 Tracking Google usage...');
+  const google = createProvider('google', { apiKey });
 
   const result = await collectDeltas(
-    google(messages, {
+    google([userText('Explain machine learning briefly')], {
       model: 'gemini-1.5-flash',
-      maxOutputTokens: 80,
+      maxOutputTokens: 100,
     })
   );
 
-  console.log(result.content);
+  console.log('Response:', result.content);
+  console.log('Usage:', result.usage);
+  // Google provides comprehensive usage: inputTokens, outputTokens, totalTokens, timeToFirstToken
+  console.log();
+}
 
-  if (result.usage) {
-    console.log('\n📊 Usage Information:');
-    console.log(`• Input tokens: ${result.usage.inputTokens || 'N/A'}`);
-    console.log(`• Output tokens: ${result.usage.outputTokens || 'N/A'}`);
-    console.log(`• Total tokens: ${result.usage.totalTokens || 'N/A'}`);
-  } else {
-    console.log('\n⚠️  No usage information available (provider-dependent)');
+async function demonstrateStreamingUsageTracking() {
+  printSectionHeader('Streaming Usage Tracking');
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.log('⚠️  OPENAI_API_KEY not found in environment variables');
+    return;
   }
 
-  // Google provides comprehensive usage metadata
+  const openai = createProvider('openai', { apiKey });
+
+  console.log('📡 Streaming with usage tracking:');
+
+  await processStream(
+    openai([userText('Count to 10')], {
+      model: 'gpt-4o-mini',
+      includeUsage: true,
+    }),
+    {
+      onDelta: delta => process.stdout.write(delta),
+      onUsage: usage => {
+        console.log('\n📊 Usage received:', usage);
+        if (usage?.timeToFirstToken) {
+          console.log(`⏱️  Time to first token: ${usage.timeToFirstToken}ms`);
+        }
+      },
+    }
+  );
+
+  console.log('\n');
 }
 
 async function demonstrateEmbeddingUsageTracking() {
   printSectionHeader('Embedding Usage Tracking');
 
-  // OpenAI Embeddings
-  console.log('🔍 OpenAI Embedding Usage:');
-  const openaiEmbeddings = createOpenAIEmbeddings({ apiKey: OPENAI_API_KEY });
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.log('⚠️  OPENAI_API_KEY not found in environment variables');
+    return;
+  }
 
-  const texts = [
-    'Machine learning is fascinating',
-    'TypeScript makes JavaScript better',
-    'AI will change the world',
-  ];
+  const embeddings = createOpenAIEmbeddings({ apiKey });
 
-  const openaiResult = await openaiEmbeddings(texts, {
+  const result = await embeddings(['Hello world', 'Machine learning', 'TypeScript'], {
     model: 'text-embedding-3-small',
   });
 
-  console.log(`• Generated ${openaiResult.embeddings.length} embeddings`);
-  console.log(`• Vector dimensions: ${openaiResult.embeddings[0].values.length}`);
-  if (openaiResult.usage) {
-    console.log(`• Input tokens: ${openaiResult.usage.inputTokens || 'N/A'}`);
-    console.log(`• Total tokens: ${openaiResult.usage.totalTokens || 'N/A'}`);
-    console.log(`• Truncated: ${openaiResult.usage.truncated ? 'Yes' : 'No'}`);
-  }
-
-  // Google Embeddings
-  console.log('\n🔍 Google Embedding Usage:');
-  const googleEmbeddings = createGoogleEmbeddings({ apiKey: GOOGLE_API_KEY });
-
-  const googleResult = await googleEmbeddings(['Hello, world!'], {
-    model: 'text-embedding-004',
-  });
-
-  console.log(`• Generated ${googleResult.embeddings.length} embeddings`);
-  console.log(`• Vector dimensions: ${googleResult.embeddings[0].values.length}`);
-  if (googleResult.usage) {
-    console.log(`• Input tokens: ${googleResult.usage.inputTokens || 'N/A'}`);
-    console.log(`• Total tokens: ${googleResult.usage.totalTokens || 'N/A'}`);
-  } else {
-    console.log('• Usage info: Not available for Google embeddings');
-  }
-
-  // Embedding usage helps track costs for vector operations
-}
-
-async function demonstrateReasoningUsageTracking() {
-  printSectionHeader('Reasoning Models Usage Tracking');
-
-  console.log('🧠 OpenAI o-series reasoning usage:');
-
-  const openai = createProvider('openai', { apiKey: OPENAI_API_KEY });
-
-  const messages = [userText('Solve: 2x + 5 = 15. Show your work.')];
-
-  const result = await collectDeltas(
-    openai(messages, {
-      model: 'o1-mini',
-      reasoning: { effort: 'medium' },
-    })
-  );
-
-  console.log(result.content);
-
-  if (result.usage) {
-    console.log('\n📊 Reasoning Model Usage:');
-    console.log(`• Input tokens: ${result.usage.inputTokens || 'N/A'}`);
-    console.log(`• Output tokens: ${result.usage.outputTokens || 'N/A'}`);
-    console.log(`• Reasoning tokens: ${result.usage.reasoningTokens || 'N/A'} 🧠`);
-    console.log(`• Total tokens: ${result.usage.totalTokens || 'N/A'}`);
-    console.log('\n💰 Cost Impact: Reasoning tokens are typically charged at higher rates!');
-  }
-
-  // Reasoning tokens can significantly increase costs - monitor carefully
-}
-
-async function demonstrateUsageComparison() {
-  printSectionHeader('Provider Usage Comparison');
-
-  const prompt = 'Explain recursion in programming in 2 sentences.';
-  const providers = [
-    {
-      name: 'OpenAI GPT-4o-mini',
-      provider: createProvider('openai', { apiKey: OPENAI_API_KEY }),
-      model: 'gpt-4o-mini',
-    },
-    {
-      name: 'Anthropic Claude Haiku',
-      provider: createProvider('anthropic', { apiKey: ANTHROPIC_API_KEY }),
-      model: 'claude-3-5-haiku-20241022',
-    },
-    {
-      name: 'Google Gemini Flash',
-      provider: createProvider('google', { apiKey: GOOGLE_API_KEY }),
-      model: 'gemini-1.5-flash',
-    },
-  ];
-
-  for (const { name, provider, model } of providers) {
-    console.log(`\n🎯 Testing ${name}:`);
-
-    try {
-      const result = await collectDeltas(
-        provider([userText(prompt)], { model, maxOutputTokens: 60 })
-      );
-
-      console.log(`Response: "${result.content.slice(0, 100)}..."`);
-
-      if (result.usage) {
-        console.log(
-          `📊 Usage: ${result.usage.inputTokens || '?'} in + ${result.usage.outputTokens || '?'} out = ${result.usage.totalTokens || '?'} total tokens`
-        );
-      } else {
-        console.log('📊 Usage: Not available');
-      }
-    } catch {
-      // Skip providers with errors
-    }
-  }
-
-  // Different providers have different token counting methods and pricing
-  // Use usage tracking to optimize costs and monitor consumption patterns
+  console.log('Embeddings generated:', result.embeddings.length);
+  console.log('First embedding dimensions:', result.embeddings[0].values.length);
+  console.log('Usage:', result.usage);
+  // Shows inputTokens, totalTokens, and truncated status
+  console.log();
 }
 
 async function main() {
-  console.log('💰 AIKit Usage Tracking Example\n');
-  console.log(
-    'Track token consumption across all providers for cost monitoring and optimization.\n'
-  );
+  console.log('🏷️  AIKit Usage Tracking Examples\n');
 
   try {
     await demonstrateOpenAIUsageTracking();
     await demonstrateAnthropicUsageTracking();
     await demonstrateGoogleUsageTracking();
+    await demonstrateStreamingUsageTracking();
     await demonstrateEmbeddingUsageTracking();
-    await demonstrateReasoningUsageTracking();
-    await demonstrateUsageComparison();
 
-    console.log('✅ Usage tracking examples completed!');
+    console.log('✅ All usage tracking examples completed!');
   } catch (error) {
-    console.error('Error running usage tracking examples:', error);
+    console.error('❌ Error running examples:', error);
   }
 }
 
-// Only run if this file is executed directly
-if (require.main === module) {
-  main().catch(console.error);
-}
+main().catch(console.error);

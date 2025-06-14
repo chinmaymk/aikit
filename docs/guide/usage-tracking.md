@@ -1,6 +1,6 @@
 # Usage Tracking
 
-Track token consumption and costs across all providers. Because knowing how much you're spending is half the fun of AI development!
+Track token consumption, costs, and response timing across all providers. Because knowing how much you're spending and how fast responses arrive is half the fun of AI development!
 
 ## Quick Start
 
@@ -16,13 +16,13 @@ const openai = createProvider('openai', {
 const result = await collectStream(
   openai([userText('Hello!')], {
     model: 'gpt-4o',
-    streamOptions: { includeUsage: true }, // Enable usage for OpenAI
+    includeUsage: true, // Enable usage for OpenAI
   })
 );
 
 console.log('Content:', result.content);
 console.log('Usage:', result.usage);
-// Output: Usage: { inputTokens: 8, outputTokens: 6, totalTokens: 14 }
+// Output: Usage: { inputTokens: 8, outputTokens: 6, totalTokens: 14, timeToFirstToken: 342 }
 ```
 
 ## Usage Information
@@ -38,12 +38,12 @@ const openai = createProvider('openai', { apiKey: '...' });
 const result = await collectStream(
   openai([userText('Explain quantum physics')], {
     model: 'gpt-4o',
-    streamOptions: { includeUsage: true }, // Required for usage tracking
+    includeUsage: true, // Required for usage tracking
   })
 );
 
 console.log('Usage:', result.usage);
-// { inputTokens: 15, outputTokens: 127, totalTokens: 142 }
+// { inputTokens: 15, outputTokens: 127, totalTokens: 142, timeToFirstToken: 287 }
 ```
 
 **Reasoning Models (o-series):**
@@ -61,13 +61,14 @@ console.log('Reasoning usage:', result.usage);
 //   inputTokens: 12,
 //   outputTokens: 25,
 //   reasoningTokens: 1847, // Extra cost!
-//   totalTokens: 1884
+//   totalTokens: 1884,
+//   timeToFirstToken: 1234 // Reasoning takes longer
 // }
 ```
 
 ### Anthropic Usage
 
-Anthropic currently provides output token counts:
+Anthropic provides output tokens and timing information:
 
 ```ts
 const anthropic = createProvider('anthropic', { apiKey: '...' });
@@ -79,12 +80,12 @@ const result = await collectStream(
 );
 
 console.log('Usage:', result.usage);
-// { outputTokens: 23 }
+// { outputTokens: 23, timeToFirstToken: 456 }
 ```
 
 ### Google Usage
 
-Google provides comprehensive usage metadata when available:
+Google provides comprehensive usage metadata and timing when available:
 
 ```ts
 const google = createProvider('google', { apiKey: '...' });
@@ -96,7 +97,7 @@ const result = await collectStream(
 );
 
 console.log('Usage:', result.usage);
-// { inputTokens: 18, outputTokens: 156, totalTokens: 174 }
+// { inputTokens: 18, outputTokens: 156, totalTokens: 174, timeToFirstToken: 623 }
 ```
 
 ## Embedding Usage
@@ -122,7 +123,7 @@ console.log('Embedding usage:', result.usage);
 
 ### Enable Usage Tracking
 
-- **OpenAI**: Set `streamOptions.includeUsage: true`
+- **OpenAI**: Set `includeUsage: true`
 - **Anthropic**: Usage is automatic (output tokens only)
 - **Google**: Usage is automatic when available
 
@@ -134,7 +135,7 @@ console.log('Embedding usage:', result.usage);
 
 **Solutions**:
 
-1. **OpenAI**: Enable `streamOptions: { includeUsage: true }`
+1. **OpenAI**: Enable `includeUsage: true`
 2. **Provider Support**: Not all providers report all usage metrics
 3. **API Access**: Some usage features require specific API tiers
 
@@ -161,3 +162,29 @@ console.log('Embedding usage:', result.usage);
 ---
 
 **Pro tip**: Usage tracking is essential for production applications. Different providers count tokens differently, so always test with your specific use case to understand real costs!
+
+## Timing Metrics
+
+### Time to First Token
+
+`timeToFirstToken` measures the latency from request start until the first content token arrives (in milliseconds):
+
+```ts
+const result = await collectStream(provider([userText('Quick response needed!')], options));
+
+if (result.usage?.timeToFirstToken) {
+  console.log(`First token arrived in ${result.usage.timeToFirstToken}ms`);
+
+  // Typical ranges:
+  // - Fast models: 100-500ms
+  // - Complex models: 500-2000ms
+  // - Reasoning models: 1000-5000ms
+}
+```
+
+**Use cases for timing data:**
+
+- Performance monitoring and alerting
+- Model comparison for latency-sensitive applications
+- User experience optimization
+- SLA compliance tracking

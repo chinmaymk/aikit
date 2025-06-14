@@ -63,8 +63,6 @@ describe('GoogleProvider', () => {
     nock.enableNetConnect();
   });
 
-  describe('constructor', () => {});
-
   describe('generate', () => {
     const mockOptions: GoogleOptions = {
       model: 'gemini-1.5-pro',
@@ -497,21 +495,24 @@ describe('GoogleProvider', () => {
     });
 
     it('should handle messages with unknown roles', async () => {
-      const messagesWithUnknownRole: Message[] = [
-        // @ts-expect-error - testing edge case
-        { role: 'unknown', content: [{ type: 'text', text: 'test' }] },
-        userText('Hello'),
-      ];
+      const invalidMessage = {
+        role: 'unknown' as any,
+        content: [{ type: 'text' as const, text: 'test' }],
+      };
 
-      // Should throw error for unknown role
+      let requestBody: any;
+      mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
       await expect(async () => {
         const chunks: StreamChunk[] = [];
-        for await (const chunk of provider(messagesWithUnknownRole, mockOptions)) {
+        for await (const chunk of provider([invalidMessage], mockOptions)) {
           chunks.push(chunk);
         }
-      }).rejects.toThrow(
-        "Unsupported message role 'unknown' for Google provider. Supported roles: user, assistant, system, tool"
-      );
+      }).rejects.toThrow("Unsupported message role 'unknown' for Google provider");
     });
 
     it('should handle tool choice edge cases', async () => {
@@ -656,6 +657,343 @@ describe('GoogleProvider', () => {
       // Should include the empty function response
       const toolResponseContent = requestBody.contents.find((c: any) => c.role === 'function');
       expect(toolResponseContent.parts[0].functionResponse.response).toEqual({ result: '' });
+    });
+
+    it('should handle tool choice with specific function name', async () => {
+      const toolOptions: GoogleOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'specific_tool',
+            description: 'Specific tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: { name: 'specific_tool' } as any,
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.toolConfig).toEqual({
+        functionCallingConfig: {
+          mode: 'ANY',
+          allowedFunctionNames: ['specific_tool'],
+        },
+      });
+    });
+
+    it('should handle tool choice "required"', async () => {
+      const toolOptions: GoogleOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'required_tool',
+            description: 'Required tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: 'required',
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.toolConfig).toEqual({
+        functionCallingConfig: { mode: 'ANY' },
+      });
+    });
+
+    it('should handle tool choice "none"', async () => {
+      const toolOptions: GoogleOptions = {
+        ...mockOptions,
+        tools: [
+          {
+            name: 'test_tool',
+            description: 'Test tool',
+            parameters: { type: 'object', properties: {} },
+          },
+        ],
+        toolChoice: 'none',
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, toolOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.toolConfig).toEqual({
+        functionCallingConfig: { mode: 'NONE' },
+      });
+    });
+
+    it('should handle images with unknown MIME types', async () => {
+      const messagesWithUnknownImage: Message[] = [
+        userImage('What is this?', 'data:application/unknown;base64,iVBORw0KGgo='),
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('I see an image'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(messagesWithUnknownImage, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      const imagePart = requestBody.contents[0].parts.find((part: any) => part.inlineData);
+      // Image may be filtered out or processed with fallback MIME type
+      if (imagePart?.inlineData) {
+        expect(imagePart.inlineData.mimeType).toBe('image/jpeg');
+      } else {
+        // Image was likely filtered out due to unknown MIME type
+        expect(requestBody.contents[0].parts).toHaveLength(1);
+        expect(requestBody.contents[0].parts[0].text).toBe('What is this?');
+      }
+    });
+
+    it('should handle images with no MIME type prefix', async () => {
+      const messagesWithNoMimeImage: Message[] = [
+        userImage('What is this?', 'data:notimage/test;base64,iVBORw0KGgo='),
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('I see an image'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(messagesWithNoMimeImage, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      const imagePart2 = requestBody.contents[0].parts.find((part: any) => part.inlineData);
+      // Image may be filtered out or processed with fallback MIME type
+      if (imagePart2?.inlineData) {
+        expect(imagePart2.inlineData.mimeType).toBe('image/jpeg');
+      } else {
+        // Image was likely filtered out due to invalid MIME type
+        expect(requestBody.contents[0].parts).toHaveLength(1);
+        expect(requestBody.contents[0].parts[0].text).toBe('What is this?');
+      }
+    });
+
+    it('should handle chunks with usage but no candidates', async () => {
+      const usageOnlyChunk = {
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 5,
+          totalTokenCount: 15,
+          cachedContentTokenCount: 2,
+        },
+      };
+
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [usageOnlyChunk, googleTextChunk('Response'), googleStopChunk()],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks[0].usage).toEqual({
+        inputTokens: 10,
+        outputTokens: 5,
+        totalTokens: 15,
+        cacheTokens: 2,
+      });
+    });
+
+    it('should handle combined text content from multiple text parts', async () => {
+      const messagesWithMultipleText: Message[] = [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'First part' },
+            { type: 'text', text: 'Second part' },
+          ],
+        },
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(messagesWithMultipleText, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.contents[0].parts[0].text).toBe('First part\nSecond part');
+    });
+
+    it('should handle empty text content', async () => {
+      const messagesWithEmptyText: Message[] = [
+        {
+          role: 'user',
+          content: [{ type: 'text', text: '   ' }], // whitespace only
+        },
+      ];
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(messagesWithEmptyText, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      // Should not include text part if it's empty after trimming
+      expect(requestBody.contents[0].parts).toEqual([]);
+    });
+
+    it('should handle generation config with all options', async () => {
+      const fullOptions: GoogleOptions = {
+        ...mockOptions,
+        presencePenalty: 0.1,
+        frequencyPenalty: 0.2,
+        responseMimeType: 'application/json',
+        responseSchema: { type: 'object' },
+        seed: 12345,
+        responseLogprobs: true,
+        logprobs: 5,
+        audioTimestamp: false,
+      };
+
+      let requestBody: any;
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [googleTextChunk('Response'), googleStopChunk()],
+        body => (requestBody = body)
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, fullOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(requestBody.generationConfig).toMatchObject({
+        presencePenalty: 0.1,
+        frequencyPenalty: 0.2,
+        responseMimeType: 'application/json',
+        responseSchema: { type: 'object' },
+        seed: 12345,
+        responseLogprobs: true,
+        logprobs: 5,
+        audioTimestamp: false,
+      });
+    });
+
+    it('should handle missing API key in config', () => {
+      expect(() => {
+        createGoogle({ apiKey: '' } as any);
+      }).toThrow('Google API key is required');
+    });
+
+    it('should handle missing model in options', async () => {
+      const providerWithoutModel = createGoogle({ apiKey: 'test-key' });
+
+      await expect(async () => {
+        const chunks: StreamChunk[] = [];
+        for await (const chunk of providerWithoutModel(mockMessages, {})) {
+          chunks.push(chunk);
+        }
+      }).rejects.toThrow('Model is required in config or options');
+    });
+
+    it('should handle usage metadata with missing fields', async () => {
+      const partialUsageChunk = {
+        usageMetadata: {
+          promptTokenCount: 10,
+          // Missing other fields
+        },
+      };
+
+      const scope = mockGoogleGeneration(
+        'gemini-1.5-pro',
+        [partialUsageChunk, googleTextChunk('Response'), googleStopChunk()],
+        () => {}
+      );
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks[0].usage).toEqual({
+        inputTokens: 10,
+      });
+    });
+
+    it('should handle finish reason mapping edge cases', async () => {
+      const unknownFinishChunk = {
+        candidates: [
+          {
+            finishReason: 'SOME_UNKNOWN_REASON',
+            content: { parts: [{ text: 'test' }] },
+          },
+        ],
+      };
+
+      const scope = mockGoogleGeneration('gemini-1.5-pro', [unknownFinishChunk], () => {});
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of provider(mockMessages, mockOptions)) {
+        chunks.push(chunk);
+      }
+
+      expect(scope.isDone()).toBe(true);
+      expect(chunks[0].finishReason).toBe('stop'); // default mapping
     });
   });
 

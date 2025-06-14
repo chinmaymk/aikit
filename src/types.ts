@@ -118,6 +118,8 @@ export interface GenerationUsage {
   reasoningTokens?: number;
   /** The number of tokens used for cached content (if applicable). Free tokens! The AI remembered something. */
   cacheTokens?: number;
+  /** Time to first token in milliseconds. How long you waited for the AI to start thinking out loud. */
+  timeToFirstToken?: number;
 }
 
 /**
@@ -407,6 +409,11 @@ export interface OpenAIResponsesOptions extends ProviderOptions {
    * Helps OpenAI monitor and detect abuse.
    */
   user?: string;
+  /**
+   * Whether to include usage information (token counts and timing) in the response.
+   * When true, usage data will be included in the final stream chunk.
+   */
+  includeUsage?: boolean;
 }
 
 /**
@@ -486,12 +493,10 @@ export interface OpenAIOptions extends ProviderOptions {
    */
   n?: number;
   /**
-   * Options for streaming response. Only set this when you set stream: true.
-   * When streaming, the stream will include usage data.
+   * Whether to include usage information (token counts and timing) in the response.
+   * When true, usage data will be included in the final stream chunk.
    */
-  streamOptions?: {
-    includeUsage?: boolean;
-  };
+  includeUsage?: boolean;
   /**
    * Whether to allow the model to run tool calls in parallel.
    */

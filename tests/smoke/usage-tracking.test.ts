@@ -30,21 +30,21 @@ const PROVIDERS: ProviderConfig[] = [
     name: 'OpenAI',
     models: ['gpt-4o-mini'],
     supportsUsage: true,
-    usageFields: ['inputTokens', 'outputTokens', 'totalTokens'],
+    usageFields: ['inputTokens', 'outputTokens', 'totalTokens', 'timeToFirstToken'],
   },
   {
     type: 'anthropic',
     name: 'Anthropic',
     models: ['claude-3-5-haiku-20241022'],
     supportsUsage: true,
-    usageFields: ['outputTokens'],
+    usageFields: ['outputTokens', 'timeToFirstToken'],
   },
   {
     type: 'google',
     name: 'Google',
     models: ['gemini-1.5-flash'],
     supportsUsage: true,
-    usageFields: ['inputTokens', 'outputTokens', 'totalTokens'],
+    usageFields: ['inputTokens', 'outputTokens', 'totalTokens', 'timeToFirstToken'],
   },
 ];
 
@@ -103,7 +103,7 @@ describe('Usage Tracking Smoke Tests', () => {
 
             // Enable usage tracking for OpenAI
             if (type === 'openai') {
-              options.streamOptions = { includeUsage: true };
+              options.includeUsage = true;
             }
 
             const result = await collectDeltas(provider(messages, options));
@@ -119,7 +119,7 @@ describe('Usage Tracking Smoke Tests', () => {
           TEST_TIMEOUT
         );
 
-        (apiKey && type === 'openai' ? test.skip : test.skip)(
+        (apiKey && type === 'openai' ? test : test.skip)(
           'should track reasoning tokens for o-series models',
           async () => {
             console.log(`Testing OpenAI o1-mini - Reasoning Usage:`);
@@ -173,7 +173,7 @@ describe('Usage Tracking Smoke Tests', () => {
                 model,
                 maxOutputTokens: 150,
                 temperature: 0.1,
-                streamOptions: { includeUsage: true },
+                includeUsage: true,
               })
             );
 
@@ -183,6 +183,40 @@ describe('Usage Tracking Smoke Tests', () => {
             if (result.usage) {
               expect(result.usage.inputTokens).toBeGreaterThan(50); // Long prompt should have more input tokens
               expect(result.usage.outputTokens).toBeGreaterThan(0);
+            }
+          },
+          TEST_TIMEOUT
+        );
+
+        (apiKey ? test : test.skip)(
+          'should track time to first token',
+          async () => {
+            console.log(`Testing ${name} ${model} - Time to First Token:`);
+
+            const provider = createProvider(type, { apiKey: apiKey! });
+            const messages = [userText('Say hello!')];
+
+            const options: any = {
+              model,
+              maxOutputTokens: 20,
+              temperature: 0.1,
+            };
+
+            // Enable usage tracking for OpenAI
+            if (type === 'openai') {
+              options.includeUsage = true;
+            }
+
+            const result = await collectDeltas(provider(messages, options));
+
+            expect(result.content).toBeDefined();
+            console.log(`${name} timeToFirstToken:`, result.usage?.timeToFirstToken);
+
+            if (result.usage?.timeToFirstToken !== undefined) {
+              // Time to first token should be a reasonable value (typically between 100ms and 10 seconds)
+              expect(result.usage.timeToFirstToken).toBeGreaterThan(0);
+              expect(result.usage.timeToFirstToken).toBeLessThan(30000); // Less than 30 seconds
+              expect(typeof result.usage.timeToFirstToken).toBe('number');
             }
           },
           TEST_TIMEOUT
@@ -278,7 +312,7 @@ describe('Usage Tracking Smoke Tests', () => {
           provider(messages, {
             model: 'gpt-4o-mini',
             maxOutputTokens: 30,
-            streamOptions: { includeUsage: true },
+            includeUsage: true,
           })
         );
 

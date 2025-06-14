@@ -105,6 +105,8 @@ function buildRequest(
 async function* processStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
   let currentContent = '';
   let pendingToolCalls: ToolCall[] = [];
+  const startTime = Date.now();
+  let firstTokenTime: number | undefined;
 
   for await (const line of lineStream) {
     if (!line.trim() || !line.startsWith('data: ')) continue;
@@ -115,9 +117,13 @@ async function* processStream(lineStream: AsyncIterable<string>): AsyncIterable<
     const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
     if (!chunk) continue;
 
-    const result = processChunk(chunk, currentContent, pendingToolCalls);
+    const result = processChunk(chunk, currentContent, pendingToolCalls, startTime, firstTokenTime);
     if (result) {
       currentContent = result.content;
+      // Track first token timing
+      if (result.delta && !firstTokenTime) {
+        firstTokenTime = Date.now();
+      }
       // Update pendingToolCalls if new tool calls were added
       if (result.toolCalls) {
         pendingToolCalls = result.toolCalls;
@@ -130,10 +136,12 @@ async function* processStream(lineStream: AsyncIterable<string>): AsyncIterable<
 function processChunk(
   chunk: StreamGenerateContentChunk,
   currentContent: string,
-  pendingToolCalls: ToolCall[]
+  pendingToolCalls: ToolCall[],
+  startTime: number,
+  firstTokenTime: number | undefined
 ): StreamChunk | null {
   // Check for usage information first (can come in chunks without candidates)
-  const usage = extractUsageFromGoogleChunk(chunk);
+  let usage = extractUsageFromGoogleChunk(chunk);
 
   const candidate = chunk.candidates?.[0];
   if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) {
@@ -169,6 +177,14 @@ function processChunk(
   }
 
   const finishReason = candidate.finishReason ? mapFinishReason(candidate.finishReason) : undefined;
+
+  // Include timeToFirstToken in usage when stream is completing
+  if (finishReason && firstTokenTime !== undefined && usage) {
+    usage = {
+      ...usage,
+      timeToFirstToken: firstTokenTime - startTime,
+    };
+  }
 
   return {
     content: currentContent,

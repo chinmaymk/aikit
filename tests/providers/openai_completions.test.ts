@@ -61,41 +61,6 @@ describe('OpenAIProvider', () => {
     nock.enableNetConnect();
   });
 
-  describe('constructor', () => {
-    it('should throw error when API key is missing', () => {
-      expect(() => {
-        createOpenAI({} as any);
-      }).toThrow('OpenAI API key is required');
-    });
-
-    it('should create provider successfully', () => {
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should initialize with organization and project headers', () => {
-      const configWithOrgAndProject = {
-        apiKey: 'test-api-key',
-        organization: 'test-org',
-        project: 'test-project',
-      };
-
-      const providerWithHeaders = createOpenAI(configWithOrgAndProject);
-      expect(typeof providerWithHeaders).toBe('function');
-    });
-
-    it('should initialize with custom configuration', () => {
-      const customConfig = {
-        apiKey: 'test-api-key',
-        baseURL: 'https://custom.openai.com/v1',
-        timeout: 30000,
-        maxRetries: 5,
-      };
-
-      const customProvider = createOpenAI(customConfig);
-      expect(typeof customProvider).toBe('function');
-    });
-  });
-
   describe('generate', () => {
     it('should call OpenAI API with correct parameters', async () => {
       let requestBody: any;
@@ -497,7 +462,7 @@ describe('OpenAIProvider', () => {
     it('should handle stream options and parallel tool calls', async () => {
       const optionsWithStreamAndParallel: OpenAIOptions = {
         ...mockOptions,
-        streamOptions: { includeUsage: true },
+        includeUsage: true,
         parallelToolCalls: false,
         tools: [
           {

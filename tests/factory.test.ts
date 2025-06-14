@@ -12,354 +12,192 @@ import {
 } from '@chinmaymk/aikit';
 
 describe('Factory Functions', () => {
-  const mockOpenAIOptions = {
-    apiKey: 'test-openai-key',
+  const mockOptions = {
+    openai: { apiKey: 'test-openai-key' },
+    anthropic: { apiKey: 'test-anthropic-key' },
+    google: { apiKey: 'test-google-key' },
+    openai_responses: { apiKey: 'test-openai-key' } as WithApiKey<OpenAIResponsesOptions>,
+    embeddings: { apiKey: 'test-key' },
   };
 
-  const mockOpenAIResponsesOptions: WithApiKey<OpenAIResponsesOptions> = {
-    apiKey: 'test-openai-key',
-  };
+  describe('Individual provider creation functions', () => {
+    const providerTests = [
+      { fn: createOpenAI, options: mockOptions.openai, name: 'openai' },
+      { fn: createAnthropic, options: mockOptions.anthropic, name: 'anthropic' },
+      { fn: createGoogle, options: mockOptions.google, name: 'google' },
+      { fn: createOpenAIResponses, options: mockOptions.openai_responses, name: 'openaiResponses' },
+      { fn: createOpenAIEmbeddings, options: mockOptions.embeddings, name: undefined },
+      { fn: createGoogleEmbeddings, options: mockOptions.embeddings, name: undefined },
+    ];
 
-  const mockAnthropicOptions = {
-    apiKey: 'test-anthropic-key',
-  };
-
-  const mockGoogleOptions = {
-    apiKey: 'test-google-key',
-  };
-
-  describe('createOpenAI', () => {
-    it('should create an OpenAI provider function', () => {
-      const provider = createOpenAI(mockOpenAIOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openai');
+    providerTests.forEach(({ fn, options, name }) => {
+      it(`should create ${fn.name} provider function`, () => {
+        const provider = fn(options as any);
+        expect(typeof provider).toBe('function');
+        if (name) {
+          expect(provider.name).toBe(name);
+        }
+      });
     });
 
-    it('should handle provider creation with additional options', () => {
+    it('should handle createOpenAI with additional options', () => {
       const provider = createOpenAI({
         apiKey: 'test-key',
         model: 'gpt-4o',
         temperature: 0.7,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openai');
-    });
-
-    it('should handle provider creation with comprehensive OpenAI options', () => {
-      const provider = createOpenAI({
-        apiKey: 'test-key',
-        model: 'gpt-4o',
-        temperature: 0.8,
         maxOutputTokens: 2000,
-        topP: 0.95,
-        frequencyPenalty: 0.2,
-        presencePenalty: 0.3,
-        seed: 12345,
-        stopSequences: ['Human:', 'Assistant:'],
-        user: 'user123',
-        logitBias: { '1234': 10 },
-        logprobs: true,
-        topLogprobs: 5,
-        responseFormat: { type: 'json_object' },
-        streamOptions: { includeUsage: true },
-        parallelToolCalls: true,
-        modalities: ['text'],
-        prediction: { type: 'content', content: 'predicted' },
-        audio: { voice: 'alloy', format: 'wav' },
-        organization: 'org-123',
-        project: 'proj-456',
-        baseURL: 'https://api.custom.com',
-        timeout: 30000,
-        maxRetries: 3,
       });
       expect(typeof provider).toBe('function');
       expect(provider.name).toBe('openai');
     });
-  });
 
-  describe('createOpenAIResponses', () => {
-    it('should create an OpenAI Responses provider function', () => {
-      const provider = createOpenAIResponses(mockOpenAIResponsesOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openaiResponses');
-    });
-
-    it('should handle provider creation with reasoning options', () => {
+    it('should handle createOpenAIResponses with reasoning options', () => {
       const provider = createOpenAIResponses({
         apiKey: 'test-key',
         reasoning: { effort: 'high' },
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openaiResponses');
-    });
-
-    it('should handle provider creation with all response options', () => {
-      const provider = createOpenAIResponses({
-        apiKey: 'test-key',
         model: 'gpt-4o',
-        reasoning: { effort: 'medium' },
-        background: true,
-        include: ['reasoning.encrypted_content'],
-        instructions: 'You are a helpful assistant',
-        metadata: { user: 'test' },
-        parallelToolCalls: true,
-        store: false,
-        serviceTier: 'default',
       });
       expect(typeof provider).toBe('function');
       expect(provider.name).toBe('openaiResponses');
     });
-  });
 
-  describe('createAnthropic', () => {
-    it('should create an Anthropic provider function', () => {
-      const provider = createAnthropic(mockAnthropicOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('anthropic');
-    });
-
-    it('should handle provider creation with additional options', () => {
+    it('should handle createAnthropic with additional options', () => {
       const provider = createAnthropic({
         apiKey: 'test-key',
         model: 'claude-3-5-sonnet-20241022',
         topK: 40,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('anthropic');
-    });
-
-    it('should handle provider creation with all anthropic options', () => {
-      const provider = createAnthropic({
-        apiKey: 'test-key',
-        model: 'claude-3-5-sonnet-20241022',
         temperature: 0.8,
-        maxOutputTokens: 2000,
-        topP: 0.95,
-        topK: 40,
-        stopSequences: ['Human:', 'Assistant:'],
-        beta: ['tools-2024-04-04'],
-        metadata: { user_id: 'user123' },
-        system: 'You are Claude, an AI assistant.',
-        thinking: { type: 'enabled', budget_tokens: 1024 },
       });
       expect(typeof provider).toBe('function');
       expect(provider.name).toBe('anthropic');
     });
-  });
 
-  describe('createGoogle', () => {
-    it('should create a Google provider function', () => {
-      const provider = createGoogle(mockGoogleOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('google');
-    });
-
-    it('should handle provider creation with additional options', () => {
+    it('should handle createGoogle with additional options', () => {
       const provider = createGoogle({
         apiKey: 'test-key',
         model: 'gemini-1.5-pro',
         topK: 20,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('google');
-    });
-
-    it('should handle provider creation with all google options', () => {
-      const provider = createGoogle({
-        apiKey: 'test-key',
-        model: 'gemini-1.5-pro',
         temperature: 0.9,
-        maxOutputTokens: 1500,
-        topP: 0.8,
-        topK: 20,
-        stopSequences: ['END'],
-        candidateCount: 1,
-        presencePenalty: 0.2,
-        frequencyPenalty: 0.4,
-        responseMimeType: 'application/json',
-        responseSchema: { type: 'object' },
-        seed: 12345,
-        responseLogprobs: true,
-        logprobs: 5,
-        audioTimestamp: false,
       });
       expect(typeof provider).toBe('function');
       expect(provider.name).toBe('google');
     });
-  });
 
-  describe('createOpenAIEmbeddings', () => {
-    it('should create an OpenAI embeddings provider function', () => {
-      const provider = createOpenAIEmbeddings({ apiKey: 'test-key' });
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should handle provider creation with embedding options', () => {
-      const provider = createOpenAIEmbeddings({
-        apiKey: 'test-key',
-        model: 'text-embedding-3-large',
-        dimensions: 1024,
-      });
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should handle provider creation with all embedding options', () => {
-      const provider = createOpenAIEmbeddings({
-        apiKey: 'test-key',
-        model: 'text-embedding-3-large',
-        dimensions: 1024,
-        encodingFormat: 'float',
-        user: 'test-user',
-        organization: 'org-123',
-        project: 'proj-456',
-        baseURL: 'https://api.custom.com',
-        timeout: 30000,
-        maxRetries: 3,
-        taskType: 'similarity',
-        autoTruncate: true,
-      });
-      expect(typeof provider).toBe('function');
-    });
-  });
-
-  describe('createGoogleEmbeddings', () => {
-    it('should create a Google embeddings provider function', () => {
-      const provider = createGoogleEmbeddings({ apiKey: 'test-key' });
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should handle provider creation with embedding options', () => {
+    it('should handle createGoogleEmbeddings with options', () => {
       const provider = createGoogleEmbeddings({
         apiKey: 'test-key',
         model: 'text-embedding-004',
         taskType: 'SEMANTIC_SIMILARITY',
-      });
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should handle provider creation with all google embedding options', () => {
-      const provider = createGoogleEmbeddings({
-        apiKey: 'test-key',
-        model: 'text-embedding-004',
-        taskType: 'RETRIEVAL_DOCUMENT',
-        outputDtype: 'float',
-        title: 'Document Title',
-        dimensions: 768,
-        baseURL: 'https://api.google.com',
-        timeout: 25000,
-        maxRetries: 2,
-        autoTruncate: false,
+        title: 'Test document',
       });
       expect(typeof provider).toBe('function');
     });
   });
 
-  describe('createEmbeddingsProvider', () => {
-    it('should create OpenAI embeddings provider when type is "openai_embeddings"', () => {
-      const provider = createEmbeddingsProvider('openai_embeddings', { apiKey: 'test-key' });
-      expect(typeof provider).toBe('function');
-    });
+  describe('Generic factory functions', () => {
+    describe('createEmbeddingsProvider', () => {
+      const embeddingTests = [
+        {
+          type: 'openai_embeddings' as const,
+          options: { apiKey: 'test-key', model: 'text-embedding-3-large' },
+        },
+        {
+          type: 'google_embeddings' as const,
+          options: { apiKey: 'test-key', model: 'text-embedding-004' },
+        },
+      ];
 
-    it('should create Google embeddings provider when type is "google_embeddings"', () => {
-      const provider = createEmbeddingsProvider('google_embeddings', { apiKey: 'test-key' });
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should throw error for unknown embedding provider type', () => {
-      expect(() => {
-        createEmbeddingsProvider('unknown_type' as any, { apiKey: 'test-key' });
-      }).toThrow('Unknown embedding provider type: unknown_type');
-    });
-
-    // Test the typed overloads
-    it('should return correctly typed OpenAI embeddings provider', () => {
-      const provider = createEmbeddingsProvider('openai_embeddings', {
-        apiKey: 'test-key',
-        model: 'text-embedding-3-large',
-        dimensions: 1024,
+      embeddingTests.forEach(({ type, options }) => {
+        it(`should create ${type} provider via generic factory`, () => {
+          const provider = createEmbeddingsProvider(type, options);
+          expect(typeof provider).toBe('function');
+        });
       });
-      expect(typeof provider).toBe('function');
+
+      it('should throw error for unknown embedding provider type', () => {
+        expect(() => {
+          createEmbeddingsProvider('unknown_embeddings' as any, { apiKey: 'test' } as any);
+        }).toThrow('Unknown embedding provider type: unknown_embeddings');
+      });
     });
 
-    it('should return correctly typed Google embeddings provider', () => {
-      const provider = createEmbeddingsProvider('google_embeddings', {
-        apiKey: 'test-key',
-        model: 'text-embedding-004',
-        taskType: 'SEMANTIC_SIMILARITY',
+    describe('createProvider', () => {
+      const generationTests = [
+        { type: 'openai' as const, options: mockOptions.openai, name: 'openai' },
+        { type: 'anthropic' as const, options: mockOptions.anthropic, name: 'anthropic' },
+        { type: 'google' as const, options: mockOptions.google, name: 'google' },
+        {
+          type: 'openai_responses' as const,
+          options: mockOptions.openai_responses,
+          name: 'openaiResponses',
+        },
+      ];
+
+      generationTests.forEach(({ type, options, name }) => {
+        it(`should create ${type} provider via generic factory`, () => {
+          const provider = createProvider(type, options);
+          expect(typeof provider).toBe('function');
+          expect(provider.name).toBe(name);
+        });
       });
-      expect(typeof provider).toBe('function');
+
+      it('should throw error for unknown generation provider type', () => {
+        expect(() => {
+          createProvider('unknown_provider' as any, { apiKey: 'test' } as any);
+        }).toThrow('Unknown generation provider type: unknown_provider');
+      });
     });
   });
 
-  describe('createProvider', () => {
-    it('should create OpenAI provider when type is "openai"', () => {
-      const provider = createProvider('openai', mockOpenAIOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openai');
+  // Direct function calls to ensure 100% function coverage
+  describe('Direct function body execution', () => {
+    it('should execute all individual factory function bodies', () => {
+      // These calls ensure each individual function implementation gets executed
+      const openaiProvider = createOpenAI({ apiKey: 'test' });
+      const anthropicProvider = createAnthropic({ apiKey: 'test' });
+      const googleProvider = createGoogle({ apiKey: 'test' });
+      const openaiResponsesProvider = createOpenAIResponses({ apiKey: 'test' });
+      const openaiEmbeddingsProvider = createOpenAIEmbeddings({ apiKey: 'test' });
+      const googleEmbeddingsProvider = createGoogleEmbeddings({ apiKey: 'test' });
+
+      // Verify they all return functions
+      expect(typeof openaiProvider).toBe('function');
+      expect(typeof anthropicProvider).toBe('function');
+      expect(typeof googleProvider).toBe('function');
+      expect(typeof openaiResponsesProvider).toBe('function');
+      expect(typeof openaiEmbeddingsProvider).toBe('function');
+      expect(typeof googleEmbeddingsProvider).toBe('function');
     });
 
-    it('should create OpenAI Responses provider when type is "openai_responses"', () => {
-      const provider = createProvider('openai_responses', mockOpenAIResponsesOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openaiResponses');
-    });
+    it('should execute both switch statements in factory functions', () => {
+      // Execute createEmbeddingsProvider switch statement
+      const embeddingProvider1 = createEmbeddingsProvider('openai_embeddings', { apiKey: 'test' });
+      const embeddingProvider2 = createEmbeddingsProvider('google_embeddings', { apiKey: 'test' });
 
-    it('should create Anthropic provider when type is "anthropic"', () => {
-      const provider = createProvider('anthropic', mockAnthropicOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('anthropic');
-    });
+      // Execute createProvider switch statement
+      const generationProvider1 = createProvider('openai', { apiKey: 'test' });
+      const generationProvider2 = createProvider('anthropic', { apiKey: 'test' });
+      const generationProvider3 = createProvider('google', { apiKey: 'test' });
+      const generationProvider4 = createProvider('openai_responses', { apiKey: 'test' });
 
-    it('should create Google provider when type is "google"', () => {
-      const provider = createProvider('google', mockGoogleOptions);
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('google');
+      // Verify all are functions
+      expect(typeof embeddingProvider1).toBe('function');
+      expect(typeof embeddingProvider2).toBe('function');
+      expect(typeof generationProvider1).toBe('function');
+      expect(typeof generationProvider2).toBe('function');
+      expect(typeof generationProvider3).toBe('function');
+      expect(typeof generationProvider4).toBe('function');
     });
+  });
 
-    it('should throw error for unknown provider type', () => {
-      expect(() => {
-        createProvider('unknown' as any, { apiKey: 'test' } as any);
-      }).toThrow('Unknown generation provider type: unknown');
-    });
-
-    // Test the typed overloads
-    it('should return correctly typed OpenAI provider', () => {
-      const provider = createProvider('openai', {
-        apiKey: 'test-key',
-        model: 'gpt-4o',
-        temperature: 0.7,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openai');
-    });
-
-    it('should return correctly typed Anthropic provider', () => {
-      const provider = createProvider('anthropic', {
-        apiKey: 'test-key',
-        model: 'claude-3-5-sonnet-20241022',
-        topK: 40,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('anthropic');
-    });
-
-    it('should return correctly typed Google provider', () => {
-      const provider = createProvider('google', {
-        apiKey: 'test-key',
-        model: 'gemini-1.5-pro',
-        topK: 20,
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('google');
-    });
-
-    it('should return correctly typed OpenAI Responses provider', () => {
-      const provider = createProvider('openai_responses', {
-        apiKey: 'test-key',
-        reasoning: { effort: 'high' },
-      });
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openaiResponses');
+  describe('Error handling', () => {
+    it('should throw errors for missing API keys', () => {
+      expect(() => createOpenAI({} as any)).toThrow('OpenAI API key is required');
+      expect(() => createAnthropic({} as any)).toThrow('Anthropic API key is required');
+      expect(() => createGoogle({} as any)).toThrow('Google API key is required');
+      expect(() => createOpenAIResponses({} as any)).toThrow('OpenAI API key is required');
+      expect(() => createOpenAIEmbeddings({} as any)).toThrow('OpenAI API key is required');
+      expect(() => createGoogleEmbeddings({} as any)).toThrow('Google API key is required');
     });
   });
 });

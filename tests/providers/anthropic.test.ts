@@ -75,28 +75,6 @@ describe('AnthropicProvider', () => {
     nock.enableNetConnect();
   });
 
-  describe('constructor', () => {
-    it('should throw error when API key is missing', () => {
-      expect(() => {
-        createAnthropic({} as any);
-      }).toThrow('Anthropic API key is required');
-    });
-
-    it('should create provider successfully', () => {
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should handle beta configuration', () => {
-      const configWithBeta = {
-        apiKey: 'test-api-key',
-        beta: ['message-batches-2024-09-24', 'prompt-caching-2024-07-31'],
-      };
-
-      const providerWithBeta = createAnthropic(configWithBeta);
-      expect(typeof providerWithBeta).toBe('function');
-    });
-  });
-
   describe('MessageTransformer (Anthropic tests)', () => {
     it('should test groupContentByType', () => {
       const content = [

@@ -10,19 +10,6 @@ describe('GoogleEmbeddingProvider', () => {
     nock.cleanAll();
   });
 
-  describe('constructor', () => {
-    it('should create provider with required options', () => {
-      const provider = createGoogleEmbeddings(defaultOptions);
-      expect(typeof provider).toBe('function');
-    });
-
-    it('should throw error when API key is missing', () => {
-      expect(() => {
-        createGoogleEmbeddings({} as any);
-      }).toThrow('Google API key is required');
-    });
-  });
-
   describe('embed', () => {
     let provider: ReturnType<typeof createGoogleEmbeddings>;
 

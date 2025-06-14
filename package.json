@@ -26,7 +26,7 @@
     "lint": "eslint --quiet src scripts examples --ext .ts,.js",
     "lint:fix": "eslint src scripts examples --ext .ts,.js --fix",
     "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test && npm run compile",
+    "build": "npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run compile",
     "compile": "tsc --build tsconfig.build.json",
     "prepublishOnly": "npm run build",
     "docs:generate": "typedoc",

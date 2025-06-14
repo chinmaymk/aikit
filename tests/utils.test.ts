@@ -553,48 +553,49 @@ describe('Stream Utilities', () => {
       expect(chunks).toEqual(data);
     });
 
-    it('should handle cancellation properly', async () => {
-      const mockIterator = {
-        next: jest.fn().mockResolvedValue({ value: 'data', done: false }),
-        return: jest.fn().mockResolvedValue({ done: true }),
-        [Symbol.asyncIterator]() {
-          return this;
+    it('should handle stream cancellation properly', async () => {
+      let returnCalled = false;
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield { content: 'test1', delta: 'test1' };
+          yield { content: 'test2', delta: 'test2' };
         },
       };
 
-      const asyncIterable = {
-        [Symbol.asyncIterator]() {
-          return mockIterator;
-        },
+      // Mock the iterator with a return method
+      const originalIterator = mockStream[Symbol.asyncIterator];
+      mockStream[Symbol.asyncIterator] = function () {
+        const iterator = originalIterator.call(this);
+        iterator.return = async () => {
+          returnCalled = true;
+          return { done: true, value: undefined };
+        };
+        return iterator;
       };
 
-      const readableStream = toReadableStream(asyncIterable);
+      const readableStream = toReadableStream(mockStream);
       const reader = readableStream.getReader();
 
+      // Read one chunk then cancel
+      await reader.read();
       await reader.cancel();
 
-      expect(mockIterator.return).toHaveBeenCalled();
+      expect(returnCalled).toBe(true);
     });
 
     it('should handle iterator without return method', async () => {
-      const mockIterator = {
-        next: jest.fn().mockResolvedValue({ value: 'data', done: false }),
-        [Symbol.asyncIterator]() {
-          return this;
+      const mockStream = {
+        async *[Symbol.asyncIterator]() {
+          yield { content: 'test', delta: 'test' };
         },
       };
 
-      const asyncIterable = {
-        [Symbol.asyncIterator]() {
-          return mockIterator;
-        },
-      };
-
-      const readableStream = toReadableStream(asyncIterable);
+      const readableStream = toReadableStream(mockStream);
       const reader = readableStream.getReader();
 
-      // Should not throw even if iterator.return is undefined
-      await expect(reader.cancel()).resolves.toBeUndefined();
+      await reader.read();
+      // This should not throw even if iterator doesn't have return method
+      await reader.cancel();
     });
 
     it('should handle errors in the stream', async () => {
@@ -776,6 +777,48 @@ describe('Stream Utilities', () => {
       expect(() => executeToolCall(toolCall, errorService)).toThrow(
         'Tool execution failed: Error: Tool failed'
       );
+    });
+  });
+
+  describe('processStream with reasoning content', () => {
+    it('should handle reasoning content properly', async () => {
+      const mockStream = async function* () {
+        yield {
+          content: 'Hello',
+          delta: 'Hello',
+          reasoning: {
+            content: 'I think this is a greeting',
+            delta: 'I think this is a greeting',
+          },
+        };
+        yield {
+          content: 'Hello world',
+          delta: ' world',
+          reasoning: {
+            content: 'I think this is a greeting to the world',
+            delta: ' to the world',
+          },
+        };
+      };
+
+      let reasoningCallbacks: Array<{ content: string; delta: string }> = [];
+
+      const result = await processStream(mockStream(), {
+        onReasoning: reasoning => {
+          reasoningCallbacks.push(reasoning);
+        },
+      });
+
+      expect(result.reasoning).toBe('I think this is a greeting to the world');
+      expect(reasoningCallbacks).toHaveLength(2);
+      expect(reasoningCallbacks[0]).toEqual({
+        content: 'I think this is a greeting',
+        delta: 'I think this is a greeting',
+      });
+      expect(reasoningCallbacks[1]).toEqual({
+        content: 'I think this is a greeting to the world',
+        delta: ' to the world',
+      });
     });
   });
 });

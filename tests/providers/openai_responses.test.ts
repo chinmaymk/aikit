@@ -60,42 +60,6 @@ describe('OpenAIResponsesProvider', () => {
     nock.enableNetConnect();
   });
 
-  describe('constructor', () => {
-    it('should initialize with organization and project headers', () => {
-      const configWithOrgAndProject = {
-        apiKey: 'test-api-key',
-        organization: 'test-org',
-        project: 'test-project',
-      };
-
-      const providerWithHeaders = createOpenAIResponses(configWithOrgAndProject);
-      expect(typeof providerWithHeaders).toBe('function');
-    });
-
-    it('should initialize with custom configuration', () => {
-      const customConfig = {
-        apiKey: 'test-api-key',
-        baseURL: 'https://custom.openai.com/v1',
-        timeout: 30000,
-        maxRetries: 5,
-      };
-
-      const customProvider = createOpenAIResponses(customConfig);
-      expect(typeof customProvider).toBe('function');
-    });
-
-    it('should create provider successfully', () => {
-      expect(typeof provider).toBe('function');
-      expect(provider.name).toBe('openaiResponses');
-    });
-
-    it('should throw error when API key is missing', () => {
-      expect(() => {
-        createOpenAIResponses({} as any);
-      }).toThrow('OpenAI API key is required');
-    });
-  });
-
   describe('generate', () => {
     const mockOptions: GenerationOptions = {
       model: 'gpt-4o',

@@ -175,12 +175,22 @@ export class StreamState {
   accumulatingArgs: Record<string, string> = {};
   outputIndexToCallId: Record<number, string> = {};
   hasToolCalls = false;
+  private startTime: number;
+  private firstTokenTime?: number;
+
+  constructor() {
+    this.startTime = Date.now();
+  }
 
   /**
    * Add content delta to the stream state.
    * @param delta - The new content to add.
    */
   addContentDelta(delta: string): void {
+    // Track first token timing
+    if (delta && !this.firstTokenTime) {
+      this.firstTokenTime = Date.now();
+    }
     this.content += delta;
   }
 
@@ -190,8 +200,20 @@ export class StreamState {
    * @returns Reasoning object with delta and full content.
    */
   addReasoningDelta(delta: string): { delta: string; content: string } {
+    // Track first token timing for reasoning too
+    if (delta && !this.firstTokenTime) {
+      this.firstTokenTime = Date.now();
+    }
     this.reasoning = this.reasoning === null ? delta : this.reasoning + delta;
     return { delta, content: this.reasoning };
+  }
+
+  /**
+   * Get the time to first token in milliseconds.
+   * @returns Time to first token in milliseconds, or undefined if no token received yet.
+   */
+  getTimeToFirstToken(): number | undefined {
+    return this.firstTokenTime ? this.firstTokenTime - this.startTime : undefined;
   }
 
   /**
@@ -249,13 +271,22 @@ export class StreamState {
     const toolCalls = finishReason ? this.finalizeToolCalls() : undefined;
     const reasoning = finishReason ? this.getFinalReasoning() : undefined;
 
+    // Include timeToFirstToken in usage when stream is completing
+    let enhancedUsage = usage;
+    if (finishReason && this.getTimeToFirstToken() !== undefined) {
+      enhancedUsage = {
+        ...usage,
+        timeToFirstToken: this.getTimeToFirstToken(),
+      };
+    }
+
     return MessageTransformer.createStreamChunk(
       this.content,
       delta,
       toolCalls,
       finishReason,
       reasoning,
-      usage
+      enhancedUsage
     );
   }
 }
