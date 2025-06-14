@@ -11,7 +11,6 @@ import {
   type GenerationOptions,
   type OpenAIResponsesOptions,
   type StreamChunk,
-  type FinishReason,
   type OpenAIResponsesProvider,
 } from '@chinmaymk/aikit';
 import nock from 'nock';
@@ -83,6 +82,17 @@ describe('OpenAIResponsesProvider', () => {
 
       const customProvider = createOpenAIResponses(customConfig);
       expect(typeof customProvider).toBe('function');
+    });
+
+    it('should create provider successfully', () => {
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('openaiResponses');
+    });
+
+    it('should throw error when API key is missing', () => {
+      expect(() => {
+        createOpenAIResponses({} as any);
+      }).toThrow('OpenAI API key is required');
     });
   });
 

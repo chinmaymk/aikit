@@ -7,10 +7,7 @@ import {
   createOpenAIEmbeddings,
   createGoogleEmbeddings,
   createEmbeddingsProvider,
-  type OpenAIOptions,
   type OpenAIResponsesOptions,
-  type AnthropicOptions,
-  type GoogleOptions,
   type WithApiKey,
 } from '@chinmaymk/aikit';
 
@@ -43,6 +40,37 @@ describe('Factory Functions', () => {
         apiKey: 'test-key',
         model: 'gpt-4o',
         temperature: 0.7,
+      });
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('openai');
+    });
+
+    it('should handle provider creation with comprehensive OpenAI options', () => {
+      const provider = createOpenAI({
+        apiKey: 'test-key',
+        model: 'gpt-4o',
+        temperature: 0.8,
+        maxOutputTokens: 2000,
+        topP: 0.95,
+        frequencyPenalty: 0.2,
+        presencePenalty: 0.3,
+        seed: 12345,
+        stopSequences: ['Human:', 'Assistant:'],
+        user: 'user123',
+        logitBias: { '1234': 10 },
+        logprobs: true,
+        topLogprobs: 5,
+        responseFormat: { type: 'json_object' },
+        streamOptions: { includeUsage: true },
+        parallelToolCalls: true,
+        modalities: ['text'],
+        prediction: { type: 'content', content: 'predicted' },
+        audio: { voice: 'alloy', format: 'wav' },
+        organization: 'org-123',
+        project: 'proj-456',
+        baseURL: 'https://api.custom.com',
+        timeout: 30000,
+        maxRetries: 3,
       });
       expect(typeof provider).toBe('function');
       expect(provider.name).toBe('openai');
@@ -242,6 +270,25 @@ describe('Factory Functions', () => {
         createEmbeddingsProvider('unknown_type' as any, { apiKey: 'test-key' });
       }).toThrow('Unknown embedding provider type: unknown_type');
     });
+
+    // Test the typed overloads
+    it('should return correctly typed OpenAI embeddings provider', () => {
+      const provider = createEmbeddingsProvider('openai_embeddings', {
+        apiKey: 'test-key',
+        model: 'text-embedding-3-large',
+        dimensions: 1024,
+      });
+      expect(typeof provider).toBe('function');
+    });
+
+    it('should return correctly typed Google embeddings provider', () => {
+      const provider = createEmbeddingsProvider('google_embeddings', {
+        apiKey: 'test-key',
+        model: 'text-embedding-004',
+        taskType: 'SEMANTIC_SIMILARITY',
+      });
+      expect(typeof provider).toBe('function');
+    });
   });
 
   describe('createProvider', () => {
@@ -273,6 +320,46 @@ describe('Factory Functions', () => {
       expect(() => {
         createProvider('unknown' as any, { apiKey: 'test' } as any);
       }).toThrow('Unknown generation provider type: unknown');
+    });
+
+    // Test the typed overloads
+    it('should return correctly typed OpenAI provider', () => {
+      const provider = createProvider('openai', {
+        apiKey: 'test-key',
+        model: 'gpt-4o',
+        temperature: 0.7,
+      });
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('openai');
+    });
+
+    it('should return correctly typed Anthropic provider', () => {
+      const provider = createProvider('anthropic', {
+        apiKey: 'test-key',
+        model: 'claude-3-5-sonnet-20241022',
+        topK: 40,
+      });
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('anthropic');
+    });
+
+    it('should return correctly typed Google provider', () => {
+      const provider = createProvider('google', {
+        apiKey: 'test-key',
+        model: 'gemini-1.5-pro',
+        topK: 20,
+      });
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('google');
+    });
+
+    it('should return correctly typed OpenAI Responses provider', () => {
+      const provider = createProvider('openai_responses', {
+        apiKey: 'test-key',
+        reasoning: { effort: 'high' },
+      });
+      expect(typeof provider).toBe('function');
+      expect(provider.name).toBe('openaiResponses');
     });
   });
 });

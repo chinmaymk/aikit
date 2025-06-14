@@ -1,7 +1,6 @@
 import {
   createOpenAIEmbeddings,
-  type EmbeddingResponse,
-  type OpenAIEmbeddingOptions,
+  openaiEmbeddings,
   type OpenAIEmbeddingProvider,
 } from '@chinmaymk/aikit';
 import nock from 'nock';
@@ -259,6 +258,42 @@ describe('OpenAIEmbeddingProvider', () => {
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
+    });
+  });
+
+  describe('direct openaiEmbeddings function', () => {
+    it('should generate embeddings using direct function call', async () => {
+      const mockResponse = {
+        object: 'list',
+        data: [
+          {
+            object: 'embedding',
+            index: 0,
+            embedding: [0.1, 0.2, 0.3, -0.1, -0.2],
+          },
+        ],
+        model: 'text-embedding-3-small',
+        usage: {
+          prompt_tokens: 5,
+          total_tokens: 5,
+        },
+      };
+
+      const scope = nock('https://api.openai.com/v1')
+        .post('/embeddings')
+        .reply(200, JSON.stringify(mockResponse));
+
+      const result = await openaiEmbeddings(
+        {
+          apiKey: 'test-api-key',
+          model: 'text-embedding-3-small',
+        },
+        ['Hello world']
+      );
+
+      expect(scope.isDone()).toBe(true);
+      expect(result.embeddings).toHaveLength(1);
+      expect(result.embeddings[0].values).toEqual([0.1, 0.2, 0.3, -0.1, -0.2]);
     });
   });
 });

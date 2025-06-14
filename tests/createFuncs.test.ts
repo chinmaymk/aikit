@@ -243,9 +243,9 @@ describe('Utils', () => {
     });
 
     it('should print stream to stdout', async () => {
-      const originalWrite = process.stdout.write;
-      const mockWrite = jest.fn();
-      process.stdout.write = mockWrite as any;
+      const originalLog = console.log;
+      const mockLog = jest.fn();
+      console.log = mockLog;
 
       try {
         const chunks = [
@@ -255,10 +255,10 @@ describe('Utils', () => {
 
         await printStream(createMockStream(chunks));
 
-        expect(mockWrite).toHaveBeenCalledWith('Hello');
-        expect(mockWrite).toHaveBeenCalledWith(' world');
+        expect(mockLog).toHaveBeenCalledWith('Hello');
+        expect(mockLog).toHaveBeenCalledWith(' world');
       } finally {
-        process.stdout.write = originalWrite;
+        console.log = originalLog;
       }
     });
   });

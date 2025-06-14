@@ -696,10 +696,7 @@ export const executeToolCall = (
   }
 
   try {
-    const args =
-      typeof toolCall.arguments === 'string' ? JSON.parse(toolCall.arguments) : toolCall.arguments;
-
-    const result = service(...Object.values(args));
+    const result = service(...Object.values(toolCall.arguments));
     return typeof result === 'string' ? result : JSON.stringify(result);
   } catch (error) {
     throw new Error(`Tool execution failed: ${error}`);

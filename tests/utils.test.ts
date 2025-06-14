@@ -269,9 +269,9 @@ describe('Utils', () => {
     });
 
     it('should print stream to stdout', async () => {
-      const originalWrite = process.stdout.write;
-      const mockWrite = jest.fn();
-      process.stdout.write = mockWrite as any;
+      const originalLog = console.log;
+      const mockLog = jest.fn();
+      console.log = mockLog;
 
       try {
         const chunks = [
@@ -281,10 +281,10 @@ describe('Utils', () => {
 
         await printStream(createMockStream(chunks));
 
-        expect(mockWrite).toHaveBeenCalledWith('Hello');
-        expect(mockWrite).toHaveBeenCalledWith(' world');
+        expect(mockLog).toHaveBeenCalledWith('Hello');
+        expect(mockLog).toHaveBeenCalledWith(' world');
       } finally {
-        process.stdout.write = originalWrite;
+        console.log = originalLog;
       }
     });
   });
@@ -529,36 +529,88 @@ describe('Stream Utilities', () => {
 
   describe('toReadableStream', () => {
     it('should convert async iterable to ReadableStream', async () => {
-      const stream = createMockStream([{ delta: 'hello' }, { delta: 'world' }]);
-
-      const readableStream = toReadableStream(stream);
-      const reader = readableStream.getReader();
-
-      const chunk1 = await reader.read();
-      expect(chunk1.done).toBe(false);
-      expect(chunk1.value?.delta).toBe('hello');
-
-      const chunk2 = await reader.read();
-      expect(chunk2.done).toBe(false);
-      expect(chunk2.value?.delta).toBe('world');
-
-      const chunk3 = await reader.read();
-      expect(chunk3.done).toBe(true);
-    });
-
-    it('should handle errors in ReadableStream', async () => {
-      const errorStream = {
+      const data = ['chunk1', 'chunk2', 'chunk3'];
+      const asyncIterable = {
         async *[Symbol.asyncIterator]() {
-          yield { delta: 'hello', content: 'hello' } as StreamChunk;
-          throw new Error('Stream error');
+          for (const item of data) {
+            yield item;
+          }
         },
       };
 
-      const readableStream = toReadableStream(errorStream);
+      const readableStream = toReadableStream(asyncIterable);
+      expect(readableStream).toBeInstanceOf(ReadableStream);
+
+      const reader = readableStream.getReader();
+      const chunks = [];
+
+      let result = await reader.read();
+      while (!result.done) {
+        chunks.push(result.value);
+        result = await reader.read();
+      }
+
+      expect(chunks).toEqual(data);
+    });
+
+    it('should handle cancellation properly', async () => {
+      const mockIterator = {
+        next: jest.fn().mockResolvedValue({ value: 'data', done: false }),
+        return: jest.fn().mockResolvedValue({ done: true }),
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+      };
+
+      const asyncIterable = {
+        [Symbol.asyncIterator]() {
+          return mockIterator;
+        },
+      };
+
+      const readableStream = toReadableStream(asyncIterable);
       const reader = readableStream.getReader();
 
-      const chunk1 = await reader.read();
-      expect(chunk1.done).toBe(false);
+      await reader.cancel();
+
+      expect(mockIterator.return).toHaveBeenCalled();
+    });
+
+    it('should handle iterator without return method', async () => {
+      const mockIterator = {
+        next: jest.fn().mockResolvedValue({ value: 'data', done: false }),
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+      };
+
+      const asyncIterable = {
+        [Symbol.asyncIterator]() {
+          return mockIterator;
+        },
+      };
+
+      const readableStream = toReadableStream(asyncIterable);
+      const reader = readableStream.getReader();
+
+      // Should not throw even if iterator.return is undefined
+      await expect(reader.cancel()).resolves.toBeUndefined();
+    });
+
+    it('should handle errors in the stream', async () => {
+      const error = new Error('Stream error');
+      const asyncIterable = {
+        async *[Symbol.asyncIterator]() {
+          yield 'chunk1';
+          throw error;
+        },
+      };
+
+      const readableStream = toReadableStream(asyncIterable);
+      const reader = readableStream.getReader();
+
+      const result1 = await reader.read();
+      expect(result1.value).toBe('chunk1');
 
       await expect(reader.read()).rejects.toThrow('Stream error');
     });
@@ -611,87 +663,119 @@ describe('Stream Utilities', () => {
     });
   });
 
-  describe('generate function', () => {
-    it('should call provider function and return stream result', async () => {
-      const mockStream = createMockStream([
-        { delta: 'Hello', content: 'Hello' },
-        { delta: ' world', content: 'Hello world', finishReason: 'stop' },
-      ]);
+  describe('generate', () => {
+    it('should call provider and collect stream result', async () => {
+      const mockProvider = jest.fn().mockReturnValue(
+        createMockStream([
+          { delta: 'Hello', content: 'Hello' },
+          { delta: ' world', content: 'Hello world', finishReason: 'stop' },
+        ])
+      );
 
-      const mockProvider = jest.fn().mockReturnValue(mockStream);
-
-      const messages = [userText('Hello')];
+      const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hi' }] }];
       const options = { temperature: 0.7 };
 
-      const result = await generate(mockProvider as any, messages, options);
+      const result = await generate(mockProvider as any, messages as any, options);
 
       expect(mockProvider).toHaveBeenCalledWith(messages, options);
       expect(result.content).toBe('Hello world');
       expect(result.finishReason).toBe('stop');
     });
 
-    it('should work with empty options', async () => {
-      const mockStream = createMockStream([
-        { delta: 'Hello', content: 'Hello', finishReason: 'stop' },
-      ]);
+    it('should work with default options', async () => {
+      const mockProvider = jest
+        .fn()
+        .mockReturnValue(
+          createMockStream([{ delta: 'Test', content: 'Test', finishReason: 'stop' }])
+        );
 
-      const mockProvider = jest.fn().mockReturnValue(mockStream);
+      const messages = [{ role: 'user', content: [{ type: 'text', text: 'Hi' }] }];
 
-      const messages = [userText('Hello')];
-
-      const result = await generate(mockProvider as any, messages);
+      const result = await generate(mockProvider as any, messages as any);
 
       expect(mockProvider).toHaveBeenCalledWith(messages, {});
-      expect(result.content).toBe('Hello');
+      expect(result.content).toBe('Test');
     });
   });
 
-  describe('executeToolCall function', () => {
-    it('should execute tool call and return stringified result', () => {
+  describe('executeToolCall', () => {
+    const mockServices = {
+      get_weather: jest.fn((location: string) => `Weather in ${location}`),
+      calculate: jest.fn((a: number, b: number) => a + b),
+      return_object: jest.fn(() => ({ result: 'success' })),
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should execute tool call with object arguments', () => {
       const toolCall = {
         id: 'call_123',
-        name: 'testService',
-        arguments: { param: 'value' },
+        name: 'get_weather',
+        arguments: { location: 'New York' },
       };
 
-      const services = {
-        testService: jest.fn().mockReturnValue({ result: 'success' }),
+      const result = executeToolCall(toolCall, mockServices);
+
+      expect(mockServices.get_weather).toHaveBeenCalledWith('New York');
+      expect(result).toBe('Weather in New York');
+    });
+
+    it('should execute tool call with multiple arguments', () => {
+      const toolCall = {
+        id: 'call_123',
+        name: 'calculate',
+        arguments: { a: 5, b: 3 },
       };
 
-      const result = executeToolCall(toolCall, services);
+      const result = executeToolCall(toolCall, mockServices);
 
-      expect(services.testService).toHaveBeenCalledWith('value');
+      expect(mockServices.calculate).toHaveBeenCalledWith(5, 3);
+      expect(result).toBe('8');
+    });
+
+    it('should stringify non-string results', () => {
+      const toolCall = {
+        id: 'call_123',
+        name: 'return_object',
+        arguments: {},
+      };
+
+      const result = executeToolCall(toolCall, mockServices);
+
+      expect(mockServices.return_object).toHaveBeenCalled();
       expect(result).toBe('{"result":"success"}');
     });
 
-    it('should handle service that returns primitive values', () => {
+    it('should throw error for unknown tool', () => {
       const toolCall = {
         id: 'call_123',
-        name: 'simpleService',
+        name: 'unknown_tool',
         arguments: {},
       };
 
-      const services = {
-        simpleService: jest.fn().mockReturnValue('simple result'),
-      };
-
-      const result = executeToolCall(toolCall, services);
-
-      expect(result).toBe('simple result');
+      expect(() => executeToolCall(toolCall, mockServices)).toThrow(
+        'No service found for tool: unknown_tool'
+      );
     });
 
-    it('should handle missing service', () => {
+    it('should handle tool execution errors', () => {
+      const errorService = {
+        failing_tool: jest.fn(() => {
+          throw new Error('Tool failed');
+        }),
+      };
+
       const toolCall = {
         id: 'call_123',
-        name: 'nonExistentService',
+        name: 'failing_tool',
         arguments: {},
       };
 
-      const services = {
-        testService: jest.fn().mockReturnValue('result'),
-      };
-
-      expect(() => executeToolCall(toolCall, services)).toThrow();
+      expect(() => executeToolCall(toolCall, errorService)).toThrow(
+        'Tool execution failed: Error: Tool failed'
+      );
     });
   });
 });

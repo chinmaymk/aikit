@@ -1,4 +1,4 @@
-import { createGoogleEmbeddings } from '@chinmaymk/aikit';
+import { createGoogleEmbeddings, googleEmbeddings } from '@chinmaymk/aikit';
 import nock from 'nock';
 
 describe('GoogleEmbeddingProvider', () => {
@@ -267,6 +267,34 @@ describe('GoogleEmbeddingProvider', () => {
 
       expect(scope.isDone()).toBe(true);
       expect(result.embeddings).toHaveLength(1);
+    });
+  });
+
+  describe('direct googleEmbeddings function', () => {
+    it('should generate embeddings using direct function call', async () => {
+      const mockResponse = {
+        embedding: {
+          values: [0.1, 0.2, 0.3, -0.1, -0.2],
+        },
+      };
+
+      const scope = nock('https://generativelanguage.googleapis.com/v1beta')
+        .post('/models/text-embedding-004:embedContent')
+        .query({ key: 'test-api-key' })
+        .reply(200, JSON.stringify(mockResponse));
+
+      const result = await googleEmbeddings(
+        {
+          apiKey: 'test-api-key',
+          model: 'text-embedding-004',
+          taskType: 'SEMANTIC_SIMILARITY',
+        },
+        ['Hello world']
+      );
+
+      expect(scope.isDone()).toBe(true);
+      expect(result.embeddings).toHaveLength(1);
+      expect(result.embeddings[0].values).toEqual([0.1, 0.2, 0.3, -0.1, -0.2]);
     });
   });
 });
