@@ -182,9 +182,47 @@ if (result.usage?.timeToFirstToken) {
 }
 ```
 
+### Total Generation Time
+
+`totalTime` measures the complete duration from request start to finish (in milliseconds):
+
+```ts
+const result = await collectStream(provider([userText('Generate a long story')], options));
+
+if (result.usage?.totalTime) {
+  console.log(`Total generation took ${result.usage.totalTime}ms`);
+
+  if (result.usage.timeToFirstToken) {
+    const generationTime = result.usage.totalTime - result.usage.timeToFirstToken;
+    console.log(`Time to generate remaining content: ${generationTime}ms`);
+  }
+}
+```
+
+### Complete Timing Example
+
+```ts
+const result = await collectStream(
+  openai([userText('Explain quantum computing in detail')], {
+    model: 'gpt-4o',
+    includeUsage: true,
+  })
+);
+
+console.log('Timing Analysis:');
+console.log(`⏱️ Time to first token: ${result.usage?.timeToFirstToken}ms`);
+console.log(`🏁 Total generation time: ${result.usage?.totalTime}ms`);
+
+if (result.usage?.timeToFirstToken && result.usage?.totalTime) {
+  const throughput = result.usage.outputTokens / (result.usage.totalTime / 1000);
+  console.log(`🚀 Throughput: ${throughput.toFixed(1)} tokens/second`);
+}
+```
+
 **Use cases for timing data:**
 
 - Performance monitoring and alerting
 - Model comparison for latency-sensitive applications
 - User experience optimization
 - SLA compliance tracking
+- Token throughput analysis

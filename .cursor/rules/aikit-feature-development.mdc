@@ -1,0 +1,107 @@
+---
+description: AIKit Feature Development Guide
+globs: 
+alwaysApply: false
+---
+# AIKit Feature Development Guide
+
+## Overview
+AIKit is a lightweight generation abstraction for OpenAI, Anthropic, and Google Gemini. When adding new features, follow this structured approach to ensure consistency across all providers.
+
+## File Structure
+- **Core Types**: [src/types.ts](mdc:src/types.ts) - All TypeScript interfaces and types
+- **Main Entry**: [src/index.ts](mdc:src/index.ts) - Public API exports
+- **Utilities**: [src/utils.ts](mdc:src/utils.ts) - Stream collection and helper functions
+- **Factory**: [src/factory.ts](mdc:src/factory.ts) - Provider creation functions
+- **Provider Utils**: [src/providers/utils.ts](mdc:src/providers/utils.ts) - Shared provider utilities including StreamState
+- **Tests**: [tests/](mdc:tests) - Comprehensive test suite
+- **Documentation**: [docs/guide/](mdc:docs/guide) - User-facing documentation
+
+## Feature Development Process
+
+### 1. Define Types First
+Start by adding your feature's types to [src/types.ts](mdc:src/types.ts):
+- Add fields to existing interfaces (e.g., `GenerationUsage`, `StreamChunk`)
+- Create new interfaces if needed
+- Include comprehensive JSDoc comments with examples
+- Follow the humorous but professional tone of existing comments
+
+### 2. Implement in Core Utilities
+If your feature affects stream processing:
+- Update [src/providers/utils.ts](mdc:src/providers/utils.ts) `StreamState` class
+- Modify the `createChunk` method to include your feature
+- Add timing/tracking logic as needed
+
+### 3. Update All Providers
+AIKit supports multiple providers - ensure your feature works across all:
+
+#### OpenAI Providers
+- [src/providers/openai_util.ts](mdc:src/providers/openai_util.ts) - Core OpenAI utilities
+- [src/providers/openai_completions.ts](mdc:src/providers/openai_completions.ts) - Chat completions
+- [src/providers/openai_responses.ts](mdc:src/providers/openai_responses.ts) - Responses API
+
+#### Anthropic Provider
+- [src/providers/anthropic.ts](mdc:src/providers/anthropic.ts) - Full Anthropic implementation
+
+#### Google Provider  
+- [src/providers/google.ts](mdc:src/providers/google.ts) - Gemini implementation
+
+### 4. Write Comprehensive Tests
+Create tests in [tests/providers/](mdc:tests/providers):
+- Add a dedicated test file for your feature (e.g., `timing.test.ts`)
+- Update existing provider tests to expect new fields
+- Use `expect.any(Number)` or `expect.objectContaining()` for dynamic values
+- Test edge cases and error conditions
+
+### 5. Update Documentation
+Add examples to relevant documentation in [docs/guide/](mdc:docs/guide):
+- Update existing guides (e.g., [docs/guide/usage-tracking.md](mdc:docs/guide/usage-tracking.md))
+- Include code examples showing the feature in action
+- Document typical value ranges and use cases
+
+### 6. Build and Test
+Always run the full build process:
+```bash
+npm run build
+```
+This runs: format → lint → typecheck → format:check → test:coverage → compile
+
+## Development Principles
+
+### Consistency Across Providers
+- All providers should support the feature when possible
+- Use the shared `StreamState` class for common functionality
+- Maintain the same API shape across providers
+
+### Backward Compatibility
+- Add new fields as optional (`field?: type`)
+- Preserve existing usage patterns
+- Don't break existing tests unless necessary
+
+### Code Quality Standards
+- Follow DRY principles - extract common logic to utilities
+- Write concise, readable code
+- Use TypeScript strictly - avoid `any` types
+- Include comprehensive error handling
+
+### Testing Requirements
+- Maintain >96% test coverage
+- Test all providers individually
+- Mock external API calls with realistic responses
+- Include edge cases and error scenarios
+
+## Example Feature Implementation
+Reference the recent `totalTime` feature addition:
+1. Added `totalTime?: number` to `GenerationUsage` interface
+2. Updated `StreamState.createChunk()` to calculate and include timing
+3. Modified Google provider's `processChunk()` for timing calculation
+4. Created [tests/providers/timing.test.ts](mdc:tests/providers/timing.test.ts)
+5. Updated [docs/guide/usage-tracking.md](mdc:docs/guide/usage-tracking.md)
+6. Fixed failing tests to expect timing data
+
+## Common Gotchas
+- OpenAI requires `includeUsage: true` for usage data
+- Anthropic uses `StreamState.createChunk()` for finish chunks
+- Google has custom timing logic in `processChunk()`
+- Always update test expectations when adding new fields
+- Provider-specific features should degrade gracefully on other providers

@@ -37,7 +37,21 @@ async function demonstrateOpenAIUsageTracking() {
 
   console.log('Response:', result.content);
   console.log('Usage:', result.usage);
-  // Output includes: inputTokens, outputTokens, totalTokens, timeToFirstToken
+  // Output includes: inputTokens, outputTokens, totalTokens, timeToFirstToken, totalTime
+
+  // Demonstrate timing analysis
+  if (result.usage?.totalTime && result.usage?.timeToFirstToken) {
+    const generationTime = result.usage.totalTime - result.usage.timeToFirstToken;
+    console.log(`⏱️  Timing Analysis:`);
+    console.log(`   Time to first token: ${result.usage.timeToFirstToken}ms`);
+    console.log(`   Total generation time: ${result.usage.totalTime}ms`);
+    console.log(`   Time to generate remaining content: ${generationTime}ms`);
+
+    if (result.usage.outputTokens) {
+      const throughput = result.usage.outputTokens / (result.usage.totalTime / 1000);
+      console.log(`🚀 Throughput: ${throughput.toFixed(1)} tokens/second`);
+    }
+  }
   console.log();
 
   // Reasoning model usage (more expensive)

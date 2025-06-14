@@ -125,6 +125,10 @@ describe('AnthropicProvider', () => {
         delta: '',
         finishReason: 'stop',
         toolCalls: undefined,
+        usage: expect.objectContaining({
+          timeToFirstToken: expect.any(Number),
+          totalTime: expect.any(Number),
+        }),
       });
     });
 
@@ -153,6 +157,10 @@ describe('AnthropicProvider', () => {
         delta: '',
         finishReason: 'stop',
         toolCalls: undefined,
+        usage: expect.objectContaining({
+          timeToFirstToken: expect.any(Number),
+          totalTime: expect.any(Number),
+        }),
       });
     });
 
@@ -180,6 +188,10 @@ describe('AnthropicProvider', () => {
         delta: '',
         finishReason: 'stop',
         toolCalls: undefined,
+        usage: expect.objectContaining({
+          timeToFirstToken: expect.any(Number),
+          totalTime: expect.any(Number),
+        }),
       });
     });
 
@@ -276,6 +288,9 @@ describe('AnthropicProvider', () => {
             arguments: { location: 'SF' },
           },
         ],
+        usage: expect.objectContaining({
+          totalTime: expect.any(Number),
+        }),
       });
     });
 
@@ -431,6 +446,10 @@ describe('AnthropicProvider', () => {
         delta: '',
         finishReason: 'stop',
         toolCalls: undefined,
+        usage: expect.objectContaining({
+          timeToFirstToken: expect.any(Number),
+          totalTime: expect.any(Number),
+        }),
       });
     });
 
@@ -626,6 +645,10 @@ describe('AnthropicProvider', () => {
         delta: '',
         finishReason: 'stop',
         toolCalls: undefined,
+        usage: expect.objectContaining({
+          timeToFirstToken: expect.any(Number),
+          totalTime: expect.any(Number),
+        }),
       });
     });
 

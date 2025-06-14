@@ -178,11 +178,13 @@ function processChunk(
 
   const finishReason = candidate.finishReason ? mapFinishReason(candidate.finishReason) : undefined;
 
-  // Include timeToFirstToken in usage when stream is completing
-  if (finishReason && firstTokenTime !== undefined && usage) {
+  // Include timing information in usage when stream is completing
+  if (finishReason && usage) {
+    const totalTime = Date.now() - startTime;
     usage = {
       ...usage,
-      timeToFirstToken: firstTokenTime - startTime,
+      ...(firstTokenTime != null && { timeToFirstToken: firstTokenTime - startTime }),
+      totalTime,
     };
   }
 

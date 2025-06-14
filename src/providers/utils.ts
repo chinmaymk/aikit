@@ -271,12 +271,16 @@ export class StreamState {
     const toolCalls = finishReason ? this.finalizeToolCalls() : undefined;
     const reasoning = finishReason ? this.getFinalReasoning() : undefined;
 
-    // Include timeToFirstToken in usage when stream is completing
+    // Include timing information in usage when stream is completing
     let enhancedUsage = usage;
-    if (finishReason && this.getTimeToFirstToken() !== undefined) {
+    if (finishReason) {
+      const timeToFirstToken = this.getTimeToFirstToken();
+      const totalTime = Date.now() - this.startTime;
+
       enhancedUsage = {
         ...usage,
-        timeToFirstToken: this.getTimeToFirstToken(),
+        ...(timeToFirstToken != null && { timeToFirstToken }),
+        totalTime,
       };
     }
 

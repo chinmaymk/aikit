@@ -120,6 +120,8 @@ export interface GenerationUsage {
   cacheTokens?: number;
   /** Time to first token in milliseconds. How long you waited for the AI to start thinking out loud. */
   timeToFirstToken?: number;
+  /** Total time for the entire generation in milliseconds. How long you waited for the AI to finish its masterpiece. */
+  totalTime?: number;
 }
 
 /**

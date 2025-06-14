@@ -324,20 +324,11 @@ function handleMessageDelta(
   if (!event.delta.stop_reason) return null;
 
   const finishReason = mapFinishReason(event.delta.stop_reason);
-  const toolCalls = state.finalizeToolCalls();
-  const reasoning = state.getFinalReasoning();
 
   // Extract usage information from the event
   const usage = extractUsageFromAnthropicEvent(event);
 
-  return MessageTransformer.createStreamChunk(
-    state.content,
-    '',
-    toolCalls,
-    finishReason,
-    reasoning,
-    usage
-  );
+  return state.createChunk('', finishReason, usage);
 }
 
 function transformMessages(messages: Message[]): {

@@ -301,6 +301,7 @@ describe('OpenAIUtil Branch Coverage Tests', () => {
         totalTokens: 15,
         reasoningTokens: 3,
         cacheTokens: 2,
+        totalTime: expect.any(Number),
       });
     });
   });
