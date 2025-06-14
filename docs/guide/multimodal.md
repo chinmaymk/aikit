@@ -44,7 +44,7 @@ const message = userImage(
 );
 
 // Generate response
-const result = await provider.generate([message], {
+const result = await provider([message], {
   model: 'gpt-4o',
 });
 
@@ -88,7 +88,7 @@ const message = userContent([
   imageContent(imageData),
 ]);
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 ```
 
@@ -110,7 +110,7 @@ const message = userMultipleImages(
   [beforeImage, afterImage, referenceImage]
 );
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 ```
 
@@ -133,21 +133,21 @@ const messages = conversation()
 // First question with image
 messages.push(userImage('What do you see in this image?', imageData));
 
-const response1 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 });
+const response1 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 200 });
 console.log('AI:', response1.content);
 
 // Continue conversation - AI remembers the image
 messages.push(assistantText(response1.content));
 messages.push(userText('What emotions might this evoke in viewers?'));
 
-const response2 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 150 });
+const response2 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 150 });
 console.log('AI:', response2.content);
 
 // Ask about specific details
 messages.push(assistantText(response2.content));
 messages.push(userText('Can you identify any text or numbers in the image?'));
 
-const response3 = await provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
+const response3 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
 console.log('AI:', response3.content);
 ```
 
@@ -184,7 +184,7 @@ function loadImageAsBase64(filePath: string): string {
 const imageData = loadImageAsBase64('./screenshot.png');
 const message = userImage('What does this screenshot show?', imageData);
 
-const result = await provider.generate([message], { model: 'gpt-4o' });
+const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 ```
 
@@ -205,58 +205,11 @@ const message = userImage(
 
 console.log('Streaming detailed description:');
 await printStream(
-  provider.generate([message], {
+  provider([message], {
     model: 'gpt-4o',
     maxOutputTokens: 500,
     temperature: 0.8,
   })
-);
-```
-
-## Common Use Cases
-
-### Document Analysis
-
-```typescript
-const message = userImage(
-  'Extract all the text from this document and format it as markdown.',
-  documentImageData
-);
-```
-
-### Chart and Graph Reading
-
-```typescript
-const message = userImage(
-  'What does this chart show? Provide specific numbers and trends.',
-  chartImageData
-);
-```
-
-### Code Screenshot Analysis
-
-```typescript
-const message = userImage(
-  "What does this code do? Are there any bugs or improvements you'd suggest?",
-  codeScreenshotData
-);
-```
-
-### Design Feedback
-
-```typescript
-const message = userImage(
-  'Critique this UI design. What works well? What could be improved?',
-  designMockupData
-);
-```
-
-### Photo Description for Accessibility
-
-```typescript
-const message = userImage(
-  'Describe this photo for someone who cannot see it. Be detailed but concise.',
-  photoData
 );
 ```
 
@@ -302,7 +255,7 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 
 try {
   const message = userImage('What is this?', invalidImageData);
-  const result = await provider.generate([message], { model: 'gpt-4o' });
+  const result = await provider([message], { model: 'gpt-4o' });
   console.log(result.content);
 } catch (error) {
   if (error.message.includes('invalid image')) {

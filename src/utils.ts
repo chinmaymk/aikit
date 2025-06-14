@@ -260,7 +260,7 @@ export const createTool = (
  * @group Stream Helpers
  * @example
  * ```typescript
- * const result = await collectDeltas(provider.generate(messages, options));
+ * const result = await collectDeltas(provider(messages, options));
  * console.log(result.content); // Full generated text
  * ```
  */
@@ -303,7 +303,7 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
  * @group Stream Helpers
  * @example
  * ```typescript
- * const result = await collectStream(provider.generate(messages, options));
+ * const result = await collectStream(provider(messages, options));
  * console.log(result.content); // Full generated text
  * console.log(result.reasoning); // Full reasoning content if available
  * ```

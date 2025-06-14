@@ -23,7 +23,7 @@ AIKit is a minimal TypeScript wrapper that gives you unified access to the gener
 
 **Use AIKit for:** Generation & streaming, multimodal prompts (text + images), tool/function calling, and embeddings.
 
-_Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
+Use the official provider SDKs for everything else (fine-tuning, file management, etc.).
 
 ## Features at a Glance
 
@@ -300,4 +300,4 @@ Ready to dive deeper? Here's where to go:
 
 ---
 
-_Built with ❤️ for developers who want AI integration without the complexity tax._
+Built with ❤️ for developers who want AI integration without the complexity tax.

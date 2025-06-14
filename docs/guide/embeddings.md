@@ -12,11 +12,11 @@ const embeddings = createOpenAIEmbeddings({
 });
 
 // Single text → vector
-const result = await embeddings.embed(['Hello, world!']);
+const result = await embeddings(['Hello, world!']);
 console.log(result.embeddings[0].values); // [0.123, -0.456, 0.789, ...]
 
 // Multiple texts → multiple vectors
-const results = await embeddings.embed([
+const results = await embeddings([
   'I love TypeScript',
   'Python is cool too',
   'The weather is nice',
@@ -143,21 +143,6 @@ const result = await embeddings(['Hello'], {
 });
 ```
 
-### Google Task Optimization
-
-```typescript
-// For documents you want to search
-await embeddings(['Important document'], {
-  taskType: 'RETRIEVAL_DOCUMENT',
-  title: 'The Document Title',
-});
-
-// For search queries
-await embeddings(['find something'], {
-  taskType: 'RETRIEVAL_QUERY',
-});
-```
-
 ## Universal Factory
 
 Because consistency is nice:
@@ -209,25 +194,3 @@ interface EmbeddingResponse {
 3. **Choose dimensions wisely**: Bigger isn't always better
 4. **Preprocess text**: Clean up before embedding
 5. **Pick the right model**: Small for speed, large for accuracy
-
-## Migration
-
-### From OpenAI SDK
-
-```typescript
-// Before
-const openai = new OpenAI();
-const response = await openai.embeddings.create({
-  model: 'text-embedding-3-small',
-  input: 'Hello',
-});
-
-// After
-const embeddings = createOpenAIEmbeddings({
-  apiKey: process.env.OPENAI_API_KEY!,
-  model: 'text-embedding-3-small',
-});
-const response = await embeddings(['Hello']);
-```
-
-Much cleaner, right?

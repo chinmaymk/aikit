@@ -68,7 +68,7 @@ const toolServices = {
 };
 
 // Use the tool
-const result = await provider.generate([userText('What is 15 multiplied by 7?')], {
+const result = await provider([userText('What is 15 multiplied by 7?')], {
   model: 'gpt-4o',
   tools: [calculatorTool],
 });
@@ -160,7 +160,7 @@ const messages = conversation()
 console.log("User: What's the weather like in Tokyo?");
 
 // Generate with tools
-const result = await provider.generate(messages, {
+const result = await provider(messages, {
   model: 'gpt-4o',
   tools: [weatherTool],
   maxOutputTokens: 300,
@@ -186,7 +186,7 @@ if (result.toolCalls && result.toolCalls.length > 0) {
   }
 
   // Generate final response with tool results
-  const finalResult = await provider.generate(messages, {
+  const finalResult = await provider(messages, {
     model: 'gpt-4o',
     maxOutputTokens: 200,
   });
@@ -253,7 +253,7 @@ const toolServices = {
 };
 
 // The AI can now use any of these tools
-const result = await provider.generate(
+const result = await provider(
   [userText("What's the weather in Tokyo, what time is it there, and what's 15% of 2000?")],
   {
     model: 'gpt-4o',
@@ -292,21 +292,21 @@ const calculatorTool = createTool(
 );
 
 // Force tool use
-const forcedResult = await provider.generate([userText('What is 2 + 2?')], {
+const forcedResult = await provider([userText('What is 2 + 2?')], {
   model: 'gpt-4o',
   tools: [calculatorTool],
   toolChoice: 'required', // Force the AI to use a tool
 });
 
 // Prefer tool use but allow text-only response
-const preferredResult = await provider.generate([userText('What is 2 + 2?')], {
+const preferredResult = await provider([userText('What is 2 + 2?')], {
   model: 'gpt-4o',
   tools: [calculatorTool],
   toolChoice: 'auto', // Let AI decide (default)
 });
 
 // Disable tool use
-const noToolsResult = await provider.generate([userText('What is 2 + 2?')], {
+const noToolsResult = await provider([userText('What is 2 + 2?')], {
   model: 'gpt-4o',
   tools: [calculatorTool],
   toolChoice: 'none', // Disable tools for this request
@@ -356,7 +356,7 @@ const toolServices = {
   },
 };
 
-const result = await provider.generate([userText('Show me all users from the database')], {
+const result = await provider([userText('Show me all users from the database')], {
   model: 'gpt-4o',
   tools: [databaseTool],
 });
@@ -407,10 +407,10 @@ const toolServices = {
 };
 
 // Stream the response
-const stream = provider.generate(
-  [userText("What's the weather in Sydney and should I go for a walk?")],
-  { model: 'gpt-4o', tools: [weatherTool] }
-);
+const stream = provider([userText("What's the weather in Sydney and should I go for a walk?")], {
+  model: 'gpt-4o',
+  tools: [weatherTool],
+});
 
 await processStream(stream, {
   onDelta: delta => process.stdout.write(delta),
@@ -424,51 +424,6 @@ await processStream(stream, {
 });
 ```
 
-## Real-World Tool Examples
-
-### File Operations
-
-```typescript
-const fileOperationsTool = createTool('file_operations', 'Read, write, or list files', {
-  type: 'object',
-  properties: {
-    operation: { type: 'string', enum: ['read', 'write', 'list'] },
-    path: { type: 'string', description: 'File or directory path' },
-    content: { type: 'string', description: 'Content to write (for write operation)' },
-  },
-  required: ['operation', 'path'],
-});
-```
-
-### API Calls
-
-```typescript
-const apiCallTool = createTool('api_call', 'Make HTTP requests to external APIs', {
-  type: 'object',
-  properties: {
-    url: { type: 'string', description: 'API endpoint URL' },
-    method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'DELETE'] },
-    headers: { type: 'object', description: 'Request headers' },
-    body: { type: 'string', description: 'Request body for POST/PUT' },
-  },
-  required: ['url', 'method'],
-});
-```
-
-### Database Queries
-
-```typescript
-const databaseTool = createTool('database_query', 'Execute database queries', {
-  type: 'object',
-  properties: {
-    table: { type: 'string', description: 'Table name' },
-    operation: { type: 'string', enum: ['select', 'insert', 'update', 'delete'] },
-    conditions: { type: 'object', description: 'Query conditions' },
-  },
-  required: ['table', 'operation'],
-});
-```
-
 ## Best Practices
 
 1. **Keep tools focused** - Each tool should do one thing well
@@ -477,58 +432,6 @@ const databaseTool = createTool('database_query', 'Execute database queries', {
 4. **Provide good descriptions** - Help the AI understand when to use each tool
 5. **Return structured data** - JSON is your friend
 6. **Be security conscious** - Validate and sanitize all tool inputs
-
-## Common Patterns
-
-### Tool Result Validation
-
-```typescript
-function validateToolResult(result: string) {
-  try {
-    const parsed = JSON.parse(result);
-    if (parsed.error) {
-      throw new Error(parsed.error);
-    }
-    return parsed;
-  } catch (error) {
-    throw new Error(`Invalid tool result: ${error.message}`);
-  }
-}
-```
-
-### Async Tool Services
-
-```typescript
-const toolServices = {
-  async fetch_data(url: string) {
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-      return JSON.stringify(data);
-    } catch (error) {
-      return JSON.stringify({ error: error.message });
-    }
-  },
-};
-```
-
-### Tool Result Caching
-
-```typescript
-const toolCache = new Map();
-
-const toolServices = {
-  expensive_operation: (input: string) => {
-    if (toolCache.has(input)) {
-      return toolCache.get(input);
-    }
-
-    const result = performExpensiveOperation(input);
-    toolCache.set(input, result);
-    return result;
-  },
-};
-```
 
 ## What's Next?
 

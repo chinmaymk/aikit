@@ -10,12 +10,12 @@ Single-shot AI interactions are like speed dating—quick, but shallow. Real con
 
 Every conversation has a beginning. Let's start simple and build up:
 
-````typescript
+```typescript
 import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Build initial conversation
@@ -27,9 +27,9 @@ const messages = conversation()
 console.log('User: What is the difference between let and const?');
 
 // First exchange
-const response1 = await provider.generate(messages, {
+const response1 = await provider(messages, {
   model: 'gpt-4o',
-  maxOutputTokens: 200
+  maxOutputTokens: 200,
 });
 console.log('AI:', response1.content);
 
@@ -39,9 +39,9 @@ messages.push(userText('Can you show me a practical example?'));
 
 console.log('\nUser: Can you show me a practical example?');
 
-const response2 = await provider.generate(messages, {
+const response2 = await provider(messages, {
   model: 'gpt-4o',
-  maxOutputTokens: 250
+  maxOutputTokens: 250,
 });
 console.log('AI:', response2.content);
 
@@ -51,28 +51,26 @@ messages.push(userText('What happens if I try to reassign a const variable?'));
 
 console.log('\nUser: What happens if I try to reassign a const?');
 
-const response3 = await provider.generate(messages, {
+const response3 = await provider(messages, {
   model: 'gpt-4o',
-  maxOutputTokens: 150
+  maxOutputTokens: 150,
 });
 console.log('AI:', response3.content);
+```
 
 > **💡 Helper Functions are Optional**
 > The `conversation()` builder and message helpers are just for convenience. You can build conversations manually:
->
-> ```typescript
-> // Using helpers (recommended)
-> const messages = conversation()
->   .system('You are helpful')
->   .user('Hello')
->   .build();
->
-> // Manual construction (also valid)
-> const messages = [
->   { role: 'system', content: [{ type: 'text', text: 'You are helpful' }] },
->   { role: 'user', content: [{ type: 'text', text: 'Hello' }] }
-> ];
-> ```
+
+```typescript
+// Using helpers (recommended)
+const messages = conversation().system('You are helpful').user('Hello').build();
+
+// Manual construction (also valid)
+const messages = [
+  { role: 'system', content: [{ type: 'text', text: 'You are helpful' }] },
+  { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+];
+```
 
 ## Context Preservation
 
@@ -93,7 +91,7 @@ const messages = conversation()
 
 console.log("User: Hi! My name is Sarah and I'm working on a React project.");
 
-const response1 = await provider.generate(messages, { model: 'gpt-4o' });
+const response1 = await provider(messages, { model: 'gpt-4o' });
 console.log('AI:', response1.content);
 
 // Test context retention
@@ -102,7 +100,7 @@ messages.push(userText("I'm having trouble with state management. What would you
 
 console.log("\nUser: I'm having trouble with state management. What would you recommend?");
 
-const response2 = await provider.generate(messages, { model: 'gpt-4o' });
+const response2 = await provider(messages, { model: 'gpt-4o' });
 console.log('AI:', response2.content);
 
 // Check if AI remembers personal details
@@ -111,9 +109,9 @@ messages.push(userText('What was my name again, and what technology am I working
 
 console.log('\nUser: What was my name and what technology am I working with?');
 
-const response3 = await provider.generate(messages, { model: 'gpt-4o' });
+const response3 = await provider(messages, { model: 'gpt-4o' });
 console.log('AI:', response3.content);
-````
+```
 
 ## Memory Management
 
@@ -155,7 +153,7 @@ class ConversationManager {
   async chat(provider: any, userMessage: string) {
     this.addMessage(userText(userMessage));
 
-    const response = await provider.generate(this.getMessages(), {
+    const response = await provider(this.getMessages(), {
       model: 'gpt-4o',
       maxOutputTokens: 200,
     });
@@ -250,7 +248,7 @@ class InterviewBot {
 
     // Generate a contextual follow-up comment
     this.messages.push(userText(`My answer: ${answer}`));
-    const response = await provider.generate(
+    const response = await provider(
       [...this.messages, assistantText("Great! That's helpful to know.")],
       { model: 'gpt-4o', maxOutputTokens: 100 }
     );
@@ -323,7 +321,7 @@ class MultiTopicChat {
 
     messages.push(userText(message));
 
-    const response = await provider.generate(messages, {
+    const response = await provider(messages, {
       model: 'gpt-4o',
       maxOutputTokens: 200,
     });
@@ -400,7 +398,7 @@ class PersonalityBot {
   async chat(provider: any, message: string) {
     this.messages.push(userText(message));
 
-    const response = await provider.generate(this.messages, {
+    const response = await provider(this.messages, {
       model: 'gpt-4o',
       maxOutputTokens: 200,
       temperature: 0.8, // Higher temperature for more personality
@@ -455,71 +453,6 @@ console.log('AI:', response);
 4. **Handle context switching gracefully** - Clear transitions between topics
 5. **Maintain consistency** - Keep personality and context coherent
 6. **Plan for interruptions** - Handle conversation breaks and resumptions
-
-## Common Patterns
-
-### Conversation State Persistence
-
-```typescript
-class PersistentChat {
-  async saveConversation(conversationId: string, messages: any[]) {
-    // Save to database, file, or localStorage
-    localStorage.setItem(`chat_${conversationId}`, JSON.stringify(messages));
-  }
-
-  async loadConversation(conversationId: string): Promise<any[]> {
-    const saved = localStorage.getItem(`chat_${conversationId}`);
-    return saved ? JSON.parse(saved) : [];
-  }
-}
-```
-
-### Context Summarization
-
-```typescript
-async function summarizeContext(provider: any, messages: any[]) {
-  const summaryPrompt = [
-    userText(
-      'Please summarize the key points from this conversation:\n' +
-        messages.map(m => `${m.role}: ${m.content}`).join('\n')
-    ),
-  ];
-
-  const summary = await provider.generate(summaryPrompt, {
-    model: 'gpt-4o',
-    maxOutputTokens: 200,
-  });
-
-  return summary.content;
-}
-```
-
-### Conversation Analytics
-
-```typescript
-class ConversationAnalytics {
-  analyzeConversation(messages: any[]) {
-    return {
-      totalMessages: messages.length,
-      userMessages: messages.filter(m => m.role === 'user').length,
-      assistantMessages: messages.filter(m => m.role === 'assistant').length,
-      averageMessageLength:
-        messages.reduce((sum, m) => sum + m.content.length, 0) / messages.length,
-      topics: this.extractTopics(messages),
-    };
-  }
-
-  private extractTopics(messages: any[]) {
-    // Simple topic extraction logic
-    const allText = messages
-      .map(m => m.content)
-      .join(' ')
-      .toLowerCase();
-    const keywords = ['javascript', 'python', 'react', 'api', 'database'];
-    return keywords.filter(keyword => allText.includes(keyword));
-  }
-}
-```
 
 ## What's Next?
 
