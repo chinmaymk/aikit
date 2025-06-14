@@ -14,6 +14,14 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  coverageThreshold: {
+    global: {
+      lines: 95,
+      functions: 90,
+      branches: 80,
+      statements: 90,
+    },
+  },
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 10000,
   reporters: [

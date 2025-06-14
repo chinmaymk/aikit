@@ -94,7 +94,7 @@ const dateTimeService = (...args: unknown[]) => {
       timezone,
       timestamp: now.getTime(),
     });
-  } catch (error) {
+  } catch {
     return JSON.stringify({ error: `Invalid timezone: ${timezone}` });
   }
 };
@@ -375,7 +375,7 @@ async function toolChoiceExample() {
       const result = executeToolCall(toolCall, toolServices);
       console.log('Tool result:', JSON.parse(result));
     }
-  } catch (error) {
+  } catch {
     console.log('Error with required tool choice (some providers may not support this)');
   }
 

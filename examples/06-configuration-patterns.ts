@@ -261,7 +261,7 @@ async function pattern8_MultiProviderConsistency() {
     try {
       const result = await generate(provider, question);
       console.log(`${name}: ${result.content.substring(0, 80)}...\n`);
-    } catch (error) {
+    } catch {
       console.log(`${name}: Error\n`);
     }
   }
