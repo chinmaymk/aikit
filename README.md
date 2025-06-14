@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml/badge.svg)](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/chinmaymk/aikit/graph/badge.svg)](https://codecov.io/gh/chinmaymk/aikit)
+[![npm version](https://badge.fury.io/js/@chinmaymk%2Faikit.svg)](https://www.npmjs.com/package/@chinmaymk/aikit)
+[![npm downloads](https://img.shields.io/npm/dm/@chinmaymk/aikit.svg)](https://www.npmjs.com/package/@chinmaymk/aikit)
 
 > **AIKit** is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 

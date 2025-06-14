@@ -6,6 +6,8 @@ So you want to pilot some LLMs? Good call. AIKit gets you from zero to **"Hello,
 
 First things first, let's get this thing installed. Open your terminal and chant the sacred words:
 
+[![npm version](https://badge.fury.io/js/@chinmaymk%2Faikit.svg)](https://www.npmjs.com/package/@chinmaymk/aikit)
+
 ::: code-group
 
 ```bash [npm]

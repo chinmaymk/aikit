@@ -12,6 +12,9 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/chinmaymk/aikit
+    - theme: alt
+      text: View on npm
+      link: https://www.npmjs.com/package/@chinmaymk/aikit
 ---
 
 ## Why AIKit?
