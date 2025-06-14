@@ -40,6 +40,38 @@ jobs:
         run: npm run build
 
       - name: Publish to NPM
-        run: npm publish
+        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Archive dist artifacts
+        run: |
+          cd dist
+          tar -czf ../aikit-${{ github.ref_name }}.tar.gz .
+          cd ..
+          zip -r aikit-${{ github.ref_name }}.zip dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Release ${{ github.ref_name }}
+            
+            This release has been published to npm as `@chinmaymk/aikit@${{ github.ref_name }}`
+            
+            ### Installation
+            ```bash
+            npm install @chinmaymk/aikit@${{ github.ref_name }}
+            ```
+            
+            ### What's included
+            - Compiled JavaScript and TypeScript definitions
+            - Source maps for debugging
+            - All provider implementations
+          files: |
+            aikit-${{ github.ref_name }}.tar.gz
+            aikit-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
