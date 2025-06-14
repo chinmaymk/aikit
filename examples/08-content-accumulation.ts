@@ -65,7 +65,7 @@ async function step2_CollectDeltasVsCollectStream() {
   console.log(`Result: "${resultDeltas.content}"`);
   console.log(`Length: ${resultDeltas.content.length} characters\n`);
 
-  // Test with collectStream  
+  // Test with collectStream
   console.log('Using collectStream:');
   const stream2 = provider(messages, {
     model: getModelName(type!),
@@ -79,7 +79,7 @@ async function step2_CollectDeltasVsCollectStream() {
 
   console.log('Note: Both functions should give identical results for properly');
   console.log('implemented providers, but collectStream is more reliable as it');
-  console.log('uses the provider\'s own content accumulation.\n');
+  console.log("uses the provider's own content accumulation.\n");
 }
 
 async function step3_ReasoningAccumulation() {
@@ -95,12 +95,10 @@ async function step3_ReasoningAccumulation() {
     return;
   }
 
-  const messages = [
-    userText('Solve this step by step: What is 15 × 23? Show your reasoning.'),
-  ];
+  const messages = [userText('Solve this step by step: What is 15 × 23? Show your reasoning.')];
 
   console.log('Testing reasoning accumulation with o1 model:');
-  
+
   try {
     const stream = provider(messages, {
       model: 'o1-mini', // Use o1 model for reasoning
@@ -109,17 +107,18 @@ async function step3_ReasoningAccumulation() {
 
     let hasReasoning = false;
     const result = await processStream(stream, {
-      onReasoning: (reasoning) => {
+      onReasoning: reasoning => {
         hasReasoning = true;
         console.log(`Reasoning update (${reasoning.content.length} chars):`);
         console.log(`  Delta: "${reasoning.delta}"`);
-        const preview = reasoning.content.length > 100 
-          ? reasoning.content.substring(0, 100) + '...'
-          : reasoning.content;
+        const preview =
+          reasoning.content.length > 100
+            ? reasoning.content.substring(0, 100) + '...'
+            : reasoning.content;
         console.log(`  Full content: "${preview}"`);
         console.log();
       },
-      onDelta: (delta) => {
+      onDelta: delta => {
         process.stdout.write(`Content: ${delta}`);
       },
     });
@@ -129,9 +128,9 @@ async function step3_ReasoningAccumulation() {
       console.log('Final reasoning length:', result.reasoning?.length || 0, 'characters');
     } else {
       console.log('No reasoning content detected. This might be because:');
-      console.log('1. The model doesn\'t support reasoning');
+      console.log("1. The model doesn't support reasoning");
       console.log('2. Reasoning is not included in the response');
-      console.log('3. The request didn\'t trigger reasoning mode');
+      console.log("3. The request didn't trigger reasoning mode");
     }
     console.log();
   } catch (error: any) {
@@ -183,10 +182,10 @@ async function step4_StreamProcessingPatterns() {
 
   let finalContent = '';
   await processStream(stream3, {
-    onContent: (content) => {
+    onContent: content => {
       finalContent = content; // Track accumulated content
     },
-    onDelta: (delta) => {
+    onDelta: delta => {
       process.stdout.write(delta);
     },
   });
@@ -212,4 +211,4 @@ if (require.main === module) {
   main();
 }
 
-export { main }; 
+export { main };

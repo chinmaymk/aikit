@@ -357,21 +357,21 @@ describe('Stream Utilities', () => {
 
     it('should handle reasoning content correctly', async () => {
       const stream = createMockStream([
-        { 
-          delta: 'Hello', 
+        {
+          delta: 'Hello',
           content: 'Hello',
-          reasoning: { delta: 'Let me think...', content: 'Let me think...' }
+          reasoning: { delta: 'Let me think...', content: 'Let me think...' },
         },
-        { 
-          delta: ' world', 
+        {
+          delta: ' world',
           content: 'Hello world',
-          reasoning: { delta: ' about this.', content: 'Let me think... about this.' }
+          reasoning: { delta: ' about this.', content: 'Let me think... about this.' },
         },
-        { 
-          delta: '!', 
+        {
+          delta: '!',
           content: 'Hello world!',
           reasoning: { delta: ' Done!', content: 'Let me think... about this. Done!' },
-          finishReason: 'stop' 
+          finishReason: 'stop',
         },
       ]);
 
@@ -412,15 +412,17 @@ describe('Stream Utilities', () => {
       ]);
 
       const resultDeltas = await collectDeltas(stream);
-      const resultStream = await collectStream(createMockStream([
-        { delta: 'Hello', content: 'Hello' },
-        { delta: ' world', content: ' world' },
-        { delta: '!', content: ' world!', finishReason: 'stop' },
-      ]));
+      const resultStream = await collectStream(
+        createMockStream([
+          { delta: 'Hello', content: 'Hello' },
+          { delta: ' world', content: ' world' },
+          { delta: '!', content: ' world!', finishReason: 'stop' },
+        ])
+      );
 
       // collectDeltas accumulates deltas: "Hello world!"
       expect(resultDeltas.content).toBe('Hello world!');
-      
+
       // collectStream uses last accumulated content: " world!"
       expect(resultStream.content).toBe(' world!');
     });
@@ -452,23 +454,23 @@ describe('Stream Utilities', () => {
 
     it('should handle reasoning content correctly', async () => {
       const onReasoning = jest.fn();
-      
+
       const stream = createMockStream([
-        { 
-          delta: 'Hello', 
+        {
+          delta: 'Hello',
           content: 'Hello',
-          reasoning: { delta: 'Think...', content: 'Think...' }
+          reasoning: { delta: 'Think...', content: 'Think...' },
         },
-        { 
-          delta: ' world', 
+        {
+          delta: ' world',
           content: 'Hello world',
-          reasoning: { delta: ' more.', content: 'Think... more.' }
+          reasoning: { delta: ' more.', content: 'Think... more.' },
         },
-        { 
-          delta: '!', 
+        {
+          delta: '!',
           content: 'Hello world!',
           reasoning: { delta: ' Done!', content: 'Think... more. Done!' },
-          finishReason: 'stop' 
+          finishReason: 'stop',
         },
       ]);
 
@@ -477,9 +479,15 @@ describe('Stream Utilities', () => {
       // Verify reasoning handler received accumulated content
       expect(onReasoning).toHaveBeenCalledTimes(3);
       expect(onReasoning).toHaveBeenNthCalledWith(1, { content: 'Think...', delta: 'Think...' });
-      expect(onReasoning).toHaveBeenNthCalledWith(2, { content: 'Think... more.', delta: ' more.' });
-      expect(onReasoning).toHaveBeenNthCalledWith(3, { content: 'Think... more. Done!', delta: ' Done!' });
-      
+      expect(onReasoning).toHaveBeenNthCalledWith(2, {
+        content: 'Think... more.',
+        delta: ' more.',
+      });
+      expect(onReasoning).toHaveBeenNthCalledWith(3, {
+        content: 'Think... more. Done!',
+        delta: ' Done!',
+      });
+
       // Verify final result has correct reasoning
       expect(result.reasoning).toBe('Think... more. Done!');
     });

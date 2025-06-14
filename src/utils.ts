@@ -295,7 +295,7 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
  * Collects the complete stream result using the accumulated content from chunks.
  * This is the corrected version that uses chunk.content (already accumulated)
  * instead of manually accumulating chunk.delta values.
- * 
+ *
  * Use this function when you want the streaming benefits but need the final result.
  * This is more reliable than collectDeltas as it uses the provider's own content accumulation.
  * @param stream - The async iterable stream of chunks
@@ -317,16 +317,16 @@ export async function collectStream(stream: AsyncIterable<StreamChunk>): Promise
   for await (const chunk of stream) {
     // Use the accumulated content from the chunk, not delta accumulation
     content = chunk.content;
-    
+
     if (chunk.reasoning) {
       // Use the accumulated reasoning content, not delta accumulation
       reasoning = chunk.reasoning.content;
     }
-    
+
     if (chunk.finishReason) {
       finishReason = chunk.finishReason;
     }
-    
+
     if (chunk.toolCalls) {
       toolCalls = chunk.toolCalls;
     }
