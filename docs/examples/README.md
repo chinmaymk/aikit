@@ -65,7 +65,7 @@ Real-time AI responses for better UX. Covers:
 
 - Basic streaming with `printStream()`
 - Custom stream handlers for progress tracking
-- Collecting complete responses with `collectDeltas()`
+- Collecting complete responses with `collectStream()`
 - Performance comparison: streaming vs batch
 
 ```bash
@@ -197,7 +197,7 @@ import {
   userImage,
   conversation,
   printStream,
-  collectDeltas,
+  collectStream,
 } from '@chinmaymk/aikit';
 
 // Build messages easily
@@ -210,7 +210,7 @@ const imageMessage = userImage('What do you see?', 'data:image/jpeg;base64,...')
 await printStream(provider(messages, { model: 'gpt-4o' }));
 
 // Collect complete responses
-const result = await collectDeltas(provider(messages, { model: 'gpt-4o' }));
+const result = await collectStream(provider(messages, { model: 'gpt-4o' }));
 ```
 
 ## 🧪 Advanced Patterns

@@ -8,7 +8,7 @@ AIKit directly calls the APIs of underlying LLM providers (OpenAI, Anthropic, Go
 
 ## How does this differ from the official SDKs?
 
-AIKit focuses **only** on generation features across providers. That narrow focus lets us ship a smaller, unified API surface. If you need file uploads, fine-tuning, vector stores, etc., use the vendor SDK. Think of AIKit as the Swiss Army knife for AI generation—not every tool in the shed, but the ones you use most often.
+AIKit focuses **only** on generation features across providers. That narrow focus lets us ship a smaller, unified API surface. If you need file uploads, fine-tuning, vector stores, etc., use the vendor SDK.
 
 ## What are the best use cases for AIKit?
 
@@ -30,7 +30,7 @@ Vendor generation endpoints rarely break. When they occasionally do, we publish 
 
 ## Is AIKit production-ready?
 
-There's no such thing as production ready.
+AIKit is as production-ready as any library can be. We follow semantic versioning, have comprehensive tests, and maintain backward compatibility. The real question is: are you production-ready?
 
 ## What providers and models are supported?
 
@@ -96,7 +96,7 @@ This includes:
 
 Each provider supports streaming, and vision-capable models support multimodal inputs.
 
-**OpenAI-compatible APIs** (like Ollama, LocalAI, etc.) may work with the OpenAI provider, but they're not officially tested, so YMMV.
+**OpenAI-compatible APIs** (like Ollama, LocalAI, etc.) may work with the OpenAI provider, but they're not officially tested, so your mileage may vary.
 
 _AIKit includes a reference list of available models in the library for convenience, but this doesn't limit what you can use._
 
@@ -116,7 +116,7 @@ const mockProvider = async function* (messages, options) {
 };
 
 // Use in tests just like a real provider
-const result = await collectDeltas(mockProvider(messages, options));
+const result = await collectStream(mockProvider(messages, options));
 ```
 
 ## Which models support images?
@@ -276,7 +276,7 @@ Check:
 - Model supports reasoning (see supported models above)
 - Using correct parameters (`reasoning` for OpenAI, `thinking` for Anthropic)
 - API key has access to reasoning features
-- Use `collectDeltas()` or `processStream()` to access reasoning content
+- Use `collectStream()` or `processStream()` to access reasoning content
 
 ## Where can I find more examples?
 

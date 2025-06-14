@@ -7,13 +7,13 @@ Track token consumption and costs across all providers. Because knowing how much
 ### Basic Usage Tracking
 
 ```ts
-import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
+import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const result = await collectDeltas(
+const result = await collectStream(
   openai([userText('Hello!')], {
     model: 'gpt-4o',
     streamOptions: { includeUsage: true }, // Enable usage for OpenAI
@@ -35,7 +35,7 @@ OpenAI provides the most comprehensive usage tracking:
 const openai = createProvider('openai', { apiKey: '...' });
 
 // Enable usage tracking in stream options
-const result = await collectDeltas(
+const result = await collectStream(
   openai([userText('Explain quantum physics')], {
     model: 'gpt-4o',
     streamOptions: { includeUsage: true }, // Required for usage tracking
@@ -49,7 +49,7 @@ console.log('Usage:', result.usage);
 **Reasoning Models (o-series):**
 
 ```ts
-const result = await collectDeltas(
+const result = await collectStream(
   openai([userText('Solve: 2x + 5 = 15')], {
     model: 'o1-mini',
     reasoning: { effort: 'medium' },
@@ -72,7 +72,7 @@ Anthropic currently provides output token counts:
 ```ts
 const anthropic = createProvider('anthropic', { apiKey: '...' });
 
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([userText('Write a haiku')], {
     model: 'claude-3-5-sonnet-20241022',
   })
@@ -89,7 +89,7 @@ Google provides comprehensive usage metadata when available:
 ```ts
 const google = createProvider('google', { apiKey: '...' });
 
-const result = await collectDeltas(
+const result = await collectStream(
   google([userText('Explain machine learning')], {
     model: 'gemini-1.5-pro',
   })

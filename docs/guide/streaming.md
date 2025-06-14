@@ -112,10 +112,10 @@ console.log(`\nFinal result: ${result.content.length} characters`);
 
 ## Collecting Complete Responses
 
-Sometimes you want to stream for responsiveness but still need the complete response. Use `collectDeltas()` to get both.
+Sometimes you want to stream for responsiveness but still need the complete response. Use `collectStream()` to get both.
 
 ```typescript
-import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
+import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -125,7 +125,7 @@ console.log('Collecting complete response...');
 const stream = provider(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
 
 // This streams internally but returns the complete response
-const result = await collectDeltas(stream);
+const result = await collectStream(stream);
 
 console.log('Complete response:');
 console.log(result.content);
@@ -145,19 +145,19 @@ const question = [userText('What is machine learning?')];
 // OpenAI streaming
 const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 console.log('OpenAI:');
-await printStream(openai.generate(question, { model: 'gpt-4o', maxOutputTokens: 150 }));
+await printStream(openai(question, { model: 'gpt-4o', maxOutputTokens: 150 }));
 
 // Anthropic streaming
 const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
 console.log('\nAnthropic:');
 await printStream(
-  anthropic.generate(question, { model: 'claude-3-5-sonnet-20241022', maxOutputTokens: 150 })
+  anthropic(question, { model: 'claude-3-5-sonnet-20241022', maxOutputTokens: 150 })
 );
 
 // Google streaming
 const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
 console.log('\nGoogle:');
-await printStream(google.generate(question, { model: 'gemini-1.5-pro', maxOutputTokens: 150 }));
+await printStream(google(question, { model: 'gemini-1.5-pro', maxOutputTokens: 150 }));
 ```
 
 ## Error Handling in Streams
@@ -192,7 +192,7 @@ try {
 Here's how streaming compares to collecting full responses:
 
 ```typescript
-import { createProvider, userText, printStream, collectDeltas } from '@chinmaymk/aikit';
+import { createProvider, userText, printStream, collectStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const messages = [userText('Write a paragraph about TypeScript benefits.')];
@@ -207,7 +207,7 @@ console.log(`Streaming time: ${streamTime}ms\n`);
 // Collect-all approach - user waits for complete response
 console.log('Collect-all approach:');
 const collectStart = Date.now();
-const collectResult = await collectDeltas(
+const collectResult = await collectStream(
   provider(messages, { model: 'gpt-4o', maxOutputTokens: 200 })
 );
 const collectTime = Date.now() - collectStart;

@@ -23,23 +23,23 @@ AIKit is a minimal TypeScript wrapper that gives you unified access to the gener
 
 **Use AIKit for:** Generation & streaming, multimodal prompts (text + images), tool/function calling, and embeddings.
 
-Use the official provider SDKs for everything else (fine-tuning, file management, etc.).
+_Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
 
 ## Features at a Glance
 
-| Feature                 | What That Means                                                        |
-| ----------------------- | ---------------------------------------------------------------------- |
-| **Zero Dependencies**   | Uses only the built-in `fetch`; no freeloaders.                        |
-| **No Surprises**        | Every provider option is right there—no secret sauce.                  |
-| **Multimodal**          | Text and images get equal treatment.                                   |
-| **Embeddings Included** | Vectors are first-class citizens.                                      |
-| **Tool-Friendly**       | Utilities for tool and function calls, ready to go.                    |
-| **Reasoning Support**   | Access model reasoning for Claude and OpenAI o-series models.          |
-| **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.                        |
-| **Type-Safe**           | Exhaustive TypeScript types for requests & responses.                  |
-| **Streaming**           | `for await` over tokens or deltas.                                     |
-| **Utility Functions**   | Helper functions for messages, tools, and content, and stream handling |
-| **Model Flexible**      | Use any model string accepted by the provider APIs.                    |
+| Feature                 | What That Means                                            |
+| ----------------------- | ---------------------------------------------------------- |
+| **Zero Dependencies**   | Uses only the built-in `fetch`—no freeloaders.             |
+| **No Surprises**        | Every provider option is right there—no secret sauce.      |
+| **Multimodal**          | Text and images get equal treatment.                       |
+| **Embeddings Included** | Vectors are first-class citizens.                          |
+| **Tool-Friendly**       | Utilities for tool and function calls, ready to go.        |
+| **Reasoning Support**   | Access model reasoning—watch AI think out loud.            |
+| **Unified API**         | Same call shape for OpenAI, Anthropic & Gemini.            |
+| **Type-Safe**           | Exhaustive TypeScript types for requests & responses.      |
+| **Streaming**           | `for await` over tokens or deltas.                         |
+| **Utility Functions**   | Helper functions for messages, tools, and stream handling. |
+| **Model Flexible**      | Use any model string the provider APIs accept.             |
 
 ## Quick Start
 
@@ -79,7 +79,7 @@ import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
-  apiKey: '...',
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Start streaming generation
@@ -104,7 +104,7 @@ import { createProvider, userImage } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
-  apiKey: '...',
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Simple helper for text + image
@@ -127,7 +127,7 @@ import { createProvider, createTool, executeToolCall } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
-  apiKey: '...',
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Define a weather tool
@@ -168,15 +168,15 @@ if (result.toolCalls) {
 Access the reasoning process of models that support it, like Claude (Anthropic) and o-series models (OpenAI). See how the model thinks through problems in real-time.
 
 ```ts
-import { createProvider, userText, collectDeltas, processStream } from '@chinmaymk/aikit';
+import { createProvider, userText, collectStream, processStream } from '@chinmaymk/aikit';
 
 // Anthropic Claude reasoning
 const anthropic = createProvider('anthropic', {
-  apiKey: '...',
+  apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
 // Generate with reasoning enabled
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([userText('Solve this math problem step by step: 2x + 5 = 15')], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: {
@@ -187,7 +187,7 @@ const result = await collectDeltas(
 );
 
 console.log('Answer:', result.content);
-console.log('Reasoning:', result.reasoning); // Access the model's thinking process
+console.log('Reasoning:', result.reasoning); // Watch the AI think
 
 // Stream reasoning in real-time
 await processStream(
@@ -210,10 +210,10 @@ await processStream(
 
 // OpenAI o-series reasoning
 const openai = createProvider('openai', {
-  apiKey: '...',
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const o1Result = await collectDeltas(
+const o1Result = await collectStream(
   openai([userText('Design a simple algorithm for sorting')], {
     model: 'o1-mini',
     reasoning: {
@@ -237,18 +237,18 @@ const messages = [userText('Explain quantum computing')];
 const options = { temperature: 0.7, maxOutputTokens: 200 };
 
 // Try OpenAI
-const openai = createProvider('openai', { apiKey: '...' });
+const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const openaiResult = await openai(messages, { ...options, model: 'gpt-4o' });
 
 // Try Anthropic with the same messages
-const anthropic = createProvider('anthropic', { apiKey: '...' });
+const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
 const anthropicResult = await anthropic(messages, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
 
 // Try Google with the same messages
-const google = createProvider('google', { apiKey: '...' });
+const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
 const googleResult = await google(messages, { ...options, model: 'gemini-2.0-flash' });
 
 // Now compare their answers!

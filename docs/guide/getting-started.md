@@ -1,10 +1,10 @@
 # Getting Started
 
-So you want to pilot some LLMs? Good call. AIKit gets you from zero to **"Hello, LLM"** in one import. One interface for OpenAI, Anthropic, and Gemini. Zero runtime dependencies, fully typed, and small enough to tweet about.
+Ready to pilot some LLMs? AIKit gets you from zero to **"Hello, LLM"** in one import. One interface for OpenAI, Anthropic, and Gemini. Zero runtime dependencies, fully typed, and small enough to tweet about.
 
 ## Installation
 
-First things first, let's get this thing installed. Open your terminal and chant the sacred words:
+First things first, let's get this installed. Open your terminal and run:
 
 [![npm version](https://badge.fury.io/js/@chinmaymk%2Faikit.svg)](https://www.npmjs.com/package/@chinmaymk/aikit)
 
@@ -34,7 +34,7 @@ export ANTHROPIC_API_KEY="your-anthropic-api-key"
 export GOOGLE_API_KEY="your-google-api-key"
 ```
 
-Don't have them yet? No problem. Here are the secret passages:
+Don't have them yet? Here's where to get them:
 
 - **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 - **Anthropic**: [console.anthropic.com/dashboard](https://console.anthropic.com/dashboard)
@@ -42,7 +42,7 @@ Don't have them yet? No problem. Here are the secret passages:
 
 ## Basic Generation
 
-Alright, let's make the magic happen. Here's how to get a simple response from a model.
+Let's make the magic happen. Here's how to get a simple response from a model.
 
 ```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
@@ -81,7 +81,7 @@ console.log(result.content);
 
 ## Streaming Responses
 
-Who has time to wait for a full response? Let's stream it like it's hot.
+Who has time to wait for a full response? Let's stream it in real-time.
 
 ```typescript
 import { createProvider, userText, printStream } from '@chinmaymk/aikit';
@@ -326,7 +326,7 @@ const result = await provider(messages, options);
 Sometimes things go sideways. Here's how to catch them gracefully.
 
 ```typescript
-import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
+import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
@@ -334,7 +334,7 @@ try {
   const stream = provider([userText('Hello!')], { model: 'gpt-4o' });
 
   // Collect the full response
-  const result = await collectDeltas(stream);
+  const result = await collectStream(stream);
   console.log(result.content);
 } catch (error) {
   if (error.message.includes('API key')) {

@@ -1,6 +1,6 @@
 # Multimodal AI with Images
 
-Modern AI models can see and understand images just like humans do. AIKit makes it ridiculously easy to combine text and images in your conversations. Let's turn your AI into an art critic, diagram analyzer, or photo detective.
+Modern AI models can see and understand images just like humans do. AIKit makes it easy to combine text and images in your conversations. Turn your AI into an art critic, diagram analyzer, or photo detective.
 
 ## Why Multimodal?
 

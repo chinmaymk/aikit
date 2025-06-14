@@ -35,13 +35,13 @@ AIKit provides access to AI model reasoning processes, allowing you to see how m
 ### Anthropic Claude
 
 ```ts
-import { createProvider, userText, collectDeltas } from '@chinmaymk/aikit';
+import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
 const anthropic = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([userText('Solve: 2x + 5 = 15')], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: {
@@ -62,9 +62,9 @@ const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const result = await collectDeltas(
+const result = await collectStream(
   openai([userText('Design a sorting algorithm')], {
-    model: 'o1-2024-12-17',
+    model: 'o1-mini',
     reasoning: { effort: 'medium' },
   })
 );
@@ -80,7 +80,7 @@ const google = createProvider('google', {
   apiKey: process.env.GOOGLE_API_KEY!,
 });
 
-const result = await collectDeltas(
+const result = await collectStream(
   google([userText('Analyze this complex problem step by step')], {
     model: 'gemini-2.0-flash',
     // Note: Google's reasoning support is experimental
@@ -161,7 +161,7 @@ Distance: 300 miles apart
 When do they meet?
 `);
 
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([mathProblem], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: { type: 'enabled', budget_tokens: 1536 },
@@ -172,9 +172,9 @@ const result = await collectDeltas(
 ### Code Analysis
 
 ```ts
-const result = await collectDeltas(
+const result = await collectStream(
   openai([userText('Find longest palindromic substring - optimize for time complexity')], {
-    model: 'o1-2024-12-17',
+    model: 'o1',
     reasoning: { effort: 'high' },
   })
 );
@@ -183,7 +183,7 @@ const result = await collectDeltas(
 ### Decision Analysis
 
 ```ts
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([userText('Investment advice: $10k, moderate risk, 5-year timeline')], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: { type: 'enabled', budget_tokens: 2048 },
@@ -196,7 +196,7 @@ const result = await collectDeltas(
 ```ts
 import { userImage } from '@chinmaymk/aikit';
 
-const result = await collectDeltas(
+const result = await collectStream(
   anthropic([userImage('Analyze this chart and explain the trends', imageData)], {
     model: 'claude-3-5-sonnet-20241022',
     thinking: { type: 'enabled', budget_tokens: 2048 },
@@ -216,7 +216,7 @@ const result = await collectDeltas(
 
 ```ts
 try {
-  const result = await collectDeltas(stream);
+  const result = await collectStream(stream);
   if (result.reasoning) {
     console.log('Reasoning:', result.reasoning);
   } else {
@@ -249,7 +249,7 @@ try {
 1. Verify model supports reasoning (check supported models above)
 2. Check your API access level with the provider
 3. Use correct parameters (`thinking` for Anthropic, `reasoning` for OpenAI)
-4. Ensure you're calling `collectDeltas()` or using `processStream()`
+4. Ensure you're calling `collectStream()` or using `processStream()`
 5. Try a different model that definitely supports reasoning
 
 **High token usage?**
