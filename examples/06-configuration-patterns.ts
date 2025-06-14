@@ -102,8 +102,8 @@ async function pattern3_AdvancedOpenAIConfiguration() {
 async function pattern4_AnthropicConfiguration() {
   printSectionHeader('Pattern 4: Anthropic Configuration with Type Safety');
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log('Skipping Anthropic example - no API key provided\n');
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
     return;
   }
 
@@ -144,8 +144,8 @@ async function pattern4_AnthropicConfiguration() {
 async function pattern5_GoogleConfiguration() {
   printSectionHeader('Pattern 5: Google Configuration with Type Safety');
 
-  if (!process.env.GOOGLE_API_KEY) {
-    console.log('Skipping Google example - no API key provided\n');
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
     return;
   }
 
@@ -253,7 +253,6 @@ async function pattern8_MultiProviderConsistency() {
   ].filter(Boolean) as Array<[string, ReturnType<typeof createOpenAI>]>;
 
   if (providers.length === 0) {
-    console.log('No API keys configured\n');
     return;
   }
 
@@ -262,7 +261,7 @@ async function pattern8_MultiProviderConsistency() {
       const result = await generate(provider, question);
       console.log(`${name}: ${result.content.substring(0, 80)}...\n`);
     } catch {
-      console.log(`${name}: Error\n`);
+      // Skip providers with errors
     }
   }
 }

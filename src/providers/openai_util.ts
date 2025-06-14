@@ -8,6 +8,7 @@ import type {
   EmbeddingResponse,
   EmbeddingResult,
   Content,
+  GenerationUsage,
 } from '../types';
 import { MessageTransformer, StreamUtils, StreamState, ResponseProcessor } from './utils';
 import { APIClient } from './api';
@@ -465,6 +466,15 @@ export class OpenAIStreamProcessor {
     chunk: OpenAI.Chat.StreamChunk,
     state: StreamState
   ): StreamChunk | null {
+    // Check for usage information first (can come in chunks with empty choices)
+    if (chunk.usage && (!chunk.choices || chunk.choices.length === 0)) {
+      const usage = this.extractUsageFromChunk(chunk);
+      if (usage) {
+        // Return a usage-only chunk
+        return state.createChunk('', undefined, usage);
+      }
+    }
+
     if (!chunk.choices || chunk.choices.length === 0) return null;
 
     const choice = chunk.choices[0];
@@ -499,7 +509,11 @@ export class OpenAIStreamProcessor {
         choice.finish_reason,
         OPENAI_CONSTANTS.FINISH_REASON_MAPPINGS.CHAT
       );
-      return state.createChunk('', finishReason);
+
+      // Extract usage information if available
+      const usage = this.extractUsageFromChunk(chunk);
+
+      return state.createChunk('', finishReason, usage);
     }
 
     // If we processed tool calls but no finish reason, return a chunk
@@ -580,6 +594,30 @@ export class OpenAIStreamProcessor {
         state.addToolCallArgs(callId, deltaCall.function.arguments);
       }
     }
+  }
+
+  private static extractUsageFromChunk(
+    chunk: OpenAI.Chat.StreamChunk
+  ): GenerationUsage | undefined {
+    if (!chunk.usage) return undefined;
+
+    const usage: GenerationUsage = {};
+
+    if (chunk.usage.prompt_tokens) usage.inputTokens = chunk.usage.prompt_tokens;
+    if (chunk.usage.completion_tokens) usage.outputTokens = chunk.usage.completion_tokens;
+    if (chunk.usage.total_tokens) usage.totalTokens = chunk.usage.total_tokens;
+
+    // Handle reasoning tokens from completion_tokens_details
+    if (chunk.usage.completion_tokens_details?.reasoning_tokens) {
+      usage.reasoningTokens = chunk.usage.completion_tokens_details.reasoning_tokens;
+    }
+
+    // Handle cached tokens from prompt_tokens_details
+    if (chunk.usage.prompt_tokens_details?.cached_tokens) {
+      usage.cacheTokens = chunk.usage.prompt_tokens_details.cached_tokens;
+    }
+
+    return Object.keys(usage).length > 0 ? usage : undefined;
   }
 }
 

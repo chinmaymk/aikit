@@ -103,6 +103,24 @@ export interface Message {
 }
 
 /**
+ * Usage information for a generation request.
+ * Like a receipt from your AI shopping spree, but with tokens instead of groceries.
+ * @group Types
+ */
+export interface GenerationUsage {
+  /** The number of tokens in the input/prompt. What you fed the AI to get it thinking. */
+  inputTokens?: number;
+  /** The number of tokens in the generated output. The AI's brilliant (or not so brilliant) response. */
+  outputTokens?: number;
+  /** The total number of tokens used in the request (input + output). Your grand total bill. */
+  totalTokens?: number;
+  /** The number of tokens used for reasoning (o-series models). The AI showing its work, like a good student. */
+  reasoningTokens?: number;
+  /** The number of tokens used for cached content (if applicable). Free tokens! The AI remembered something. */
+  cacheTokens?: number;
+}
+
+/**
  * A little piece of the streaming response.
  * It's like getting your data one delicious drop at a time.
  * @group Types
@@ -126,6 +144,8 @@ export interface StreamChunk {
     /** The new bit of reasoning content that just arrived in this chunk. */
     delta: string;
   };
+  /** Usage information for this chunk. Typically only available in the final chunk. */
+  usage?: GenerationUsage;
 }
 
 /**
@@ -142,6 +162,8 @@ export interface StreamResult {
   toolCalls?: ToolCall[];
   /** Complete reasoning content if available. The model's internal reasoning process. */
   reasoning?: string;
+  /** Usage information for the complete generation. */
+  usage?: GenerationUsage;
 }
 
 /**

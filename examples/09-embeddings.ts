@@ -85,7 +85,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
 
 if (require.main === module) {
   if (!process.env.OPENAI_API_KEY && !process.env.GOOGLE_API_KEY) {
-    console.log('💡 Set OPENAI_API_KEY and/or GOOGLE_API_KEY to run this demo.');
+    // Set API keys to run this demo
     process.exit(1);
   }
   main().catch(console.error);

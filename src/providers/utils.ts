@@ -7,6 +7,7 @@ import type {
   StreamChunk,
   FinishReason,
   Tool,
+  GenerationUsage,
 } from '../types';
 
 /**
@@ -120,9 +121,17 @@ export class MessageTransformer {
     delta: string,
     toolCalls?: ToolCall[],
     finishReason?: FinishReason,
-    reasoning?: { content: string; delta: string }
+    reasoning?: { content: string; delta: string },
+    usage?: GenerationUsage
   ): StreamChunk {
-    return { content, delta, toolCalls, finishReason, reasoning };
+    const chunk: StreamChunk = { content, delta };
+
+    if (toolCalls !== undefined) chunk.toolCalls = toolCalls;
+    if (finishReason !== undefined) chunk.finishReason = finishReason;
+    if (reasoning !== undefined) chunk.reasoning = reasoning;
+    if (usage !== undefined) chunk.usage = usage;
+
+    return chunk;
   }
 }
 
@@ -233,9 +242,10 @@ export class StreamState {
    * Create a stream chunk with current state.
    * @param delta - Content delta for this chunk.
    * @param finishReason - Finish reason if applicable.
+   * @param usage - Usage information if available.
    * @returns Properly formed stream chunk.
    */
-  createChunk(delta: string, finishReason?: FinishReason): StreamChunk {
+  createChunk(delta: string, finishReason?: FinishReason, usage?: GenerationUsage): StreamChunk {
     const toolCalls = finishReason ? this.finalizeToolCalls() : undefined;
     const reasoning = finishReason ? this.getFinalReasoning() : undefined;
 
@@ -244,7 +254,8 @@ export class StreamState {
       delta,
       toolCalls,
       finishReason,
-      reasoning
+      reasoning,
+      usage
     );
   }
 }

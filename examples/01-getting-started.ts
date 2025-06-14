@@ -110,7 +110,6 @@ async function step5_MultipleProviders() {
   const availableProviders = providers.filter(p => process.env[`${p.type.toUpperCase()}_API_KEY`]);
 
   if (availableProviders.length < 2) {
-    console.log('Set multiple API keys to see provider comparison\n');
     return;
   }
 
@@ -130,8 +129,8 @@ async function step5_MultipleProviders() {
 
       console.log(`${providerInfo.name}:`);
       console.log(result.content + '\n');
-    } catch (error) {
-      console.log(`${providerInfo.name}: Error - ${error}\n`);
+    } catch {
+      // Skip providers with errors
     }
   }
 }

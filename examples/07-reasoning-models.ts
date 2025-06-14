@@ -15,17 +15,18 @@ import {
   processStream,
 } from '@chinmaymk/aikit';
 import { printSectionHeader } from './utils.js';
+import { createProvider } from '@chinmaymk/aikit';
 
-async function demonstrateAnthropicReasoning() {
-  printSectionHeader('Anthropic Claude Reasoning');
+async function step1_AnthropicReasoning() {
+  printSectionHeader('Anthropic Reasoning (Claude 3.5 Sonnet with Thinking)');
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log('Skipping Anthropic example - no API key provided\n');
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
     return;
   }
 
   const anthropic = createAnthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY!,
+    apiKey: apiKey!,
   });
 
   const question = userText(
@@ -71,16 +72,16 @@ async function demonstrateAnthropicReasoning() {
   console.log('\n' + '='.repeat(80) + '\n');
 }
 
-async function demonstrateOpenAIReasoning() {
-  printSectionHeader('OpenAI o-series Reasoning');
+async function step2_OpenAIReasoning() {
+  printSectionHeader('OpenAI Reasoning (o1-preview and o1-mini)');
 
-  if (!process.env.OPENAI_API_KEY) {
-    console.log('Skipping OpenAI example - no API key provided\n');
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return;
   }
 
   const openai = createOpenAI({
-    apiKey: process.env.OPENAI_API_KEY!,
+    apiKey: apiKey!,
   });
 
   const question = userText(
@@ -115,10 +116,7 @@ async function demonstrateOpenAIReasoning() {
   );
 
   if (!hasReasoning) {
-    console.log('Note: No reasoning content detected. This might be because:');
-    console.log('- The model is not an o-series model (o1-mini, o1-preview, etc.)');
-    console.log('- The reasoning tokens are not exposed in the streaming API');
-    console.log("- Your API tier doesn't include reasoning token access\n");
+    // No reasoning content detected
   }
 
   // Collect complete result
@@ -136,81 +134,74 @@ async function demonstrateOpenAIReasoning() {
     console.log(result.reasoning);
   }
   console.log('\n' + '='.repeat(80) + '\n');
+
+  if (!result.usage?.reasoningTokens) {
+    return;
+  }
 }
 
-async function demonstrateReasoningComparison() {
-  printSectionHeader('Reasoning Across Providers');
+async function step3_CompareReasoningModels() {
+  printSectionHeader('Comparing Reasoning Models');
 
-  const mathProblem = userText('A farmer has 17 sheep. All but 9 die. How many sheep are left?');
-
-  console.log('Math Problem:', (mathProblem.content[0] as { text: string }).text);
-  console.log("\nLet's see how different reasoning models approach this...\n");
-
-  // Test with different providers that support reasoning
   const providers = [
     {
-      name: 'Anthropic Claude',
-      condition: () => !!process.env.ANTHROPIC_API_KEY,
-      test: async () => {
-        const anthropic = createAnthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY!,
-        });
-
-        const result = await collectDeltas(
-          anthropic([mathProblem], {
-            model: 'claude-3-5-sonnet-20241022',
-            thinking: { type: 'enabled', budget_tokens: 512 },
-            maxOutputTokens: 300,
-          })
-        );
-
-        console.log("🤖 Claude's Answer:", result.content);
-        if (result.reasoning) {
-          console.log("🧠 Claude's Reasoning:", result.reasoning.substring(0, 200) + '...');
-        }
-      },
+      name: 'Anthropic Claude 3.5 Sonnet (Thinking)',
+      type: 'anthropic' as const,
+      model: 'claude-3-5-sonnet-20241022',
+      keyEnv: 'ANTHROPIC_API_KEY',
     },
     {
       name: 'OpenAI o1-mini',
-      condition: () => !!process.env.OPENAI_API_KEY,
-      test: async () => {
-        const openai = createOpenAI({
-          apiKey: process.env.OPENAI_API_KEY!,
-        });
-
-        const result = await collectDeltas(
-          openai([mathProblem], {
-            model: 'o1-mini',
-            reasoning: { effort: 'low' },
-            maxOutputTokens: 300,
-          })
-        );
-
-        console.log("🤖 o1-mini's Answer:", result.content);
-        if (result.reasoning) {
-          console.log("🧠 o1-mini's Reasoning:", result.reasoning.substring(0, 200) + '...');
-        } else {
-          console.log("🧠 o1-mini's Reasoning: Not accessible via streaming API");
-        }
-      },
+      type: 'openai' as const,
+      model: 'o1-mini',
+      keyEnv: 'OPENAI_API_KEY',
     },
   ];
 
+  const question = `
+  Three friends Alice, Bob, and Charlie are sharing 12 apples.
+  Alice gets twice as many as Bob.
+  Charlie gets 2 more than Bob.
+  How many apples does each person get?
+  Show your reasoning step by step.
+  `;
+
   for (const provider of providers) {
-    if (provider.condition()) {
-      console.log(`\n--- ${provider.name} ---`);
-      try {
-        await provider.test();
-      } catch (error) {
-        console.log(`❌ Error with ${provider.name}:`, (error as Error).message);
+    const apiKey = process.env[provider.keyEnv];
+    if (!apiKey) continue;
+
+    try {
+      const providerInstance = createProvider(provider.type, { apiKey });
+
+      const options: any = {
+        model: provider.model,
+        maxOutputTokens: 500,
+        temperature: 0.1,
+      };
+
+      if (provider.type === 'anthropic') {
+        options.thinking = { type: 'enabled', budget_tokens: 2048 };
       }
-    } else {
-      console.log(`\n--- ${provider.name} ---`);
-      console.log(`Skipping ${provider.name} - no API key provided`);
+
+      const result = await collectDeltas(providerInstance([userText(question)], options));
+
+      console.log(`\n${provider.name}:`);
+      console.log(result.content);
+
+      if (result.reasoning) {
+        // Reasoning not shown in streaming API
+      }
+
+      if (result.usage) {
+        console.log(`\nTokens: ${result.usage.outputTokens} output`);
+        if (result.usage.reasoningTokens) {
+          console.log(`Reasoning: ${result.usage.reasoningTokens} tokens`);
+        }
+      }
+    } catch {
+      // Skip providers with errors
     }
   }
-
-  console.log('\n' + '='.repeat(80) + '\n');
 }
 
 async function main() {
@@ -218,21 +209,13 @@ async function main() {
   console.log('This example demonstrates how to access the reasoning process of AI models.\n');
 
   try {
-    await demonstrateAnthropicReasoning();
-    await demonstrateOpenAIReasoning();
-    await demonstrateReasoningComparison();
+    await step1_AnthropicReasoning();
+    await step2_OpenAIReasoning();
+    await step3_CompareReasoningModels();
 
     console.log('✅ Reasoning examples completed!');
-    console.log('\n💡 Key Takeaways:');
-    console.log('• Anthropic Claude: Use thinking: { type: "enabled", budget_tokens: N }');
-    console.log('• OpenAI o-series: Use reasoning: { effort: "low"|"medium"|"high" }');
-    console.log('• Access reasoning via result.reasoning or onReasoning callback');
-    console.log('• Not all models support reasoning - check provider documentation');
   } catch (error) {
-    console.error('❌ Error running reasoning examples:', error);
-    console.log('\n💡 Make sure you have the required API keys set:');
-    console.log('export ANTHROPIC_API_KEY="your-key-here"');
-    console.log('export OPENAI_API_KEY="your-key-here"');
+    console.error('Error running reasoning examples:', error);
   }
 }
 

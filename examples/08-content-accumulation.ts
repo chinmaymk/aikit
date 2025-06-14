@@ -81,8 +81,7 @@ async function step3_ReasoningAccumulation() {
 
   // Only test reasoning with OpenAI o1 models
   if (type !== 'openai') {
-    console.log('Reasoning is only supported with OpenAI o1 models.');
-    console.log('Set OPENAI_API_KEY to test reasoning accumulation.\n');
+    // Reasoning is only supported with OpenAI o1 models
     return;
   }
 
@@ -124,9 +123,9 @@ async function step3_ReasoningAccumulation() {
       console.log("3. The request didn't trigger reasoning mode");
     }
     console.log();
-  } catch (error: any) {
-    console.log('Error testing reasoning:', error.message);
-    console.log('This is expected if using a non-o1 model.\n');
+  } catch {
+    // Error testing reasoning
+    // This is expected if using a non-o1 model
   }
 }
 

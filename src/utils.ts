@@ -269,6 +269,7 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
   let reasoning = '';
   let finishReason: StreamChunk['finishReason'];
   let toolCalls: StreamChunk['toolCalls'];
+  let usage: StreamChunk['usage'];
 
   for await (const chunk of stream) {
     content += chunk.delta;
@@ -281,6 +282,9 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
     if (chunk.toolCalls) {
       toolCalls = chunk.toolCalls;
     }
+    if (chunk.usage) {
+      usage = chunk.usage;
+    }
   }
 
   return {
@@ -288,6 +292,7 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
     finishReason,
     toolCalls,
     reasoning: reasoning || undefined,
+    usage,
   };
 }
 
@@ -313,6 +318,7 @@ export async function collectStream(stream: AsyncIterable<StreamChunk>): Promise
   let reasoning = '';
   let finishReason: StreamChunk['finishReason'];
   let toolCalls: StreamChunk['toolCalls'];
+  let usage: StreamChunk['usage'];
 
   for await (const chunk of stream) {
     // Use the accumulated content from the chunk, not delta accumulation
@@ -330,6 +336,10 @@ export async function collectStream(stream: AsyncIterable<StreamChunk>): Promise
     if (chunk.toolCalls) {
       toolCalls = chunk.toolCalls;
     }
+
+    if (chunk.usage) {
+      usage = chunk.usage;
+    }
   }
 
   return {
@@ -337,6 +347,7 @@ export async function collectStream(stream: AsyncIterable<StreamChunk>): Promise
     finishReason,
     toolCalls,
     reasoning: reasoning || undefined,
+    usage,
   };
 }
 
@@ -365,12 +376,14 @@ export async function processStream(
     onFinish?: (finishReason: StreamChunk['finishReason']) => void;
     onChunk?: (chunk: StreamChunk) => void;
     onReasoning?: (reasoning: { content: string; delta: string }) => void;
+    onUsage?: (usage: StreamChunk['usage']) => void;
   } = {}
 ): Promise<StreamResult> {
   let content = '';
   let reasoning = '';
   let finishReason: StreamChunk['finishReason'];
   let toolCalls: StreamChunk['toolCalls'];
+  let usage: StreamChunk['usage'];
 
   for await (const chunk of stream) {
     if (handlers.onChunk) {
@@ -404,6 +417,13 @@ export async function processStream(
         handlers.onFinish(finishReason);
       }
     }
+
+    if (chunk.usage) {
+      usage = chunk.usage;
+      if (handlers.onUsage) {
+        handlers.onUsage(usage);
+      }
+    }
   }
 
   return {
@@ -411,6 +431,7 @@ export async function processStream(
     finishReason,
     toolCalls,
     reasoning: reasoning || undefined,
+    usage,
   };
 }
 

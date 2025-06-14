@@ -5,6 +5,7 @@ import type {
   AnthropicOptions,
   WithApiKey,
   StreamingGenerateFunction,
+  GenerationUsage,
 } from '../types';
 
 import {
@@ -133,6 +134,17 @@ interface AnthropicRequest {
 
 // Consolidated streaming event types
 type AnthropicStreamEvent =
+  | {
+      type: 'message_start';
+      message: {
+        usage: {
+          input_tokens: number;
+          output_tokens: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+        };
+      };
+    }
   | { type: 'content_block_start'; index: number; content_block: AnthropicContentBlock }
   | {
       type: 'content_block_delta';
@@ -216,6 +228,11 @@ async function* processStream(sseStream: AsyncIterable<string>): AsyncIterable<S
 
 function handleStreamEvent(event: AnthropicStreamEvent, state: StreamState): StreamChunk | null {
   switch (event.type) {
+    case 'message_start':
+      // Note: message_start provides initial usage info but we can't easily combine it
+      // with message_delta usage in the current architecture. This would require
+      // significant refactoring of the streaming state management.
+      return null;
     case 'content_block_start':
       if ('content_block' in event && 'index' in event) {
         return handleContentBlockStart(
@@ -310,12 +327,16 @@ function handleMessageDelta(
   const toolCalls = state.finalizeToolCalls();
   const reasoning = state.getFinalReasoning();
 
+  // Extract usage information from the event
+  const usage = extractUsageFromAnthropicEvent(event);
+
   return MessageTransformer.createStreamChunk(
     state.content,
     '',
     toolCalls,
     finishReason,
-    reasoning
+    reasoning,
+    usage
   );
 }
 
@@ -437,4 +458,24 @@ function mapFinishReason(reason?: string): FinishReason | undefined {
     refusal: 'error',
   };
   return reason ? reasonMap[reason] : undefined;
+}
+
+function extractUsageFromAnthropicEvent(
+  event: Extract<AnthropicStreamEvent, { type: 'message_delta' }>
+): GenerationUsage | undefined {
+  if (!event.usage) return undefined;
+
+  const usage: GenerationUsage = {};
+
+  // Output tokens are the main usage information from message_delta events
+  if (event.usage.output_tokens) {
+    usage.outputTokens = event.usage.output_tokens;
+  }
+
+  // Note: Anthropic's streaming API typically only provides output_tokens in message_delta events
+  // Input tokens, cache tokens, etc. are usually available in the message_start event
+  // but we don't have access to that here. The streaming architecture would need to be
+  // updated to capture and pass through usage from message_start events.
+
+  return Object.keys(usage).length > 0 ? usage : undefined;
 }

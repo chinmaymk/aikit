@@ -84,11 +84,18 @@ export const anthropicContentBlockStopChunk = (index = 0) => ({
 /**
  * Build a message delta chunk with finish reason.
  */
-export const anthropicMessageDeltaChunk = (stopReason: AnthropicFinish, outputTokens = 15) => ({
-  type: 'message_delta',
-  delta: { stop_reason: stopReason },
-  usage: { output_tokens: outputTokens },
-});
+export const anthropicMessageDeltaChunk = (stopReason: AnthropicFinish, outputTokens?: number) => {
+  const chunk: any = {
+    type: 'message_delta',
+    delta: { stop_reason: stopReason },
+  };
+
+  if (outputTokens !== undefined) {
+    chunk.usage = { output_tokens: outputTokens };
+  }
+
+  return chunk;
+};
 
 /**
  * Build a message stop chunk.

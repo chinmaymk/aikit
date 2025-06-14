@@ -52,4 +52,10 @@ export interface StreamGenerateContentChunk {
     content?: GoogleContent;
     finishReason?: string;
   }>;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+    cachedContentTokenCount?: number;
+  };
 }

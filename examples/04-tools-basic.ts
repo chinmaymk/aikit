@@ -363,7 +363,7 @@ async function toolChoiceExample() {
       console.log('Tool result:', JSON.parse(result));
     }
   } catch {
-    console.log('Error with required tool choice (some providers may not support this)');
+    // Error with required tool choice
   }
 
   console.log();

@@ -6,6 +6,7 @@ import type {
   GoogleOptions,
   WithApiKey,
   StreamingGenerateFunction,
+  GenerationUsage,
 } from '../types';
 
 import { MessageTransformer, StreamUtils } from './utils';
@@ -131,8 +132,23 @@ function processChunk(
   currentContent: string,
   pendingToolCalls: ToolCall[]
 ): StreamChunk | null {
+  // Check for usage information first (can come in chunks without candidates)
+  const usage = extractUsageFromGoogleChunk(chunk);
+
   const candidate = chunk.candidates?.[0];
-  if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) return null;
+  if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) {
+    // If we have usage but no candidates, return a usage-only chunk
+    if (usage) {
+      return {
+        content: currentContent,
+        delta: '',
+        finishReason: undefined,
+        toolCalls: pendingToolCalls.length > 0 ? pendingToolCalls : undefined,
+        usage,
+      };
+    }
+    return null;
+  }
 
   let delta = '';
   const newToolCalls: ToolCall[] = [];
@@ -164,6 +180,7 @@ function processChunk(
         : pendingToolCalls.length > 0
           ? pendingToolCalls
           : undefined,
+    usage,
   };
 }
 
@@ -400,4 +417,31 @@ function formatToolChoice(toolChoice: GoogleOptions['toolChoice']) {
     };
   }
   return build('AUTO');
+}
+
+function extractUsageFromGoogleChunk(
+  chunk: StreamGenerateContentChunk
+): GenerationUsage | undefined {
+  if (!chunk.usageMetadata) return undefined;
+
+  const usage: GenerationUsage = {};
+
+  if (chunk.usageMetadata.promptTokenCount) {
+    usage.inputTokens = chunk.usageMetadata.promptTokenCount;
+  }
+
+  if (chunk.usageMetadata.candidatesTokenCount) {
+    usage.outputTokens = chunk.usageMetadata.candidatesTokenCount;
+  }
+
+  if (chunk.usageMetadata.totalTokenCount) {
+    usage.totalTokens = chunk.usageMetadata.totalTokenCount;
+  }
+
+  // Google's cached content tokens (if using context caching)
+  if (chunk.usageMetadata.cachedContentTokenCount) {
+    usage.cacheTokens = chunk.usageMetadata.cachedContentTokenCount;
+  }
+
+  return Object.keys(usage).length > 0 ? usage : undefined;
 }
