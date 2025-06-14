@@ -8,11 +8,39 @@ Images contain information that's difficult to describe in words. A chart, photo
 
 ## Supported Models
 
-Not all models support images. Here are some vision-capable models (but AIKit doesn't restrict which models you can use—try any model string the provider accepts):
+Not all models support images. Here are vision-capable models (but AIKit doesn't restrict which models you can use—try any model string the provider accepts):
 
-- **OpenAI**: GPT-4o, GPT-4o-mini, GPT-4-turbo (and newer vision models)
-- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku (and newer vision models)
-- **Google**: Gemini 1.5 Pro, Gemini 1.5 Flash, Gemini 2.0 Flash (and newer vision models)
+**OpenAI**
+
+- `gpt-4o`
+- `gpt-4o-mini`
+- `gpt-4-turbo`
+- `gpt-4.1`
+- `gpt-4.1-mini`
+- `gpt-4`
+
+**Anthropic**
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+- `claude-3-sonnet-20240229`
+- `claude-3-haiku-20240307`
+
+**Google**
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-001`
+- `gemini-1.5-pro`
+- `gemini-1.5-pro-002`
+- `gemini-1.5-flash`
+- `gemini-1.5-flash-002`
+- `gemini-pro-vision`
 
 _AIKit includes a reference list of available models in the library, but you can use any model string that the provider API accepts, including new releases and beta models._
 

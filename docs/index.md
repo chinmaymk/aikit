@@ -262,18 +262,23 @@ console.log('Google:', googleResult.content);
 Each provider has different models optimized for different tasks. Pick the one that fits your needs:
 
 ```ts
-// For OpenAI - balance cost vs capability
-await openai(messages, { model: 'gpt-4o-mini' }); // Fast & cheap
-await openai(messages, { model: 'gpt-4o' }); // Smart & capable
-await openai(messages, { model: 'o1-mini' }); // Reasoning & problem-solving
+// OpenAI
+await openai(messages, { model: 'gpt-4o-mini' });
+await openai(messages, { model: 'gpt-4o' });
+await openai(messages, { model: 'gpt-4.1' });
+await openai(messages, { model: 'o1' });
+await openai(messages, { model: 'o3-mini' });
 
-// For Anthropic - different strengths
-await anthropic(messages, { model: 'claude-3-5-haiku-20241022' }); // Quick responses
-await anthropic(messages, { model: 'claude-3-5-sonnet-20241022' }); // Best overall
+// Anthropic
+await anthropic(messages, { model: 'claude-3-5-haiku-20241022' });
+await anthropic(messages, { model: 'claude-3-5-sonnet-20241022' });
+await anthropic(messages, { model: 'claude-opus-4-20250514' });
+await anthropic(messages, { model: 'claude-3-7-sonnet-20250219' });
 
-// For Google - various capabilities
-await google(messages, { model: 'gemini-1.5-flash' }); // Fast multimodal
-await google(messages, { model: 'gemini-2.0-flash' }); // Latest model
+// Google
+await google(messages, { model: 'gemini-1.5-flash' });
+await google(messages, { model: 'gemini-2.0-flash' });
+await google(messages, { model: 'gemini-2.5-pro-preview-06-05' });
 ```
 
 **Use any model the provider supports:**
@@ -286,7 +291,7 @@ await google(messages, { model: 'gemini-2.0-flash' }); // Latest model
 // These all work if the provider supports them
 await openai(messages, { model: 'your-custom-model' });
 await anthropic(messages, { model: 'claude-4-when-it-exists' });
-await google(messages, { model: 'models/your-tuned-gemini' });
+await google(messages, { model: 'your-tuned-gemini' });
 ```
 
 ## What's Next?

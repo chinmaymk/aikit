@@ -38,16 +38,61 @@ There's no such thing as production ready.
 
 This includes:
 
-- **Standard models**: Like GPT-4o, Claude 3.5 Sonnet, Gemini 2.0 Flash
-- **New releases**: Beta models and newly announced models
+- **Standard models**: Production-ready models for everyday use
+- **New releases**: Latest models and cutting-edge capabilities
 - **Custom models**: Your fine-tuned or specialized models
 - **Future models**: Any model the provider adds
 
-Examples:
+### OpenAI Models
 
-- **OpenAI**: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `your-custom-model`
-- **Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc.
-- **Google**: `gemini-2.0-flash`, `gemini-1.5-pro`, `models/your-model`
+- `gpt-4o`
+- `gpt-4o-mini`
+- `gpt-4.1`
+- `gpt-4.1-mini`
+- `gpt-4.1-nano`
+- `gpt-4-turbo`
+- `gpt-4`
+- `o1`
+- `o1-mini`
+- `o1-preview`
+- `o1-pro`
+- `o3-mini`
+- `o4-mini`
+- `gpt-3.5-turbo`
+- `dall-e-3`
+- `dall-e-2`
+- `whisper-1`
+- `tts-1`
+- `text-embedding-3-large`
+- `text-embedding-3-small`
+
+### Anthropic Models
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+- `claude-3-sonnet-20240229`
+- `claude-3-haiku-20240307`
+- `claude-2.1`
+- `claude-2.0`
+
+### Google Models
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-001`
+- `gemini-1.5-pro`
+- `gemini-1.5-pro-002`
+- `gemini-1.5-flash`
+- `gemini-1.5-flash-002`
+- `gemini-1.5-flash-8b`
+- `gemini-pro-vision`
+- `embedding-001`
+- `text-embedding-004`
 
 Each provider supports streaming, and vision-capable models support multimodal inputs.
 
@@ -78,9 +123,32 @@ const result = await collectDeltas(mockProvider(messages, options));
 
 Vision capabilities vary by provider:
 
-- **OpenAI**: GPT-4o, GPT-4o-mini, GPT-4-turbo
-- **Anthropic**: Claude 4, 3.5
-- **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 2.0 Flash
+**OpenAI**
+
+- `gpt-4o`
+- `gpt-4o-mini`
+- `gpt-4-turbo`
+- `gpt-4.1`
+- `gpt-4.1-mini`
+- `gpt-4`
+
+**Anthropic**
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+
+**Google**
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-1.5-pro`
+- `gemini-1.5-flash`
+- `gemini-pro-vision`
 
 All support JPEG, PNG, GIF, and WebP formats as base64-encoded data URLs.
 
@@ -98,9 +166,30 @@ AIKit normalizes these differences so your code works the same across providers.
 
 Reasoning (access to model thinking processes) is supported by:
 
-- **OpenAI**: o1-2024-12-17, o1-mini, o1-preview
-- **Anthropic**: claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022 (with thinking enabled)
-- **Google**: Experimental support in some Gemini models
+**OpenAI**
+
+- `o1`
+- `o1-mini`
+- `o1-preview`
+- `o1-pro`
+- `o3-mini`
+- `o4-mini`
+
+**Anthropic**
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+
+**Google**
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.0-flash`
+- `gemini-1.5-pro`
+- `gemini-1.5-flash`
 
 Use the `reasoning` parameter for OpenAI and `thinking` parameter for Anthropic.
 

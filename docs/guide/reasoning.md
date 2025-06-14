@@ -4,23 +4,31 @@ AIKit provides access to AI model reasoning processes, allowing you to see how m
 
 ## Supported Models
 
-**Anthropic Claude** (Current)
+**OpenAI**
 
-- `claude-3-5-sonnet-20241022` - Latest and most capable
-- `claude-3-5-haiku-20241022` - Fast with thinking capabilities
-- `claude-3-opus-20240229` - Deep reasoning powerhouse
+- `o1`
+- `o1-mini`
+- `o1-preview`
+- `o1-pro`
+- `o3-mini`
+- `o4-mini`
 
-**OpenAI o-series** (Current)
+**Anthropic**
 
-- `o1-2024-12-17` - Latest production reasoning model
-- `o1-mini` - Compact reasoning model
-- `o1-preview` - Preview with advanced capabilities
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
 
-**Google Gemini** (Current)
+**Google**
 
-- `gemini-2.0-flash` - Latest with experimental thinking support
-- `gemini-1.5-pro` - Advanced reasoning capabilities
-- `gemini-1.5-flash` - Fast reasoning support
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-1.5-pro`
+- `gemini-1.5-flash`
 
 ## Quick Start
 
