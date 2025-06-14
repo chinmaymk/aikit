@@ -1,6 +1,6 @@
 # Examples
 
-Welcome to the AIKit cookbook—bite-sized, production-ready snippets you can copy-paste into your codebase. Each example runs with a single `npx tsx` and _zero_ extra dependencies. We won't tell anyone you didn't cook them yourself.
+Welcome to the AIKit cookbook—bite-sized, snippets you can copy-paste into your codebase. Each example runs with a single `npx tsx` and _zero_ extra dependencies. We won't tell anyone you didn't cook them yourself.
 
 ## Quick Start
 
@@ -184,7 +184,7 @@ const options = {
   stopSequences: ['END'], // Stop generation at these strings
 };
 
-const result = await provider.generate(messages, options);
+const result = await provider(messages, options);
 ```
 
 ### Helper Functions
@@ -207,10 +207,10 @@ const messages = conversation().system('You are a helpful assistant').user('Hell
 const imageMessage = userImage('What do you see?', 'data:image/jpeg;base64,...');
 
 // Stream handling
-await printStream(provider.generate(messages, { model: 'gpt-4o' }));
+await printStream(provider(messages, { model: 'gpt-4o' }));
 
 // Collect complete responses
-const result = await collectDeltas(provider.generate(messages, { model: 'gpt-4o' }));
+const result = await collectDeltas(provider(messages, { model: 'gpt-4o' }));
 ```
 
 ## 🧪 Advanced Patterns
@@ -219,7 +219,7 @@ const result = await collectDeltas(provider.generate(messages, { model: 'gpt-4o'
 
 ```typescript
 try {
-  const result = await provider.generate(messages, { model: 'gpt-4o' });
+  const result = await provider(messages, { model: 'gpt-4o' });
   console.log(result.content);
 } catch (error) {
   if (error.message.includes('API key')) {
@@ -245,7 +245,7 @@ const mockProvider = {
 };
 
 // Use it just like a real provider
-for await (const chunk of mockProvider.generate(messages, options)) {
+for await (const chunk of mockprovider(messages, options)) {
   process.stdout.write(chunk.delta);
 }
 ```
@@ -273,8 +273,6 @@ try {
 }
 ```
 
-## 🔧 Production Patterns
-
 ### Conversation State Management
 
 ```typescript
@@ -284,7 +282,7 @@ class ChatManager {
   async chat(userMessage: string) {
     this.messages.push(userText(userMessage));
 
-    const response = await provider.generate(this.messages, { model: 'gpt-4o' });
+    const response = await provider(this.messages, { model: 'gpt-4o' });
     this.messages.push(assistantText(response.content));
 
     return response.content;
@@ -317,7 +315,7 @@ const toolServices = {
 };
 
 // Use in generation
-const result = await provider.generate(messages, {
+const result = await provider(messages, {
   model: 'gpt-4o',
   tools: [weatherTool],
 });
@@ -331,8 +329,6 @@ if (result.toolCalls) {
 }
 ```
 
-## 🚀 Quick Recipes
-
 ### Chat with Image
 
 ```typescript
@@ -341,7 +337,7 @@ import { createProvider, userImage, printStream } from '@chinmaymk/aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 const message = userImage('Describe this image', 'data:image/jpeg;base64,...');
 
-await printStream(provider.generate([message], { model: 'gpt-4o' }));
+await printStream(provider([message], { model: 'gpt-4o' }));
 ```
 
 ### Streaming Tool Use
@@ -358,15 +354,12 @@ const tool = createTool('calculator', 'Do math', {
   required: [],
 });
 
-await processStream(
-  provider.generate([userText('What is 2+2?')], { model: 'gpt-4o', tools: [tool] }),
-  {
-    onDelta: delta => process.stdout.write(delta),
-    onChunk: chunk => {
-      if (chunk.toolCalls) console.log('\n[Tool call detected]');
-    },
-  }
-);
+await processStream(provider([userText('What is 2+2?')], { model: 'gpt-4o', tools: [tool] }), {
+  onDelta: delta => process.stdout.write(delta),
+  onChunk: chunk => {
+    if (chunk.toolCalls) console.log('\n[Tool call detected]');
+  },
+});
 ```
 
 ### Multi-Provider Comparison
@@ -380,7 +373,7 @@ const providers = [
 
 for (const { name, provider, model } of providers) {
   console.log(`\n${name}:`);
-  const result = await provider.generate([userText('Hello!')], { model });
+  const result = await provider([userText('Hello!')], { model });
   console.log(result.content);
 }
 ```

@@ -10,12 +10,12 @@ Streaming provides immediate feedback to users instead of making them wait for c
 
 The simplest way to stream is with `printStream()`. It handles everything and outputs directly to the console.
 
-````typescript
+```typescript
 import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // Prepare message
@@ -25,7 +25,7 @@ console.log('Streaming story:');
 
 // Stream with configuration
 const result = await printStream(
-  provider.generate(messages, {
+  provider(messages, {
     model: 'gpt-4o',
     maxOutputTokens: 200,
     temperature: 0.8,
@@ -33,22 +33,23 @@ const result = await printStream(
 );
 
 console.log(`\nCompleted: ${result.finishReason}`);
+```
 
 > **💡 Helper Functions are Optional**
 > Functions like `printStream()` and `processStream()` are convenience helpers for common streaming patterns. You can always handle streams manually:
->
-> ```typescript
-> // Using helper (recommended)
-> await printStream(stream);
->
-> // Manual handling (also valid)
-> for await (const chunk of stream) {
->   process.stdout.write(chunk.delta);
->   if (chunk.finishReason) {
->     console.log(`\nFinished: ${chunk.finishReason}`);
->   }
-> }
-> ```
+
+```typescript
+// Using helper (recommended)
+await printStream(stream);
+
+// Manual handling (also valid)
+for await (const chunk of stream) {
+  process.stdout.write(chunk.delta);
+  if (chunk.finishReason) {
+    console.log(`\nFinished: ${chunk.finishReason}`);
+  }
+}
+```
 
 ## Manual Stream Handling
 
@@ -62,7 +63,7 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 const messages = [userText('Explain photosynthesis step by step.')];
 
 console.log('Manual streaming:');
-for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 300 })) {
+for await (const chunk of provider(messages, { model: 'gpt-4o', maxOutputTokens: 300 })) {
   // chunk.delta contains the new text
   process.stdout.write(chunk.delta);
 
@@ -72,7 +73,7 @@ for await (const chunk of provider.generate(messages, { model: 'gpt-4o', maxOutp
     break;
   }
 }
-````
+```
 
 ## Advanced Stream Processing
 
@@ -88,26 +89,23 @@ const messages = [userText('List 5 programming best practices with explanations.
 let wordCount = 0;
 let chunkCount = 0;
 
-const result = await processStream(
-  provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 400 }),
-  {
-    onDelta: delta => {
-      // Count words as they arrive
-      wordCount += delta.split(/\s+/).filter(word => word.length > 0).length;
-      process.stdout.write(delta);
-    },
-    onChunk: chunk => {
-      chunkCount++;
-      // Show progress every 10 chunks
-      if (chunkCount % 10 === 0) {
-        process.stdout.write(`\n[${wordCount} words so far]\n`);
-      }
-    },
-    onFinish: finishReason => {
-      console.log(`\nCompleted: ${finishReason} (${wordCount} words, ${chunkCount} chunks)`);
-    },
-  }
-);
+const result = await processStream(provider(messages, { model: 'gpt-4o', maxOutputTokens: 400 }), {
+  onDelta: delta => {
+    // Count words as they arrive
+    wordCount += delta.split(/\s+/).filter(word => word.length > 0).length;
+    process.stdout.write(delta);
+  },
+  onChunk: chunk => {
+    chunkCount++;
+    // Show progress every 10 chunks
+    if (chunkCount % 10 === 0) {
+      process.stdout.write(`\n[${wordCount} words so far]\n`);
+    }
+  },
+  onFinish: finishReason => {
+    console.log(`\nCompleted: ${finishReason} (${wordCount} words, ${chunkCount} chunks)`);
+  },
+});
 
 console.log(`\nFinal result: ${result.content.length} characters`);
 ```
@@ -124,7 +122,7 @@ const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! 
 const messages = [userText('Write a haiku about programming.')];
 
 console.log('Collecting complete response...');
-const stream = provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
+const stream = provider(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
 
 // This streams internally but returns the complete response
 const result = await collectDeltas(stream);
@@ -172,7 +170,7 @@ import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 try {
-  await processStream(provider.generate([userText('Hello!')], { model: 'gpt-4o' }), {
+  await processStream(provider([userText('Hello!')], { model: 'gpt-4o' }), {
     onDelta: delta => process.stdout.write(delta),
     onFinish: reason => {
       console.log(`\nStream completed: ${reason}`);
@@ -202,7 +200,7 @@ const messages = [userText('Write a paragraph about TypeScript benefits.')];
 // Streaming approach - user sees immediate output
 console.log('Streaming approach:');
 const streamStart = Date.now();
-await printStream(provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 }));
+await printStream(provider(messages, { model: 'gpt-4o', maxOutputTokens: 200 }));
 const streamTime = Date.now() - streamStart;
 console.log(`Streaming time: ${streamTime}ms\n`);
 
@@ -210,7 +208,7 @@ console.log(`Streaming time: ${streamTime}ms\n`);
 console.log('Collect-all approach:');
 const collectStart = Date.now();
 const collectResult = await collectDeltas(
-  provider.generate(messages, { model: 'gpt-4o', maxOutputTokens: 200 })
+  provider(messages, { model: 'gpt-4o', maxOutputTokens: 200 })
 );
 const collectTime = Date.now() - collectStart;
 
@@ -259,10 +257,10 @@ async function streamMarkdown(stream: AsyncIterable<any>) {
 
 // Use your custom handler
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
-const stream = provider.generate(
-  [userText('Show me a simple JavaScript function with explanation.')],
-  { model: 'gpt-4o', maxOutputTokens: 300 }
-);
+const stream = provider([userText('Show me a simple JavaScript function with explanation.')], {
+  model: 'gpt-4o',
+  maxOutputTokens: 300,
+});
 
 await streamMarkdown(stream);
 ````

@@ -20,6 +20,7 @@ Perfect for:
 - **Streaming applications** - Real-time chat interfaces, live content generation
 - **Multimodal projects** - Apps that combine text and images
 - **AI-powered tools** - Function calling for weather, calculations, database queries
+- **Reasoning applications** - Access to model thinking processes
 - **Prototyping** - Quick experimentation with different models
 - **Production apps** - Type-safe, reliable AI integration
 
@@ -63,15 +64,14 @@ Yes! AIKit uses only the built-in `fetch` API, so it works in any modern JavaScr
 AIKit providers are plain async generators, making them easy to mock:
 
 ```typescript
-const mockProvider = {
-  async *generate(messages, options) {
-    yield { delta: 'Hello ' };
-    yield { delta: 'test!' };
-    yield { delta: '', finishReason: 'stop', content: 'Hello test!' };
-  },
+const mockProvider = async function* (messages, options) {
+  yield { delta: 'Hello ', content: 'Hello ', finishReason: null };
+  yield { delta: 'test!', content: 'Hello test!', finishReason: null };
+  yield { delta: '', content: 'Hello test!', finishReason: 'stop' };
 };
 
 // Use in tests just like a real provider
+const result = await collectDeltas(mockProvider(messages, options));
 ```
 
 ## Which models support images?
@@ -94,12 +94,23 @@ Yes, but with some differences:
 
 AIKit normalizes these differences so your code works the same across providers.
 
+## Which models support reasoning?
+
+Reasoning (access to model thinking processes) is supported by:
+
+- **OpenAI**: o1-2024-12-17, o1-mini, o1-preview
+- **Anthropic**: claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022 (with thinking enabled)
+- **Google**: Experimental support in some Gemini models
+
+Use the `reasoning` parameter for OpenAI and `thinking` parameter for Anthropic.
+
 ## Can I stream with tools and images?
 
 Yes! AIKit supports streaming with all features:
 
 - Tool calls can be streamed
 - Images work in streaming conversations
+- Reasoning content streams in real-time
 - You can combine all features together
 
 ## How fast is AIKit compared to direct API calls?
@@ -119,7 +130,7 @@ async function cachedGenerate(provider, messages, options) {
     return cache.get(key);
   }
 
-  const result = await provider.generate(messages, options);
+  const result = await generate(provider, messages, options);
   cache.set(key, result);
   return result;
 }
@@ -158,6 +169,7 @@ Verify:
 - Tool choice is set correctly (auto, required, or none)
 - Tool service functions return valid JSON strings
 - Error handling is in place for tool failures
+- Use `executeToolCall()` helper for automatic execution
 
 ## Streaming isn't working
 
@@ -167,6 +179,15 @@ Common fixes:
 - Check that the provider supports streaming (all supported providers do)
 - Verify error handling doesn't interfere with the stream
 - Try the `printStream` helper for debugging
+
+## Reasoning isn't working
+
+Check:
+
+- Model supports reasoning (see supported models above)
+- Using correct parameters (`reasoning` for OpenAI, `thinking` for Anthropic)
+- API key has access to reasoning features
+- Use `collectDeltas()` or `processStream()` to access reasoning content
 
 ## Where can I find more examples?
 

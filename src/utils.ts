@@ -417,20 +417,20 @@ export async function processStream(
 /**
  * Prints stream deltas to stdout as they arrive.
  * The classic "typewriter effect" - watch the AI think in real-time!
- * Also logs when the stream finishes. Perfect for CLI applications.
+ * Perfect for demos, debugging, or when you just want to see magic happen.
  * @param stream - The async iterable stream of chunks
  * @returns A promise that resolves to the complete stream result
  * @group Stream Helpers
  * @example
  * ```typescript
- * const result = await printStream(provider.generate(messages, options));
- * // Prints each character as it arrives, then shows "[Finished: stop]"
+ * // Simple and magical - just watch it type
+ * const result = await printStream(provider(messages, { model: 'gpt-4o' }));
+ * console.log('\nFinal result:', result.content);
  * ```
  */
 export async function printStream(stream: AsyncIterable<StreamChunk>): Promise<StreamResult> {
   return processStream(stream, {
     onDelta: delta => process.stdout.write(delta),
-    onFinish: reason => reason && console.log(`\n[Finished: ${reason}]`),
   });
 }
 
@@ -485,17 +485,16 @@ export async function* mapStream<T, U>(
 }
 
 /**
- * Converts an async iterable stream to a Web API ReadableStream.
- * For when you need to interface with web APIs that expect ReadableStreams.
- * Bridges the gap between our world and the browser's world.
- * @param stream - The async iterable stream
- * @returns A ReadableStream
+ * A utility function that converts an async iterable to a ReadableStream.
+ * For when you need to bridge the gap between AIKit streams and Web APIs.
+ * Useful in browsers or when working with other streaming libraries.
+ * @param stream - The async iterable to convert
+ * @returns A ReadableStream that yields the same values
  * @group Stream Helpers
  * @example
  * ```typescript
- * const readableStream = toReadableStream(stream);
- * const reader = readableStream.getReader();
- * const { value, done } = await reader.read();
+ * const readableStream = toReadableStream(provider(messages, options));
+ * // Now you can pipe it to other web streams
  * ```
  */
 export function toReadableStream<T>(stream: AsyncIterable<T>): ReadableStream<T> {
@@ -505,7 +504,6 @@ export function toReadableStream<T>(stream: AsyncIterable<T>): ReadableStream<T>
     async pull(controller) {
       try {
         const { value, done } = await iterator.next();
-
         if (done) {
           controller.close();
         } else {
@@ -515,20 +513,27 @@ export function toReadableStream<T>(stream: AsyncIterable<T>): ReadableStream<T>
         controller.error(error);
       }
     },
+
+    async cancel() {
+      if (typeof iterator.return === 'function') {
+        await iterator.return();
+      }
+    },
   });
 }
 
 /**
- * A fluent builder for creating conversation message arrays.
- * Chain methods together to build complex conversations with ease.
- * It's like a conversation, but programmatically constructed!
- * @group Conversation Helpers
+ * A builder class for constructing conversation arrays with method chaining.
+ * For when you want your code to read like a conversation.
+ * Much more elegant than manually pushing to arrays like a barbarian.
+ * @group Message Helpers
  * @example
  * ```typescript
- * const messages = new ConversationBuilder()
- *   .system("You are helpful")
- *   .user("Hello")
- *   .assistant("Hi there!")
+ * const messages = conversation()
+ *   .system("You are a helpful assistant")
+ *   .user("Hello!")
+ *   .assistant("Hi there! How can I help?")
+ *   .user("Tell me a joke")
  *   .build();
  * ```
  */
@@ -536,9 +541,10 @@ export class ConversationBuilder {
   private messages: Message[] = [];
 
   /**
-   * Adds a system message to the conversation.
-   * @param text - The system message text
-   * @returns This builder instance for chaining
+   * Add a system message to the conversation.
+   * Sets the AI's personality and behavior. Use this to give your AI some character!
+   * @param text - The system instruction
+   * @returns This builder for chaining
    */
   system(text: string): this {
     this.messages.push(systemText(text));
@@ -546,9 +552,10 @@ export class ConversationBuilder {
   }
 
   /**
-   * Adds a user message to the conversation.
-   * @param text - The user message text
-   * @returns This builder instance for chaining
+   * Add a user message to the conversation.
+   * This is you talking to the AI. Be nice - it's listening!
+   * @param text - The user's message
+   * @returns This builder for chaining
    */
   user(text: string): this {
     this.messages.push(userText(text));
@@ -556,10 +563,11 @@ export class ConversationBuilder {
   }
 
   /**
-   * Adds a user message with an image to the conversation.
-   * @param text - The message text
-   * @param imageData - Base64 encoded image data or data URL
-   * @returns This builder instance for chaining
+   * Add a user message with an image to the conversation.
+   * Show, don't tell. Perfect for multimodal interactions.
+   * @param text - The text part of the message
+   * @param imageData - Base64 encoded image data
+   * @returns This builder for chaining
    */
   userWithImage(text: string, imageData: string): this {
     this.messages.push(userImage(text, imageData));
@@ -567,9 +575,10 @@ export class ConversationBuilder {
   }
 
   /**
-   * Adds an assistant message to the conversation.
-   * @param text - The assistant message text
-   * @returns This builder instance for chaining
+   * Add an assistant message to the conversation.
+   * Put words in the AI's mouth. Useful for few-shot examples or continuing conversations.
+   * @param text - The assistant's message
+   * @returns This builder for chaining
    */
   assistant(text: string): this {
     this.messages.push(assistantText(text));
@@ -577,10 +586,12 @@ export class ConversationBuilder {
   }
 
   /**
-   * Adds a tool result message to the conversation.
-   * @param toolCallId - The ID of the tool call this result is for
-   * @param result - The result data from the tool execution
-   * @returns This builder instance for chaining
+   * Add a tool result message to the conversation.
+   * This is how you tell the AI what happened when it used a tool.
+   * Complete the circle of tool calling life.
+   * @param toolCallId - The ID of the tool call
+   * @param result - The result from executing the tool
+   * @returns This builder for chaining
    */
   tool(toolCallId: string, result: string): this {
     this.messages.push(toolResult(toolCallId, result));
@@ -588,9 +599,10 @@ export class ConversationBuilder {
   }
 
   /**
-   * Adds a custom message to the conversation.
+   * Add a pre-constructed message to the conversation.
+   * For when you need full control or have a message from elsewhere.
    * @param message - The message to add
-   * @returns This builder instance for chaining
+   * @returns This builder for chaining
    */
   addMessage(message: Message): this {
     this.messages.push(message);
@@ -598,16 +610,18 @@ export class ConversationBuilder {
   }
 
   /**
-   * Builds and returns the conversation as a message array.
-   * @returns A copy of the constructed message array
+   * Build and return the conversation array.
+   * The moment of truth - convert your fluent conversation into the format AIKit expects.
+   * @returns The array of messages
    */
   build(): Message[] {
     return [...this.messages];
   }
 
   /**
-   * Clears all messages from the builder.
-   * @returns This builder instance for chaining
+   * Clear all messages from the conversation.
+   * Start fresh. Sometimes we all need a clean slate.
+   * @returns This builder for chaining
    */
   clear(): this {
     this.messages = [];
@@ -616,33 +630,34 @@ export class ConversationBuilder {
 }
 
 /**
- * Factory function for creating a new ConversationBuilder.
- * Because sometimes you just want a fresh start.
+ * Creates a new conversation builder.
+ * Your entry point to fluent conversation building.
+ * Like a conversation starter, but for code.
  * @returns A new ConversationBuilder instance
- * @group Conversation Helpers
+ * @group Message Helpers
  * @example
  * ```typescript
  * const messages = conversation()
- *   .system("You are helpful")
- *   .user("Hello")
+ *   .system("Be helpful and concise")
+ *   .user("What's 2+2?")
  *   .build();
  * ```
  */
 export const conversation = () => new ConversationBuilder();
 
 /**
- * Generates a complete response from an AI provider.
- * This is the main function you'll use for getting AI responses.
- * It collects all the deltas and gives you the final result.
- * @param provider - The AI provider to use for generation (functional)
+ * A convenience function that calls a provider and collects the complete result.
+ * For when you want the streaming benefits internally but need the full result.
+ * Essentially provider(...args) but with automatic result collection.
+ * @param provider - The AI provider function
  * @param messages - The conversation messages
- * @param options - Generation options (model, temperature, etc.)
+ * @param options - Generation options
  * @returns A promise that resolves to the complete generation result
- * @group Generation Helpers
+ * @group Provider Helpers
  * @example
  * ```typescript
- * const result = await generate(provider, [userText("Hello")], { model: "gpt-4o" });
- * console.log(result.content); // The AI's complete response
+ * const result = await generate(provider, messages, { temperature: 0.7 });
+ * console.log(result.content);
  * ```
  */
 export const generate = async (
@@ -650,23 +665,24 @@ export const generate = async (
   messages: Message[],
   options: Partial<GenerationOptions> = {}
 ): Promise<StreamResult> => {
-  return collectDeltas(provider(messages, options));
+  const stream = provider(messages, options);
+  return collectStream(stream);
 };
 
 /**
- * Executes a tool call using provided service functions.
- * This is how you bridge the gap between AI tool calls and your actual functions.
- * The AI says "call this function", and this function actually calls it.
+ * Executes a tool call by matching it to a service function.
+ * The bridge between AI intentions and real-world actions.
+ * Your AI says "call get_weather", this function makes it happen.
  * @param toolCall - The tool call from the AI
- * @param services - Object mapping tool names to functions
- * @returns The JSON stringified result of the tool execution
+ * @param services - Object mapping tool names to actual functions
+ * @returns The stringified result of the tool execution
  * @group Tool Helpers
  * @example
  * ```typescript
- * const services = {
- *   get_weather: (location: string) => ({ temp: 22, condition: "sunny" })
- * };
- * const result = executeToolCall(toolCall, services);
+ * const result = executeToolCall(toolCall, {
+ *   get_weather: (location, unit) => getWeatherData(location, unit),
+ *   calculate: (expression) => eval(expression) // Don't actually do this!
+ * });
  * ```
  */
 export const executeToolCall = (
@@ -676,9 +692,16 @@ export const executeToolCall = (
 ): string => {
   const service = services[toolCall.name];
   if (!service) {
-    throw new Error(`Unknown tool: ${toolCall.name}`);
+    throw new Error(`No service found for tool: ${toolCall.name}`);
   }
 
-  const result = service(...Object.values(toolCall.arguments));
-  return JSON.stringify(result);
+  try {
+    const args =
+      typeof toolCall.arguments === 'string' ? JSON.parse(toolCall.arguments) : toolCall.arguments;
+
+    const result = service(...Object.values(args));
+    return typeof result === 'string' ? result : JSON.stringify(result);
+  } catch (error) {
+    throw new Error(`Tool execution failed: ${error}`);
+  }
 };

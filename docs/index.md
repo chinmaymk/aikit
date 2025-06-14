@@ -83,7 +83,7 @@ const provider = createProvider('openai', {
 });
 
 // Start streaming generation
-const stream = provider.generate([userText('Tell me a story')], {
+const stream = provider([userText('Tell me a story')], {
   model: 'gpt-4o',
 });
 
@@ -111,7 +111,7 @@ const provider = createProvider('openai', {
 const message = userImage('What is in this image?', 'data:image/jpeg;base64,...');
 
 // Generate response
-const result = await provider.generate([message], {
+const result = await provider([message], {
   model: 'gpt-4o',
 });
 
@@ -147,7 +147,7 @@ const weatherTool = createTool('get_weather', 'Get the weather for a location', 
 });
 
 // Generate with tools available
-const result = await provider.generate([userText("What's the weather in Tokyo?")], {
+const result = await provider([userText("What's the weather in Tokyo?")], {
   model: 'gpt-4o',
   tools: [weatherTool],
 });
@@ -226,53 +226,68 @@ console.log('Answer:', o1Result.content);
 console.log('Reasoning:', o1Result.reasoning);
 ```
 
-## Provider Flexibility
+## Switching Providers
 
-Switch between providers with a single line change. Same API, different AI behind the scenes.
+Want to compare different AI models? AIKit makes it trivial to switch between OpenAI, Anthropic, and Google.
 
 ```ts
-import { createProvider } from '@chinmaymk/aikit';
+import { createProvider, userText } from '@chinmaymk/aikit';
 
-// Pick your AI provider
-const openai = createProvider('openai', {
-  apiKey: '...',
-});
-
-const anthropic = createProvider('anthropic', {
-  apiKey: '...',
-});
-
-const google = createProvider('google', {
-  apiKey: '...',
-});
-
-// Same interface for all
 const messages = [userText('Explain quantum computing')];
 const options = { temperature: 0.7, maxOutputTokens: 200 };
 
-// They all work the same way
-const openaiResult = await openai.generate(messages, { ...options, model: 'gpt-4o' });
+// Try OpenAI
+const openai = createProvider('openai', { apiKey: '...' });
+const openaiResult = await openai(messages, { ...options, model: 'gpt-4o' });
 
-const anthropicResult = await anthropic.generate(messages, {
+// Try Anthropic with the same messages
+const anthropic = createProvider('anthropic', { apiKey: '...' });
+const anthropicResult = await anthropic(messages, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
+
+// Try Google with the same messages
+const google = createProvider('google', { apiKey: '...' });
+const googleResult = await google(messages, { ...options, model: 'gemini-2.0-flash' });
+
+// Now compare their answers!
+console.log('OpenAI:', openaiResult.content);
+console.log('Anthropic:', anthropicResult.content);
+console.log('Google:', googleResult.content);
 ```
 
-## Model Support
+## Choosing the Right Model
 
-**AIKit doesn't restrict which models you can use**—pass any model string that the provider API accepts. This includes new models, custom fine-tuned models, or beta releases.
+Each provider has different models optimized for different tasks. Pick the one that fits your needs:
 
 ```ts
-// Use any model supported by the provider
-await openai.generate(messages, { model: 'gpt-4o' });
-await openai.generate(messages, { model: 'your-custom-model' });
+// For OpenAI - balance cost vs capability
+await openai(messages, { model: 'gpt-4o-mini' }); // Fast & cheap
+await openai(messages, { model: 'gpt-4o' }); // Smart & capable
+await openai(messages, { model: 'o1-mini' }); // Reasoning & problem-solving
 
-await anthropic.generate(messages, { model: 'claude-3-5-sonnet-20241022' });
-await google.generate(messages, { model: 'gemini-2.0-flash' });
+// For Anthropic - different strengths
+await anthropic(messages, { model: 'claude-3-5-haiku-20241022' }); // Quick responses
+await anthropic(messages, { model: 'claude-3-5-sonnet-20241022' }); // Best overall
+
+// For Google - various capabilities
+await google(messages, { model: 'gemini-1.5-flash' }); // Fast multimodal
+await google(messages, { model: 'gemini-2.0-flash' }); // Latest model
 ```
 
-_AIKit includes a reference list of available models per provider in the library, but this is purely informational and doesn't limit what you can use._
+**Use any model the provider supports:**
+
+- New models as soon as they're released
+- Your custom fine-tuned models
+- Beta or experimental models
+
+```ts
+// These all work if the provider supports them
+await openai(messages, { model: 'your-custom-model' });
+await anthropic(messages, { model: 'claude-4-when-it-exists' });
+await google(messages, { model: 'models/your-tuned-gemini' });
+```
 
 ## What's Next?
 

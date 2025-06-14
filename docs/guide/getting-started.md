@@ -130,70 +130,75 @@ const result2 = await provider([userText('Be creative!')], {
 });
 ```
 
-## Provider Switching
+## Switching Between Providers
 
-The beauty of AIKit? Same code, different AI. Switch providers with one line.
+Need to try different AI providers? AIKit makes it seamless. Same code, different AI brain.
 
 ```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
 
-// Define once, use anywhere
-const question = [userText('Explain TypeScript in one sentence.')];
-const options = { temperature: 0.7, maxOutputTokens: 100 };
+const messages = [userText('Explain TypeScript in one sentence.')];
 
-// OpenAI
-const openai = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-const openaiResult = await openai(question, {
-  ...options,
+// Try OpenAI first
+const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const openaiResult = await openai(messages, {
   model: 'gpt-4o',
+  temperature: 0.7,
+  maxOutputTokens: 100,
 });
 
-// Anthropic
-const anthropic = createProvider('anthropic', {
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-const anthropicResult = await anthropic(question, {
-  ...options,
+// Switch to Anthropic - same message, different AI
+const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
+const anthropicResult = await anthropic(messages, {
   model: 'claude-3-5-sonnet-20241022',
+  temperature: 0.7,
+  maxOutputTokens: 100,
 });
 
-// Google
-const google = createProvider('google', {
-  apiKey: process.env.GOOGLE_API_KEY!,
+// Or try Google - still the same message format
+const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
+const googleResult = await google(messages, {
+  model: 'gemini-2.0-flash',
+  temperature: 0.7,
+  maxOutputTokens: 100,
 });
-const googleResult = await google(question, {
-  ...options,
-  model: 'gemini-1.5-pro',
-});
+
+// Compare the responses
+console.log('OpenAI says:', openaiResult.content);
+console.log('Anthropic says:', anthropicResult.content);
+console.log('Google says:', googleResult.content);
 ```
 
-## Model Flexibility
+**Why switch providers?**
 
-**AIKit doesn't restrict which models you can use**—pass any model string that the provider API accepts. This gives you access to new models, custom fine-tuned models, or beta releases without waiting for library updates.
+- Compare response quality for your specific use case
+- Test different pricing models
+- Avoid downtime if one provider has issues
+- Use provider-specific features (like OpenAI's o-series reasoning)
+
+## Switching Between Models
+
+Each provider offers different models with different capabilities. Here's how to pick the right one:
 
 ```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const messages = [userText('Write a haiku about programming')];
 
-// Use any model the provider supports
-await provider([userText('Hello!')], { model: 'gpt-4o' });
-await provider([userText('Hello!')], { model: 'gpt-4o-mini' });
-await provider([userText('Hello!')], { model: 'your-custom-fine-tuned-model' });
+// Fast and cheap for simple tasks
+const fastResult = await provider(messages, { model: 'gpt-4o-mini' });
 
-// Same for other providers
-const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
-await anthropic([userText('Hello!')], { model: 'claude-3-5-sonnet-20241022' });
-await anthropic([userText('Hello!')], { model: 'claude-3-5-haiku-20241022' });
+// More capable for complex tasks
+const smartResult = await provider(messages, { model: 'gpt-4o' });
 
-const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
-await google([userText('Hello!')], { model: 'gemini-2.0-flash' });
-await google([userText('Hello!')], { model: 'gemini-1.5-pro' });
+// Reasoning model for complex problem-solving
+const reasoningResult = await provider(messages, { model: 'o1-mini' });
+
+console.log('Fast model:', fastResult.content);
+console.log('Smart model:', smartResult.content);
+console.log('Reasoning model:', reasoningResult.content);
 ```
-
-_AIKit includes a reference list of available models per provider for informational purposes, but you're not limited to those models._
 
 ## Working with Images
 
