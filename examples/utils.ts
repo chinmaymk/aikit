@@ -2,6 +2,8 @@
  * Common utilities for AIKit examples
  */
 
+import { createProvider } from '@chinmaymk/aikit';
+
 export function getModelName(providerType: string): string {
   switch (providerType) {
     case 'openai':
@@ -45,4 +47,36 @@ export function createValidSampleImage(color: string): string {
   };
 
   return colors[color] || colors.red;
+}
+
+export function createProviderFromEnv() {
+  // Check environment variables in priority order
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      provider: createProvider('openai', { apiKey: process.env.OPENAI_API_KEY }),
+      type: 'openai' as const,
+      name: 'OpenAI',
+    };
+  }
+
+  if (process.env.ANTHROPIC_API_KEY) {
+    return {
+      provider: createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY }),
+      type: 'anthropic' as const,
+      name: 'Anthropic',
+    };
+  }
+
+  if (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY!;
+    return {
+      provider: createProvider('google', { apiKey }),
+      type: 'google' as const,
+      name: 'Google',
+    };
+  }
+
+  throw new Error(
+    'No API keys found. Please set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY environment variable.'
+  );
 }

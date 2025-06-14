@@ -11,20 +11,18 @@
 
 import {
   createProvider,
-  getAvailableProvider,
   type GenerationProviderType,
   generate,
   userText,
   systemText,
   conversation,
 } from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader } from './utils';
+import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 async function step1_SimpleGeneration() {
   printSectionHeader('Simple Text Generation');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const result = await generate(
     provider,
@@ -39,8 +37,7 @@ async function step1_SimpleGeneration() {
 async function step2_ConfigurationOptions() {
   printSectionHeader('Configuration Options');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const result = await generate(
     provider,
@@ -59,8 +56,7 @@ async function step2_ConfigurationOptions() {
 async function step3_SystemMessages() {
   printSectionHeader('System Messages for Behavior Control');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const basic = await generate(provider, [userText('Explain variables in JavaScript')], {
     model: getModelName(type!),
@@ -86,8 +82,7 @@ async function step3_SystemMessages() {
 async function step4_ConversationBuilder() {
   printSectionHeader('Conversation Builder Pattern');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const messages = conversation()
     .system('You are a helpful programming assistant')

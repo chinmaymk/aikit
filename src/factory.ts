@@ -16,7 +16,6 @@ import type {
   AnyEmbeddingProvider,
   GenerationProviderType,
   EmbeddingProviderType,
-  AvailableProviderResult,
 } from './types';
 
 import { createOpenAI as createOpenAIProvider } from './providers/openai_completions';
@@ -41,13 +40,6 @@ const embeddingProviders = {
   openai_embeddings: createOpenAIEmbeddingsProvider,
   google_embeddings: createGoogleEmbeddingsProvider,
 } as const;
-
-// Environment variable mappings for provider discovery
-const providerEnvKeys = [
-  { keys: ['OPENAI_API_KEY'], type: 'openai' as const, name: 'OpenAI' },
-  { keys: ['ANTHROPIC_API_KEY'], type: 'anthropic' as const, name: 'Anthropic' },
-  { keys: ['GOOGLE_API_KEY', 'GEMINI_API_KEY'], type: 'google' as const, name: 'Google' },
-] as const;
 
 /**
  * Creates an OpenAI provider using the Chat Completions API.
@@ -274,32 +266,4 @@ export function createProvider(
     default:
       throw new Error(`Unknown generation provider type: ${type}`);
   }
-}
-
-/**
- * Checks for available generation providers based on environment variables.
- * Returns the first available provider based on priority order.
- *
- * @example
- * ```typescript
- * const result = getAvailableProvider();
- * if (result.provider) {
- *   console.log(`Using ${result.name} provider`);
- *   const response = await result.provider(messages, { model: 'default' });
- * }
- * ```
- */
-export function getAvailableProvider(): AvailableProviderResult {
-  for (const { keys, type, name } of providerEnvKeys) {
-    const availableKey = keys.find(key => process.env[key]);
-    if (availableKey && process.env[availableKey]) {
-      try {
-        const provider = createProvider(type, { apiKey: process.env[availableKey]! });
-        return { provider, type, name } as AvailableProviderResult;
-      } catch {
-        continue;
-      }
-    }
-  }
-  return {};
 }

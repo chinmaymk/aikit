@@ -10,7 +10,6 @@
  */
 
 import {
-  getAvailableProvider,
   userText,
   userImage,
   userMultipleImages,
@@ -20,13 +19,18 @@ import {
   generate,
   conversation,
 } from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader, createValidSampleImage } from './utils';
+import {
+  getModelName,
+  printDelimiter,
+  printSectionHeader,
+  createValidSampleImage,
+  createProviderFromEnv,
+} from './utils';
 
 async function step1_SingleImageAnalysis() {
   printSectionHeader('Single Image Analysis');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const sampleImage = createValidSampleImage('yellow');
 
@@ -45,8 +49,7 @@ async function step1_SingleImageAnalysis() {
 async function step2_ManualContentCreation() {
   printSectionHeader('Manual Content Creation');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const sampleImage = createValidSampleImage('blue');
 
@@ -81,8 +84,7 @@ async function step2_ManualContentCreation() {
 async function step3_MultipleImages() {
   printSectionHeader('Multiple Images Comparison');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const redImage = createValidSampleImage('red');
   const blueImage = createValidSampleImage('blue');
@@ -106,8 +108,7 @@ async function step3_MultipleImages() {
 async function step4_ImagesInConversation() {
   printSectionHeader('Images in Conversation Flow');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const sampleImage = createValidSampleImage('blue');
 

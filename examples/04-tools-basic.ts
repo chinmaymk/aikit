@@ -11,7 +11,6 @@
  */
 
 import {
-  getAvailableProvider,
   conversation,
   createTool,
   generate,
@@ -20,7 +19,7 @@ import {
   toolResult,
   userText,
 } from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader } from './utils';
+import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 // === Tool Service Functions ===
 // These are the actual functions that will be called when the AI uses tools
@@ -104,13 +103,7 @@ const dateTimeService = (...args: unknown[]) => {
 async function basicToolExample() {
   printSectionHeader('Basic Tool Usage Example');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) {
-    console.log('No API keys found. Please set at least one API key.');
-    return;
-  }
-
-  const { provider, type, name } = providerResult;
+  const { provider, type, name } = createProviderFromEnv();
   console.log(`Using ${name} for tool examples\n`);
 
   const modelName = getModelName(type!);
@@ -192,10 +185,7 @@ async function basicToolExample() {
 async function multipleToolsExample() {
   printSectionHeader('Multiple Tools Example');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   // Define multiple tools
@@ -318,10 +308,7 @@ async function multipleToolsExample() {
 async function toolChoiceExample() {
   printSectionHeader('Tool Choice Control Example');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   const calculatorTool = createTool('calculator', 'Perform mathematical operations', {
@@ -385,10 +372,7 @@ async function toolChoiceExample() {
 async function toolErrorHandlingExample() {
   printSectionHeader('Tool Error Handling Example');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   const calculatorTool = createTool('calculator', 'Perform mathematical operations', {

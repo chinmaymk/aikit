@@ -8,25 +8,13 @@
  * 4. Structured conversation patterns
  */
 
-import {
-  getAvailableProvider,
-  conversation,
-  generate,
-  userText,
-  assistantText,
-} from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader } from './utils';
+import { conversation, generate, userText, assistantText } from '@chinmaymk/aikit';
+import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 async function basicConversationExample() {
   printSectionHeader('Basic Conversation Flow');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) {
-    console.log('No API keys found. Please set at least one API key.');
-    return;
-  }
-
-  const { provider, type, name } = providerResult;
+  const { provider, type, name } = createProviderFromEnv();
   console.log(`Using ${name} for conversation examples\n`);
 
   const modelName = getModelName(type!);
@@ -81,10 +69,7 @@ async function basicConversationExample() {
 async function contextPreservationExample() {
   printSectionHeader('Context Preservation Example');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   // Create a conversation with rich context
@@ -138,10 +123,7 @@ async function contextPreservationExample() {
 async function conversationWithMemoryLimitsExample() {
   printSectionHeader('Conversation with Memory Management');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   // Simulate a long conversation that needs memory management
@@ -204,10 +186,7 @@ async function conversationWithMemoryLimitsExample() {
 async function structuredConversationExample() {
   printSectionHeader('Structured Conversation Flow');
 
-  const providerResult = getAvailableProvider();
-  if (!providerResult) return;
-
-  const { provider, type } = providerResult;
+  const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
   // Simulate a structured interview/questionnaire

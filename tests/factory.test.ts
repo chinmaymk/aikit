@@ -4,7 +4,6 @@ import {
   createAnthropic,
   createGoogle,
   createProvider,
-  getAvailableProvider,
   createOpenAIEmbeddings,
   createGoogleEmbeddings,
   createEmbeddingsProvider,
@@ -274,92 +273,6 @@ describe('Factory Functions', () => {
       expect(() => {
         createProvider('unknown' as any, { apiKey: 'test' } as any);
       }).toThrow('Unknown generation provider type: unknown');
-    });
-  });
-
-  describe('getAvailableProvider', () => {
-    const originalEnv = process.env;
-
-    beforeEach(() => {
-      jest.resetModules();
-      process.env = { ...originalEnv };
-      delete process.env.OPENAI_API_KEY;
-      delete process.env.ANTHROPIC_API_KEY;
-      delete process.env.GOOGLE_API_KEY;
-      delete process.env.GEMINI_API_KEY;
-    });
-
-    afterEach(() => {
-      process.env = originalEnv;
-    });
-
-    it('should return OpenAI provider when OPENAI_API_KEY is available', () => {
-      process.env.OPENAI_API_KEY = 'test-openai-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('openai');
-      expect(result.name).toBe('OpenAI');
-    });
-
-    it('should return Anthropic provider when only ANTHROPIC_API_KEY is available', () => {
-      process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('anthropic');
-      expect(result.name).toBe('Anthropic');
-    });
-
-    it('should return Google provider when only GOOGLE_API_KEY is available', () => {
-      process.env.GOOGLE_API_KEY = 'test-google-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('google');
-      expect(result.name).toBe('Google');
-    });
-
-    it('should return Google provider when only GEMINI_API_KEY is available', () => {
-      process.env.GEMINI_API_KEY = 'test-gemini-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('google');
-      expect(result.name).toBe('Google');
-    });
-
-    it('should return OpenAI provider when multiple API keys are available (priority order)', () => {
-      process.env.OPENAI_API_KEY = 'test-openai-key';
-      process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-      process.env.GOOGLE_API_KEY = 'test-google-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('openai');
-      expect(result.name).toBe('OpenAI');
-    });
-
-    it('should return empty object when no API keys are available', () => {
-      const result = getAvailableProvider();
-      expect(result.provider).toBeUndefined();
-      expect(result.type).toBeUndefined();
-      expect(result.name).toBeUndefined();
-    });
-
-    it('should handle provider creation errors gracefully and continue to next provider', () => {
-      // Set an empty API key which should cause provider creation to fail
-      process.env.OPENAI_API_KEY = '';
-      process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeDefined();
-      expect(result.type).toBe('anthropic');
-      expect(result.name).toBe('Anthropic');
-    });
-
-    it('should return empty object when all providers fail to create', () => {
-      process.env.OPENAI_API_KEY = '';
-      process.env.ANTHROPIC_API_KEY = '';
-      process.env.GOOGLE_API_KEY = '';
-      const result = getAvailableProvider();
-      expect(result.provider).toBeUndefined();
-      expect(result.type).toBeUndefined();
-      expect(result.name).toBeUndefined();
     });
   });
 });

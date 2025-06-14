@@ -12,22 +12,10 @@ export { createOpenAIEmbeddings, openaiEmbeddings } from './providers/openai_emb
 export { createGoogleEmbeddings, googleEmbeddings } from './providers/google_embeddings';
 
 // Export embedding factory functions
-export {
-  createOpenAIEmbeddings as createOpenAIEmbeddingsClass,
-  createGoogleEmbeddings as createGoogleEmbeddingsClass,
-  type EmbeddingProviderType,
-} from './factory';
+export { type EmbeddingProviderType } from './factory';
 
 // Export factory functions (with functional APIs)
-export {
-  createOpenAI as createOpenAIClass,
-  createAnthropic as createAnthropicClass,
-  createGoogle as createGoogleClass,
-  createProvider,
-  createEmbeddingsProvider,
-  getAvailableProvider,
-  type GenerationProviderType,
-} from './factory';
+export { createProvider, createEmbeddingsProvider, type GenerationProviderType } from './factory';
 
 // Export utility functions
 export * from './utils';

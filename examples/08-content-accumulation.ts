@@ -4,20 +4,13 @@
  * Demonstrates collectStream vs collectDeltas and content accumulation behavior.
  */
 
-import {
-  getAvailableProvider,
-  userText,
-  collectDeltas,
-  collectStream,
-  processStream,
-} from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader } from './utils';
+import { userText, collectDeltas, collectStream, processStream } from '@chinmaymk/aikit';
+import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 async function step1_BasicContentAccumulation() {
   printSectionHeader('Basic Content Accumulation');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [userText('Say "Hello World" and explain what it means in one sentence.')];
 
@@ -48,8 +41,7 @@ async function step1_BasicContentAccumulation() {
 async function step2_CollectDeltasVsCollectStream() {
   printSectionHeader('collectDeltas vs collectStream');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [userText('Count from 1 to 5.')];
 
@@ -85,8 +77,7 @@ async function step2_CollectDeltasVsCollectStream() {
 async function step3_ReasoningAccumulation() {
   printSectionHeader('Reasoning Content Accumulation (OpenAI o1 models only)');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   // Only test reasoning with OpenAI o1 models
   if (type !== 'openai') {
@@ -142,8 +133,7 @@ async function step3_ReasoningAccumulation() {
 async function step4_StreamProcessingPatterns() {
   printSectionHeader('Different Stream Processing Patterns');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [userText('Write a haiku about programming.')];
 

@@ -9,7 +9,6 @@
  */
 
 import {
-  getAvailableProvider,
   userText,
   systemText,
   conversation,
@@ -17,13 +16,12 @@ import {
   collectDeltas,
   printStream,
 } from '@chinmaymk/aikit';
-import { getModelName, printDelimiter, printSectionHeader } from './utils';
+import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 async function step1_BasicStreaming() {
   printSectionHeader('Basic Streaming');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) throw new Error('No API keys found, configure it manually');
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [
     systemText('You are a creative storyteller. Write engaging, concise stories.'),
@@ -44,8 +42,7 @@ async function step1_BasicStreaming() {
 async function step2_CustomStreamHandlers() {
   printSectionHeader('Custom Stream Handlers');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [userText('Explain how photosynthesis works in simple terms, step by step.')];
   let wordCount = 0;
@@ -80,8 +77,7 @@ async function step2_CustomStreamHandlers() {
 async function step3_CollectingDeltas() {
   printSectionHeader('Collecting Complete Responses');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const messages = conversation()
     .system('You are a senior software engineer. Provide practical, actionable advice.')
@@ -105,8 +101,7 @@ async function step3_CollectingDeltas() {
 async function step4_StreamingComparison() {
   printSectionHeader('Streaming vs Non-Streaming Comparison');
 
-  const { provider, type } = getAvailableProvider();
-  if (!provider) return;
+  const { provider, type } = createProviderFromEnv();
 
   const messages = [userText('Write a haiku about programming.')];
 

@@ -430,7 +430,7 @@ export async function processStream(
  */
 export async function printStream(stream: AsyncIterable<StreamChunk>): Promise<StreamResult> {
   return processStream(stream, {
-    onDelta: delta => process.stdout.write(delta),
+    onDelta: delta => console.log(delta),
   });
 }
 

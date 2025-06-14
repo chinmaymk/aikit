@@ -668,22 +668,6 @@ export interface AnthropicOptions extends ProviderOptions {
 }
 
 /**
- * Interface for AI providers that support embedding generation.
- * Embedding providers convert text into numerical vectors for semantic similarity tasks.
- * @group Types
- */
-export interface EmbeddingProvider<EmbedOpts extends EmbeddingOptions = EmbeddingOptions> {
-  /**
-   * Generate embeddings for one or more text inputs.
-   * Transforms text into numerical vectors that capture semantic meaning.
-   * @param texts - Array of text strings to embed. Each string will be converted to an embedding vector.
-   * @param options - Configuration options for the embedding generation.
-   * @returns Promise that resolves to an embedding response with vectors and usage information.
-   */
-  embed(texts: string[], options?: EmbedOpts): Promise<EmbeddingResponse>;
-}
-
-/**
  * Core type utilities for the AIKit library
  */
 
@@ -785,23 +769,3 @@ export type AnyEmbeddingProvider = OpenAIEmbeddingProvider | GoogleEmbeddingProv
  */
 export type GenerationProviderType = 'openai' | 'anthropic' | 'google' | 'openai_responses';
 export type EmbeddingProviderType = 'openai_embeddings' | 'google_embeddings';
-
-/**
- * Factory function result types
- */
-
-// Clean mapping of provider types to their implementations
-type ProviderTypeMap = {
-  openai: OpenAIProvider;
-  anthropic: AnthropicProvider;
-  google: GoogleProvider;
-  openai_responses: OpenAIResponsesProvider;
-};
-
-export interface AvailableProviderResult<
-  T extends GenerationProviderType = GenerationProviderType,
-> {
-  provider?: T extends keyof ProviderTypeMap ? ProviderTypeMap[T] : AnyGenerationProvider;
-  type?: T;
-  name?: string;
-}
