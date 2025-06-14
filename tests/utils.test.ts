@@ -677,7 +677,7 @@ describe('Stream Utilities', () => {
 
       const result = executeToolCall(toolCall, services);
 
-      expect(result).toBe('"simple result"');
+      expect(result).toBe('simple result');
     });
 
     it('should handle missing service', () => {
