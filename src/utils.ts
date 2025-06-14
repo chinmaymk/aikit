@@ -252,9 +252,9 @@ export const createTool = (
 });
 
 /**
- * Collects all deltas from a stream and accumulates them into final content.
- * This is the patient way to get your complete response.
- * Each chunk adds to the previous content, building up the full message.
+ * Collects all deltas from a stream and returns the complete result.
+ * This is the simplest way to convert a stream into a complete response.
+ * Perfect for when you want the streaming benefits but need the final result.
  * @param stream - The async iterable stream of chunks
  * @returns A promise that resolves to the complete stream result
  * @group Stream Helpers
@@ -278,6 +278,55 @@ export async function collectDeltas(stream: AsyncIterable<StreamChunk>): Promise
     if (chunk.finishReason) {
       finishReason = chunk.finishReason;
     }
+    if (chunk.toolCalls) {
+      toolCalls = chunk.toolCalls;
+    }
+  }
+
+  return {
+    content,
+    finishReason,
+    toolCalls,
+    reasoning: reasoning || undefined,
+  };
+}
+
+/**
+ * Collects the complete stream result using the accumulated content from chunks.
+ * This is the corrected version that uses chunk.content (already accumulated)
+ * instead of manually accumulating chunk.delta values.
+ * 
+ * Use this function when you want the streaming benefits but need the final result.
+ * This is more reliable than collectDeltas as it uses the provider's own content accumulation.
+ * @param stream - The async iterable stream of chunks
+ * @returns A promise that resolves to the complete stream result
+ * @group Stream Helpers
+ * @example
+ * ```typescript
+ * const result = await collectStream(provider.generate(messages, options));
+ * console.log(result.content); // Full generated text
+ * console.log(result.reasoning); // Full reasoning content if available
+ * ```
+ */
+export async function collectStream(stream: AsyncIterable<StreamChunk>): Promise<StreamResult> {
+  let content = '';
+  let reasoning = '';
+  let finishReason: StreamChunk['finishReason'];
+  let toolCalls: StreamChunk['toolCalls'];
+
+  for await (const chunk of stream) {
+    // Use the accumulated content from the chunk, not delta accumulation
+    content = chunk.content;
+    
+    if (chunk.reasoning) {
+      // Use the accumulated reasoning content, not delta accumulation
+      reasoning = chunk.reasoning.content;
+    }
+    
+    if (chunk.finishReason) {
+      finishReason = chunk.finishReason;
+    }
+    
     if (chunk.toolCalls) {
       toolCalls = chunk.toolCalls;
     }
@@ -333,7 +382,7 @@ export async function processStream(
     }
 
     if (handlers.onReasoning && chunk.reasoning) {
-      reasoning += chunk.reasoning.delta;
+      reasoning = chunk.reasoning.content;
       handlers.onReasoning({ content: reasoning, delta: chunk.reasoning.delta });
     }
 

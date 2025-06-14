@@ -28,7 +28,7 @@ import { APIClient } from './api';
  */
 export function createGoogleEmbeddings(
   config: WithApiKey<GoogleEmbeddingOptions>
-): EmbedFunction<Partial<GoogleEmbeddingOptions>> {
+): EmbedFunction<GoogleEmbeddingOptions> {
   if (!config.apiKey) {
     throw new Error('Google API key is required');
   }
@@ -47,7 +47,7 @@ export function createGoogleEmbeddings(
 
   return async function googleEmbeddings(
     texts: string[],
-    options: Partial<GoogleEmbeddingOptions> = {}
+    options?: Partial<GoogleEmbeddingOptions>
   ) {
     const mergedOptions = { ...defaultOptions, ...options };
 

@@ -24,7 +24,7 @@ import { OpenAI } from './openai';
  */
 export function createOpenAIEmbeddings(
   config: WithApiKey<OpenAIEmbeddingOptions>
-): EmbedFunction<Partial<OpenAIEmbeddingOptions>> {
+): EmbedFunction<OpenAIEmbeddingOptions> {
   if (!config.apiKey) {
     throw new Error('OpenAI API key is required');
   }
@@ -35,7 +35,7 @@ export function createOpenAIEmbeddings(
 
   return async function openaiEmbeddings(
     texts: string[],
-    options: Partial<OpenAIEmbeddingOptions> = {}
+    options?: Partial<OpenAIEmbeddingOptions>
   ): Promise<EmbeddingResponse> {
     const mergedOptions = { ...defaultOptions, ...options };
 

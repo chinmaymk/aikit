@@ -14,6 +14,7 @@ import {
   conversation,
   ConversationBuilder,
   collectDeltas,
+  collectStream,
   processStream,
   printStream,
   filterStream,
@@ -341,6 +342,90 @@ describe('Stream Utilities', () => {
     });
   });
 
+  describe('collectStream', () => {
+    it('should use accumulated content from chunks', async () => {
+      const stream = createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: 'Hello world' },
+        { delta: '!', content: 'Hello world!', finishReason: 'stop' },
+      ]);
+
+      const result = await collectStream(stream);
+      expect(result.content).toBe('Hello world!');
+      expect(result.finishReason).toBe('stop');
+    });
+
+    it('should handle reasoning content correctly', async () => {
+      const stream = createMockStream([
+        { 
+          delta: 'Hello', 
+          content: 'Hello',
+          reasoning: { delta: 'Let me think...', content: 'Let me think...' }
+        },
+        { 
+          delta: ' world', 
+          content: 'Hello world',
+          reasoning: { delta: ' about this.', content: 'Let me think... about this.' }
+        },
+        { 
+          delta: '!', 
+          content: 'Hello world!',
+          reasoning: { delta: ' Done!', content: 'Let me think... about this. Done!' },
+          finishReason: 'stop' 
+        },
+      ]);
+
+      const result = await collectStream(stream);
+      expect(result.content).toBe('Hello world!');
+      expect(result.reasoning).toBe('Let me think... about this. Done!');
+      expect(result.finishReason).toBe('stop');
+    });
+
+    it('should handle tool calls', async () => {
+      const toolCalls = [{ id: 'call_123', name: 'test', arguments: {} }];
+      const stream = createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: 'Hello world', toolCalls, finishReason: 'tool_use' },
+      ]);
+
+      const result = await collectStream(stream);
+      expect(result.content).toBe('Hello world');
+      expect(result.toolCalls).toEqual(toolCalls);
+      expect(result.finishReason).toBe('tool_use');
+    });
+
+    it('should handle empty stream', async () => {
+      const stream = createMockStream([]);
+      const result = await collectStream(stream);
+      expect(result.content).toBe('');
+      expect(result.finishReason).toBeUndefined();
+      expect(result.toolCalls).toBeUndefined();
+      expect(result.reasoning).toBeUndefined();
+    });
+
+    it('should differ from collectDeltas when content accumulation is broken', async () => {
+      // Edge case: provider incorrectly resets content
+      const stream = createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: ' world' }, // Broken provider resets content
+        { delta: '!', content: ' world!', finishReason: 'stop' },
+      ]);
+
+      const resultDeltas = await collectDeltas(stream);
+      const resultStream = await collectStream(createMockStream([
+        { delta: 'Hello', content: 'Hello' },
+        { delta: ' world', content: ' world' },
+        { delta: '!', content: ' world!', finishReason: 'stop' },
+      ]));
+
+      // collectDeltas accumulates deltas: "Hello world!"
+      expect(resultDeltas.content).toBe('Hello world!');
+      
+      // collectStream uses last accumulated content: " world!"
+      expect(resultStream.content).toBe(' world!');
+    });
+  });
+
   describe('processStream', () => {
     it('should call handlers for each event', async () => {
       const handlers = {
@@ -363,6 +448,40 @@ describe('Stream Utilities', () => {
       expect(handlers.onContent).toHaveBeenCalledWith('Hello world');
       expect(handlers.onFinish).toHaveBeenCalledWith('stop');
       expect(handlers.onChunk).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle reasoning content correctly', async () => {
+      const onReasoning = jest.fn();
+      
+      const stream = createMockStream([
+        { 
+          delta: 'Hello', 
+          content: 'Hello',
+          reasoning: { delta: 'Think...', content: 'Think...' }
+        },
+        { 
+          delta: ' world', 
+          content: 'Hello world',
+          reasoning: { delta: ' more.', content: 'Think... more.' }
+        },
+        { 
+          delta: '!', 
+          content: 'Hello world!',
+          reasoning: { delta: ' Done!', content: 'Think... more. Done!' },
+          finishReason: 'stop' 
+        },
+      ]);
+
+      const result = await processStream(stream, { onReasoning });
+
+      // Verify reasoning handler received accumulated content
+      expect(onReasoning).toHaveBeenCalledTimes(3);
+      expect(onReasoning).toHaveBeenNthCalledWith(1, { content: 'Think...', delta: 'Think...' });
+      expect(onReasoning).toHaveBeenNthCalledWith(2, { content: 'Think... more.', delta: ' more.' });
+      expect(onReasoning).toHaveBeenNthCalledWith(3, { content: 'Think... more. Done!', delta: ' Done!' });
+      
+      // Verify final result has correct reasoning
+      expect(result.reasoning).toBe('Think... more. Done!');
     });
   });
 
