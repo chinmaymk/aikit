@@ -239,6 +239,12 @@ export interface EmbeddingProviderOptions extends EmbeddingOptions {
   timeout?: number;
   /** Maximum number of retry attempts for failed requests. */
   maxRetries?: number;
+  /**
+   * A function that allows you to modify the headers before a request is sent.
+   * This is useful for adding custom headers or modifying existing ones.
+   * @param headers - The original headers object to mutate directly.
+   */
+  mutateHeaders?: (headers: Record<string, string>) => void;
 }
 
 /**
@@ -329,6 +335,12 @@ export interface ProviderOptions extends GenerationOptions {
   timeout?: number;
   /** Maximum number of retry attempts for failed requests. */
   maxRetries?: number;
+  /**
+   * A function that allows you to modify the headers before a request is sent.
+   * This is useful for adding custom headers or modifying existing ones.
+   * @param headers - The original headers object to mutate directly.
+   */
+  mutateHeaders?: (headers: Record<string, string>) => void;
 }
 
 /**

@@ -42,7 +42,7 @@ export function createGoogleEmbeddings(
   } = config;
 
   const headers = { 'Content-Type': 'application/json' };
-  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const client = new APIClient(baseURL, headers, timeout, maxRetries, config.mutateHeaders);
   const defaultOptions = { apiKey, ...defaultEmbeddingOptions };
 
   return async function googleEmbeddings(

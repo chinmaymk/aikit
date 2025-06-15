@@ -9,6 +9,7 @@ export namespace OpenAI {
     project?: string;
     timeout?: number;
     maxRetries?: number;
+    mutateHeaders?: (headers: Record<string, string>) => void;
   }
 
   // Chat Completions API Types

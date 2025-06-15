@@ -1019,4 +1019,92 @@ describe('GoogleProvider', () => {
       expect(chunks[1].finishReason).toBe('stop');
     });
   });
+
+  describe('mutateHeaders functionality', () => {
+    it('should call mutateHeaders function before making request', async () => {
+      const mutateHeaders = jest.fn((headers: Record<string, string>) => {
+        headers['X-Custom-Header'] = 'test-value';
+        headers['X-Request-ID'] = 'req-123';
+      });
+
+      const mockResponse = {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Hello! How can I help you today?' }],
+              role: 'model',
+            },
+            finishReason: 'STOP',
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 15,
+          totalTokenCount: 25,
+        },
+      };
+
+      const scope = nock('https://generativelanguage.googleapis.com')
+        .post(/\/v1beta\/models\/.*:streamGenerateContent/)
+        .matchHeader('X-Custom-Header', 'test-value')
+        .matchHeader('X-Request-ID', 'req-123')
+        .reply(200, `data: ${JSON.stringify(mockResponse)}\n\ndata: [DONE]\n`);
+
+      const google = createGoogle({
+        apiKey: 'test-key',
+        model: 'gemini-1.5-flash',
+        mutateHeaders,
+      });
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of google([userText('Hello')])) {
+        chunks.push(chunk);
+      }
+
+      expect(mutateHeaders).toHaveBeenCalledTimes(1);
+      expect(mutateHeaders).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Type': 'application/json',
+          'X-Custom-Header': 'test-value',
+          'X-Request-ID': 'req-123',
+        })
+      );
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].content).toBe('Hello! How can I help you today?');
+      expect(scope.isDone()).toBe(true);
+    });
+
+    it('should work without mutateHeaders function', async () => {
+      const mockResponse = {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Hello without mutation!' }],
+              role: 'model',
+            },
+            finishReason: 'STOP',
+          },
+        ],
+      };
+
+      const scope = nock('https://generativelanguage.googleapis.com')
+        .post(/\/v1beta\/models\/.*:streamGenerateContent/)
+        .matchHeader('Content-Type', 'application/json')
+        .reply(200, `data: ${JSON.stringify(mockResponse)}\n\ndata: [DONE]\n`);
+
+      const google = createGoogle({
+        apiKey: 'test-key',
+        model: 'gemini-1.5-flash',
+      });
+
+      const chunks: StreamChunk[] = [];
+      for await (const chunk of google([userText('Hello')])) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].content).toBe('Hello without mutation!');
+      expect(scope.isDone()).toBe(true);
+    });
+  });
 });

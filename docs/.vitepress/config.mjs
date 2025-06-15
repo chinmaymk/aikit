@@ -33,6 +33,7 @@ export default defineConfig({
             { text: 'Reasoning Models', link: '/guide/reasoning' },
             { text: 'Embeddings', link: '/guide/embeddings' },
             { text: 'Usage Tracking', link: '/guide/usage-tracking' },
+            { text: 'Custom Headers', link: '/guide/custom-headers' },
             { text: 'Express Integration', link: '/examples/express-integration' },
           ],
         },

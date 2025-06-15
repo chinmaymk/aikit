@@ -59,7 +59,8 @@ export class OpenAIClientFactory {
       config.baseURL ?? OPENAI_CONSTANTS.BASE_URL,
       headers,
       config.timeout,
-      config.maxRetries
+      config.maxRetries,
+      config.mutateHeaders
     );
   }
 }

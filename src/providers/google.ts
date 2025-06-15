@@ -48,7 +48,8 @@ export class GoogleClientFactory {
       config.baseURL ?? GOOGLE_CONSTANTS.BASE_URL,
       headers,
       config.timeout,
-      config.maxRetries
+      config.maxRetries,
+      config.mutateHeaders
     );
   }
 }

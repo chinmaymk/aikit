@@ -310,6 +310,22 @@ const options = {
 const result = await provider(messages, options);
 ```
 
+### Custom Headers
+
+Need to add custom headers for tracking, authentication, or debugging? Use the `mutateHeaders` option:
+
+```typescript
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+  mutateHeaders: headers => {
+    headers['X-Request-ID'] = `req-${Date.now()}`;
+    headers['X-User-Agent'] = 'MyApp/1.0';
+  },
+});
+```
+
+Learn more in the [Custom Headers guide](/guide/custom-headers).
+
 ## Error Handling
 
 Sometimes things go sideways. Here's how to catch them gracefully.

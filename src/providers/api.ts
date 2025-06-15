@@ -9,6 +9,7 @@ export class APIClient {
   private headers: Record<string, string>;
   private timeout?: number;
   private maxRetries?: number;
+  private mutateHeaders?: (headers: Record<string, string>) => void;
 
   /**
    * Initializes the API client.
@@ -16,17 +17,20 @@ export class APIClient {
    * @param defaultHeaders - The default headers to send with each request.
    * @param timeout - The request timeout in milliseconds.
    * @param maxRetries - The maximum number of times to retry a failed request.
+   * @param mutateHeaders - Optional function to mutate headers before each request.
    */
   constructor(
     baseUrl: string,
     defaultHeaders: Record<string, string>,
     timeout?: number,
-    maxRetries?: number
+    maxRetries?: number,
+    mutateHeaders?: (headers: Record<string, string>) => void
   ) {
     this.baseUrl = baseUrl;
     this.headers = defaultHeaders;
     this.timeout = timeout;
     this.maxRetries = maxRetries;
+    this.mutateHeaders = mutateHeaders;
   }
 
   /**
@@ -78,9 +82,12 @@ export class APIClient {
           timeoutId = setTimeout(() => controller.abort(), this.timeout);
         }
 
+        const headers = { ...this.headers };
+        this.mutateHeaders?.(headers);
+
         const response = await fetch(`${this.baseUrl}${endpoint}`, {
           method: 'POST',
-          headers: this.headers,
+          headers: headers,
           body: JSON.stringify(body),
           signal,
         });

@@ -57,7 +57,16 @@ export function createProxyProvider(
   options: Record<string, unknown>
 ): StreamingGenerateFunction<Record<string, unknown>> {
   // Extract proxy-specific options and validate them
-  const { baseURL, apiKey, endpoint, timeout, headers, ...providerOptions } = options;
+  const {
+    baseURL,
+    apiKey,
+    endpoint,
+    timeout,
+    headers,
+    maxRetries,
+    mutateHeaders,
+    ...providerOptions
+  } = options;
 
   if (typeof baseURL !== 'string' || !baseURL) {
     throw new Error('The `baseURL` option is required for `createProxy` and must be a string.');
@@ -80,7 +89,11 @@ export function createProxyProvider(
     const client = new APIClient(
       baseURL.replace(/\/$/, ''),
       clientHeaders,
-      typeof timeout === 'number' ? timeout : undefined
+      typeof timeout === 'number' ? timeout : undefined,
+      typeof maxRetries === 'number' ? maxRetries : undefined,
+      typeof mutateHeaders === 'function'
+        ? (mutateHeaders as (headers: Record<string, string>) => void)
+        : undefined
     );
 
     const request: ProxyRequest = {

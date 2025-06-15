@@ -60,7 +60,7 @@ export function createAnthropic(
     headers['anthropic-beta'] = beta.join(',');
   }
 
-  const client = new APIClient(baseURL, headers, timeout, maxRetries);
+  const client = new APIClient(baseURL, headers, timeout, maxRetries, config.mutateHeaders);
   const defaultOptions = { apiKey, beta, anthropicVersion, ...defaultGenerationOptions };
 
   return async function* anthropic(messages: Message[], options: Partial<AnthropicOptions> = {}) {

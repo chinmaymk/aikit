@@ -1,0 +1,38 @@
+---
+description: 
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+Here's a summary of valuable suggestions for control flow and organizing TypeScript and JavaScript code:
+
+---
+
+## Control Flow in JavaScript and TypeScript
+
+To write more concise, robust, and maintainable control flow code in JavaScript and TypeScript, consider these techniques:
+
+* **Leverage TypeScript's Advanced Control Flow Analysis:** Allow TypeScript to infer variable types based on your code's logic, reducing manual type checks.
+* **Use Discriminated Unions for Predictable Branching:** Employ discriminated unions to branch on a single property, which makes code easier to extend and reduces errors.
+* **Prefer Early Returns to Flatten Nesting:** Avoid deeply nested code by returning early from functions, enhancing readability and improving TypeScript's type narrowing.
+* **Use Array Methods for Declarative Control Flow:** Replace explicit loops and conditionals with functional array methods like `map`, `filter`, and `reduce` for more concise and expressive code.
+* **Structure Heavy Workloads to Respect the Event Loop:** For large computations, break down work into smaller chunks and yield control back to the event loop to prevent UI freezes in JavaScript.
+* **Use Type Guards and User-Defined Type Predicates:** Implement type guards to help TypeScript narrow types within control flow, making your code safer and reducing the need for manual type assertions.
+
+---
+
+## Organizing TypeScript Code
+
+For organizing and writing clean TypeScript code at the code level, focus on these actionable strategies:
+
+* **Prefer TypeScript's Type System Over `any`:** Use `unknown` instead of `any` for safer type handling and explicitly narrow types with type guards.
+* **Leverage Utility Types:** Utilize built-in utility types like `Partial`, `Omit`, and `Pick` to avoid repetitive type definitions.
+* **Prefer Interfaces and Type Aliases for Structure:** Define clear interfaces or type aliases for objects, function signatures, and external data to improve readability and enforce contracts.
+* **Use Destructuring for Cleaner Access:** Destructure objects and arrays in function parameters and assignments for more concise code.
+* **Implement Factories and Dependency Injection:** Use factory functions or dependency injection to decouple components, making code modular and testable.
+* **Embrace Strong Domain Types:** Create domain-specific types instead of relying solely on primitives to encapsulate business logic, improving code clarity and reducing errors.
+* **Use Barrel Files for Module Exports:** Consolidate exports in `index.ts` files within modules to simplify import statements.
+* **Avoid Overusing Type Assertions (`as`):** Use type assertions sparingly and only when absolutely necessary, not as a substitute for proper type definitions.
+* **Keep Functions Small and Focused:** Write pure, single-responsibility functions that are easy to test, reuse, and maintain.
+* **Prefer Composition Over Inheritance:** Use function composition or mixins for greater flexibility and to avoid complex inheritance hierarchies.
+* **Handle Errors Consistently:** Implement a unified error handling approach across your codebase.
+* **Use Enums for Fixed Sets of Values:** Use enums to represent related constants, enhancing code clarity and type safety.
