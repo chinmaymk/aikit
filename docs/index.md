@@ -43,38 +43,52 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 
 ## Quick Start
 
-```ts
-import { createProvider, userText, printStream } from '@chinmaymk/aikit';
-
-// Create your AI provider
-const openai = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-// Prepare your message
-const messages = [userText('Hello!')];
-
-// Simple approach - print directly to console
-await printStream(
-  openai(messages, {
-    model: 'gpt-4o',
-  })
-);
-
-// Or use the classic streaming approach
-for await (const chunk of openai(messages, { model: 'gpt-4o' })) {
-  process.stdout.write(chunk.delta);
-}
+```bash
+npm install @chinmaymk/aikit
 ```
 
-> **💡 Helper Functions are Optional**
-> AIKit provides helper functions like `userText()`, `systemText()`, and `userImage()` for convenience, but they're completely optional. You can always construct message objects manually or mix approaches as you prefer. The helpers just make common patterns more readable.
+AIKit gives you two ways to work with providers. Pick what feels right:
+
+```typescript
+import { createProvider, openai, userText } from '@chinmaymk/aikit';
+
+// Factory pattern - configure once, use many times
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
+});
+
+const result1 = await provider([userText('Hello!')]);
+const result2 = await provider([userText('Tell me a joke')], { temperature: 0.9 });
+
+// Direct functions - configure each time
+const result3 = await openai([userText('Hello!')], {
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
+});
+```
+
+> **💡 Helper Functions are Optional**  
+> Functions like `userText()`, `systemText()`, and `createProvider()` are convenience helpers. You can always construct message objects and providers manually if you prefer. For example:
+>
+> ```typescript
+> // Using helpers (recommended)
+> const messages = [userText('Hello!')];
+>
+> // Manual construction (also valid)
+> const messages = [
+>   {
+>     role: 'user',
+>     content: [{ type: 'text', text: 'Hello!' }],
+>   },
+> ];
+> ```
 
 ## Streaming, Natively
 
 Stream tokens as they're generated for real-time UX. AIKit exposes a simple async iterator for streaming, so you can build responsive apps without extra plumbing.
 
-```ts
+```typescript
 import { createProvider, userText, processStream } from '@chinmaymk/aikit';
 
 // Create provider
@@ -99,7 +113,7 @@ await processStream(stream, {
 
 Send images and text together to models like GPT-4o and Claude 3.5 Sonnet. AIKit's API is designed for completeness—if the model supports it, so do we.
 
-```ts
+```typescript
 import { createProvider, userImage } from '@chinmaymk/aikit';
 
 // Create provider
@@ -122,8 +136,8 @@ console.log(result.content);
 
 Define tools (function calling) and let the model invoke them as needed. AIKit exposes all provider options, so you can build advanced, automated workflows with minimal code.
 
-```ts
-import { createProvider, createTool, executeToolCall } from '@chinmaymk/aikit';
+```typescript
+import { createProvider, createTool, executeToolCall, userText } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -167,7 +181,7 @@ if (result.toolCalls) {
 
 Access the reasoning process of models that support it, like Claude (Anthropic) and o-series models (OpenAI). See how the model thinks through problems in real-time.
 
-```ts
+```typescript
 import { createProvider, userText, collectStream, processStream } from '@chinmaymk/aikit';
 
 // Anthropic Claude reasoning
@@ -230,26 +244,38 @@ console.log('Reasoning:', o1Result.reasoning);
 
 Want to compare different AI models? AIKit makes it trivial to switch between OpenAI, Anthropic, and Google.
 
-```ts
+```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
 
 const messages = [userText('Explain quantum computing')];
 const options = { temperature: 0.7, maxOutputTokens: 200 };
 
-// Try OpenAI
-const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
-const openaiResult = await openai(messages, { ...options, model: 'gpt-4o' });
+// Try OpenAI first
+const openai = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+const openaiResult = await openai(messages, {
+  ...options,
+  model: 'gpt-4o',
+});
 
 // Try Anthropic with the same messages
-const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
+const anthropic = createProvider('anthropic', {
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+});
 const anthropicResult = await anthropic(messages, {
   ...options,
   model: 'claude-3-5-sonnet-20241022',
 });
 
 // Try Google with the same messages
-const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
-const googleResult = await google(messages, { ...options, model: 'gemini-2.0-flash' });
+const google = createProvider('google', {
+  apiKey: process.env.GOOGLE_API_KEY!,
+});
+const googleResult = await google(messages, {
+  ...options,
+  model: 'gemini-2.0-flash',
+});
 
 // Now compare their answers!
 console.log('OpenAI:', openaiResult.content);
@@ -261,7 +287,7 @@ console.log('Google:', googleResult.content);
 
 Each provider has different models optimized for different tasks. Pick the one that fits your needs:
 
-```ts
+```typescript
 // OpenAI
 await openai(messages, { model: 'gpt-4o-mini' });
 await openai(messages, { model: 'gpt-4o' });
@@ -287,7 +313,7 @@ await google(messages, { model: 'gemini-2.5-pro-preview-06-05' });
 - Your custom fine-tuned models
 - Beta or experimental models
 
-```ts
+```typescript
 // These all work if the provider supports them
 await openai(messages, { model: 'your-custom-model' });
 await anthropic(messages, { model: 'claude-4-when-it-exists' });

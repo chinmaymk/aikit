@@ -42,68 +42,56 @@ Don't have them yet? Here's where to get them:
 
 ## Basic Generation
 
-Let's make the magic happen. Here's how to get a simple response from a model.
+Let's make the magic happen. Here's how to get a simple response from a model. AIKit offers two approaches—use what feels right for your situation:
+
+### Factory Pattern vs Direct Functions
 
 ```typescript
-import { createProvider, userText } from '@chinmaymk/aikit';
+import { createProvider, openai, userText } from '@chinmaymk/aikit';
 
-// Create your provider
+// Factory pattern - configure once, use many times
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
-});
-
-// Prepare your messages
-const messages = [userText('Hello, world!')];
-
-// Get a complete response
-const result = await provider(messages, {
   model: 'gpt-4o',
+  temperature: 0.7,
 });
 
-console.log(result.content);
+const result1 = await provider([userText('Hello!')]);
+const result2 = await provider([userText('Tell me a joke')], { temperature: 0.9 }); // Override
+
+// Direct functions - configure each time
+const result3 = await openai([userText('Hello!')], {
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
+  temperature: 0.7,
+});
 ```
 
+**Use factory pattern when:** Making multiple calls, building services, setting defaults  
+**Use direct functions when:** One-off calls, comparing providers, quick scripts
+
 > **💡 Helper Functions are Optional**  
-> Functions like `userText()`, `systemText()`, and `createProvider()` are convenience helpers. You can always construct message objects and providers manually if you prefer. For example:
->
-> ```typescript
-> // Using helpers (recommended)
-> const messages = [userText('Hello!')];
->
-> // Manual construction (also valid)
-> const messages = [
->   {
->     role: 'user',
->     content: [{ type: 'text', text: 'Hello!' }],
->   },
-> ];
-> ```
+> Functions like `userText()`, `systemText()`, and `createProvider()` are convenience helpers. You can always construct message objects and providers manually if you prefer.
 
 ## Streaming Responses
 
-Who has time to wait for a full response? Let's stream it in real-time.
+Real-time responses, character by character:
 
 ```typescript
 import { createProvider, userText, printStream } from '@chinmaymk/aikit';
 
-// Create provider
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o',
 });
 
-// Prepare message
-const messages = [userText('Tell me a very short story.')];
-
 // Simple streaming - print directly to console
-await printStream(
-  provider(messages, {
-    model: 'gpt-4o',
-  })
-);
+await printStream(provider([userText('Tell me a story')]));
 
-// Or handle the stream manually
-for await (const chunk of provider(messages, { model: 'gpt-4o' })) {
+// Manual control
+for await (const chunk of provider([userText('Count to 10')])) {
   process.stdout.write(chunk.delta);
+  if (chunk.finishReason) console.log('\nDone!');
 }
 ```
 
@@ -112,6 +100,8 @@ for await (const chunk of provider(messages, { model: 'gpt-4o' })) {
 AIKit uses a flexible configuration system where you can set defaults at construction time and override them at generation time. This gives you maximum flexibility while maintaining clean, readable code.
 
 ```typescript
+import { createProvider, userText } from '@chinmaymk/aikit';
+
 // Set defaults at construction
 const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
@@ -132,7 +122,7 @@ const result2 = await provider([userText('Be creative!')], {
 
 ## Switching Between Providers
 
-Need to try different AI providers? AIKit makes it seamless. Same code, different AI brain.
+Need to try different AI providers? AIKit makes it seamless:
 
 ```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
@@ -141,27 +131,15 @@ const messages = [userText('Explain TypeScript in one sentence.')];
 
 // Try OpenAI first
 const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
-const openaiResult = await openai(messages, {
-  model: 'gpt-4o',
-  temperature: 0.7,
-  maxOutputTokens: 100,
-});
+const openaiResult = await openai(messages, { model: 'gpt-4o' });
 
 // Switch to Anthropic - same message, different AI
 const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
-const anthropicResult = await anthropic(messages, {
-  model: 'claude-3-5-sonnet-20241022',
-  temperature: 0.7,
-  maxOutputTokens: 100,
-});
+const anthropicResult = await anthropic(messages, { model: 'claude-3-5-sonnet-20241022' });
 
 // Or try Google - still the same message format
 const google = createProvider('google', { apiKey: process.env.GOOGLE_API_KEY! });
-const googleResult = await google(messages, {
-  model: 'gemini-2.0-flash',
-  temperature: 0.7,
-  maxOutputTokens: 100,
-});
+const googleResult = await google(messages, { model: 'gemini-2.0-flash' });
 
 // Compare the responses
 console.log('OpenAI says:', openaiResult.content);
@@ -178,7 +156,7 @@ console.log('Google says:', googleResult.content);
 
 ## Switching Between Models
 
-Each provider offers different models with different capabilities. Here's how to pick the right one:
+Each provider offers different models with different capabilities:
 
 ```typescript
 import { createProvider, userText } from '@chinmaymk/aikit';
@@ -205,9 +183,11 @@ console.log('Reasoning model:', reasoningResult.content);
 Modern AI models can see. Let's show them something.
 
 ```typescript
-import { createProvider, userImage } from '@chinmaymk/aikit';
+import { createProvider, userImage, userMultipleImages } from '@chinmaymk/aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Single image analysis
 const message = userImage(
@@ -219,8 +199,6 @@ const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 
 // Multiple images
-import { userMultipleImages } from '@chinmaymk/aikit';
-
 const multiMessage = userMultipleImages('Compare these images. What are the differences?', [
   imageData1,
   imageData2,
@@ -238,14 +216,23 @@ Let your AI call functions. It's like giving it superpowers, but with more TypeS
 ```typescript
 import { createProvider, createTool, userText, executeToolCall } from '@chinmaymk/aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Define a weather tool
 const weatherTool = createTool('get_weather', 'Get current weather information for a location', {
   type: 'object',
   properties: {
-    location: { type: 'string', description: 'City name or location' },
-    unit: { type: 'string', enum: ['celsius', 'fahrenheit'], description: 'Temperature unit' },
+    location: {
+      type: 'string',
+      description: 'City name or location',
+    },
+    unit: {
+      type: 'string',
+      enum: ['celsius', 'fahrenheit'],
+      description: 'Temperature unit',
+    },
   },
   required: ['location'],
 });
@@ -284,7 +271,9 @@ Keep context across multiple exchanges. Because good conversations need memory.
 ```typescript
 import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 // Build conversations fluently
 const messages = conversation()
@@ -328,7 +317,9 @@ Sometimes things go sideways. Here's how to catch them gracefully.
 ```typescript
 import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
-const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
 try {
   const stream = provider([userText('Hello!')], { model: 'gpt-4o' });

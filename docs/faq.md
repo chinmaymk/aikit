@@ -6,6 +6,11 @@ Got questions? We've got answers. Here are the most common questions about AIKit
 
 AIKit directly calls the APIs of underlying LLM providers (OpenAI, Anthropic, Google) and maps their responses to a unified result stream with consistent types. It's like having a universal translator for AI models, but for code instead of languages.
 
+AIKit gives you two ways to use providers:
+
+- **Factory pattern**: `createProvider('openai', config)` - configure once, use many times
+- **Direct functions**: `openai(messages, config)` - configure each call individually
+
 ## How does this differ from the official SDKs?
 
 AIKit focuses **only** on generation features across providers. That narrow focus lets us ship a smaller, unified API surface. If you need file uploads, fine-tuning, vector stores, etc., use the vendor SDK.

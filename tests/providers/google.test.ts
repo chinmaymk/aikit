@@ -1006,10 +1006,10 @@ describe('GoogleProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of google(
-        { apiKey: 'test-api-key', model: 'gemini-1.5-pro' },
-        mockMessages
-      )) {
+      for await (const chunk of google(mockMessages, {
+        apiKey: 'test-api-key',
+        model: 'gemini-1.5-pro',
+      })) {
         chunks.push(chunk);
       }
 

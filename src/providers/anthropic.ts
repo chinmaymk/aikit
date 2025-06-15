@@ -88,8 +88,8 @@ export function createAnthropic(
  * ```
  */
 export async function* anthropic(
-  config: WithApiKey<AnthropicOptions>,
-  messages: Message[]
+  messages: Message[],
+  config: WithApiKey<AnthropicOptions>
 ): AsyncIterable<StreamChunk> {
   const provider = createAnthropic(config);
   yield* provider(messages);

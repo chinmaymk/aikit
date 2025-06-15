@@ -950,10 +950,10 @@ describe('AnthropicProvider', () => {
       const testMessages: Message[] = [userText('Hello')];
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of anthropic(
-        { apiKey: 'test-api-key', model: 'claude-3-5-sonnet-20241022' },
-        testMessages
-      )) {
+      for await (const chunk of anthropic(testMessages, {
+        apiKey: 'test-api-key',
+        model: 'claude-3-5-sonnet-20241022',
+      })) {
         chunks.push(chunk);
       }
 

@@ -469,8 +469,8 @@ export function createGoogle(
  * ```
  */
 export async function* google(
-  config: WithApiKey<GoogleOptions>,
-  messages: Message[]
+  messages: Message[],
+  config: WithApiKey<GoogleOptions>
 ): AsyncIterable<StreamChunk> {
   const provider = createGoogle(config);
   yield* provider(messages);

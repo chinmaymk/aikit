@@ -458,31 +458,28 @@ const writeToOutput = (text: string): boolean => {
  * Universal flush function to ensure all output is written before continuing
  */
 const flushOutput = async (): Promise<void> => {
-  if (isNodeJS()) {
-    // Node.js environment - ensure stdout is flushed
-    return new Promise(resolve => {
-      if (process.stdout.write('\n')) {
-        // Data was flushed immediately
-        resolve();
-      } else {
-        // Wait for drain event
-        const onDrain = () => {
-          process.stdout.removeListener('drain', onDrain);
-          resolve();
-        };
-        process.stdout.once('drain', onDrain);
+  if (!isNodeJS()) return;
 
-        // Fallback timeout to prevent hanging
-        setTimeout(() => {
-          process.stdout.removeListener('drain', onDrain);
-          resolve();
-        }, 100);
-      }
-    });
-  } else {
-    // Browser/other environments - small delay for consistency
-    await new Promise(resolve => setTimeout(resolve, 10));
-  }
+  // Node.js environment - ensure stdout is flushed
+  return new Promise(resolve => {
+    if (process.stdout.write('\n')) {
+      // Data was flushed immediately
+      resolve();
+    } else {
+      // Wait for drain event
+      const onDrain = () => {
+        process.stdout.removeListener('drain', onDrain);
+        resolve();
+      };
+      process.stdout.once('drain', onDrain);
+
+      // Fallback timeout to prevent hanging
+      setTimeout(() => {
+        process.stdout.removeListener('drain', onDrain);
+        resolve();
+      }, 100);
+    }
+  });
 };
 
 /**
