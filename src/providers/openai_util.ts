@@ -432,8 +432,11 @@ export class OpenAIRequestBuilder {
 // ============================================================================
 
 export class OpenAIStreamProcessor {
-  static async *processChatStream(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    const state = new StreamState();
+  static async *processChatStream(
+    lineStream: AsyncIterable<string>,
+    state?: StreamState
+  ): AsyncIterable<StreamChunk> {
+    const streamState = state ?? new StreamState();
 
     for await (const data of extractDataLines(lineStream)) {
       if (data.trim() === '[DONE]') return;
@@ -441,15 +444,16 @@ export class OpenAIStreamProcessor {
       const chunk = StreamUtils.parseStreamEvent<OpenAI.Chat.StreamChunk>(data);
       if (!chunk) continue;
 
-      const result = this.processChatChunk(chunk, state);
+      const result = this.processChatChunk(chunk, streamState);
       if (result) yield result;
     }
   }
 
   static async *processResponsesStream(
-    lineStream: AsyncIterable<string>
+    lineStream: AsyncIterable<string>,
+    state?: StreamState
   ): AsyncIterable<StreamChunk> {
-    const state = new StreamState();
+    const streamState = state ?? new StreamState();
 
     for await (const data of extractDataLines(lineStream)) {
       if (data.trim() === '[DONE]') return;
@@ -457,7 +461,7 @@ export class OpenAIStreamProcessor {
       const event = StreamUtils.parseStreamEvent<OpenAI.Responses.StreamEvent>(data);
       if (!event) continue;
 
-      const chunk = this.processResponsesEvent(event, state);
+      const chunk = this.processResponsesEvent(event, streamState);
       if (chunk) yield chunk;
     }
   }
@@ -470,8 +474,8 @@ export class OpenAIStreamProcessor {
     if (chunk.usage && (!chunk.choices || chunk.choices.length === 0)) {
       const usage = this.extractUsageFromChunk(chunk);
       if (usage) {
-        // Return a usage-only chunk
-        return state.createChunk('', undefined, usage);
+        // Return a usage-only chunk with timing since this might be the final usage info
+        return state.createChunk('', 'stop', usage);
       }
     }
 

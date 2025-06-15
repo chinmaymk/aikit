@@ -220,6 +220,7 @@ describe('OpenAIUtil Branch Coverage Tests', () => {
         inputTokens: 10,
         outputTokens: 5,
         totalTokens: 15,
+        totalTime: expect.any(Number),
       });
     });
 

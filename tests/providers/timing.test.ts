@@ -109,5 +109,55 @@ describe('Timing functionality', () => {
       expect(chunk.usage?.timeToFirstToken).toBeUndefined();
       expect(chunk.usage?.totalTime).toBe(40);
     });
+
+    it('should not track first token time for empty or whitespace-only content', () => {
+      const state = new StreamState();
+
+      // Simulate 10ms passing before empty content
+      currentTime += 10;
+      state.addContentDelta(''); // Empty string should not trigger timing
+
+      // Simulate 15ms more passing before whitespace-only content
+      currentTime += 15;
+      state.addContentDelta('   '); // Whitespace-only should not trigger timing
+
+      // Simulate 10ms more passing before meaningful content
+      currentTime += 10;
+      state.addContentDelta('H'); // Single character should trigger timing
+
+      // Simulate additional 30ms passing to finish
+      currentTime += 30;
+
+      const chunk = state.createChunk('', 'stop');
+
+      // Should track from when 'H' was added (35ms from start)
+      expect(chunk.usage?.timeToFirstToken).toBe(35);
+      expect(chunk.usage?.totalTime).toBe(65);
+    });
+
+    it('should not track first token time for reasoning with empty or whitespace-only content', () => {
+      const state = new StreamState();
+
+      // Simulate 10ms passing before empty reasoning
+      currentTime += 10;
+      state.addReasoningDelta(''); // Empty string should not trigger timing
+
+      // Simulate 15ms more passing before whitespace-only reasoning
+      currentTime += 15;
+      state.addReasoningDelta('   '); // Whitespace-only should not trigger timing
+
+      // Simulate 10ms more passing before meaningful reasoning
+      currentTime += 10;
+      state.addReasoningDelta('T'); // Single character should trigger timing
+
+      // Simulate additional 30ms passing to finish
+      currentTime += 30;
+
+      const chunk = state.createChunk('', 'stop');
+
+      // Should track from when 'T' was added (35ms from start)
+      expect(chunk.usage?.timeToFirstToken).toBe(35);
+      expect(chunk.usage?.totalTime).toBe(65);
+    });
   });
 });

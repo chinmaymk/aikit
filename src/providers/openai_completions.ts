@@ -6,6 +6,7 @@ import type {
   StreamingGenerateFunction,
 } from '../types';
 import { OpenAIClientFactory, OpenAIRequestBuilder, OpenAIStreamProcessor } from './openai_util';
+import { StreamState } from './utils';
 
 /**
  * Creates an OpenAI generation function with pre-configured defaults.
@@ -44,9 +45,12 @@ export function createOpenAI(
     }
 
     const params = OpenAIRequestBuilder.buildChatCompletionParams(messages, mergedOptions);
+
+    // Create StreamState at request time for accurate timing
+    const streamState = new StreamState();
     const stream = await client.stream('/chat/completions', params);
     const lineStream = client.processStreamAsLines(stream);
-    yield* OpenAIStreamProcessor.processChatStream(lineStream);
+    yield* OpenAIStreamProcessor.processChatStream(lineStream, streamState);
   };
 }
 

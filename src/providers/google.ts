@@ -304,8 +304,11 @@ export class GoogleRequestBuilder {
 // ============================================================================
 
 export class GoogleStreamProcessor {
-  static async *process(lineStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-    const state = new StreamState();
+  static async *process(
+    lineStream: AsyncIterable<string>,
+    state?: StreamState
+  ): AsyncIterable<StreamChunk> {
+    const streamState = state ?? new StreamState();
 
     for await (const line of lineStream) {
       if (!line.trim() || !line.startsWith('data: ')) continue;
@@ -316,7 +319,7 @@ export class GoogleStreamProcessor {
       const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
       if (!chunk) continue;
 
-      const result = this.processChunk(chunk, state);
+      const result = this.processChunk(chunk, streamState);
       if (result) {
         yield result;
       }
@@ -360,24 +363,17 @@ export class GoogleStreamProcessor {
       ? this.mapFinishReason(candidate.finishReason)
       : undefined;
 
-    // Enhanced usage with timing when stream completes
-    let finalUsage = usage;
-    if (finishReason && usage) {
-      const timeToFirstToken = state.getTimeToFirstToken();
-      finalUsage = {
-        ...usage,
-        ...(timeToFirstToken !== undefined && { timeToFirstToken }),
-        totalTime: Date.now() - state['startTime'],
-      };
+    // Create chunk using state for consistent timing
+    const streamChunk = state.createChunk(delta, finishReason, usage);
+
+    // Add tool calls if present
+    if (newToolCalls.length > 0) {
+      streamChunk.toolCalls = newToolCalls;
+    } else if (state.hasToolCalls) {
+      streamChunk.toolCalls = [];
     }
 
-    return {
-      content: state.content,
-      delta,
-      finishReason,
-      toolCalls: newToolCalls.length > 0 ? newToolCalls : state.hasToolCalls ? [] : undefined,
-      usage: finalUsage,
-    };
+    return streamChunk;
   }
 
   private static mapFinishReason(reason: string): 'stop' | 'length' | 'tool_use' | undefined {
@@ -452,9 +448,12 @@ export function createGoogle(
     }
 
     const { endpoint, payload } = GoogleRequestBuilder.build(messages, mergedOptions);
+
+    // Create StreamState at request time for accurate timing
+    const streamState = new StreamState();
     const stream = await client.stream(endpoint, payload);
     const lineStream = client.processStreamAsLines(stream);
-    yield* GoogleStreamProcessor.process(lineStream);
+    yield* GoogleStreamProcessor.process(lineStream, streamState);
   };
 }
 

@@ -71,9 +71,12 @@ export function createAnthropic(
     }
 
     const params = buildRequestParams(messages, mergedOptions);
+
+    // Create StreamState at request time for accurate timing
+    const streamState = new StreamState();
     const stream = await client.stream('/messages', params);
     const sseStream = client.processStreamAsLines(stream);
-    yield* processStream(sseStream);
+    yield* processStream(sseStream, streamState);
   };
 }
 
@@ -212,8 +215,11 @@ function buildRequestParams(messages: Message[], options: AnthropicOptions): Ant
   return params;
 }
 
-async function* processStream(sseStream: AsyncIterable<string>): AsyncIterable<StreamChunk> {
-  const state = new StreamState();
+async function* processStream(
+  sseStream: AsyncIterable<string>,
+  state?: StreamState
+): AsyncIterable<StreamChunk> {
+  const streamState = state ?? new StreamState();
 
   for await (const data of extractDataLines(sseStream)) {
     if (StreamUtils.isStreamDone(data) || data.trim() === 'data: [DONE]') break;
@@ -221,7 +227,7 @@ async function* processStream(sseStream: AsyncIterable<string>): AsyncIterable<S
     const event = StreamUtils.parseStreamEvent<AnthropicStreamEvent>(data);
     if (!event) continue;
 
-    const chunk = handleStreamEvent(event, state);
+    const chunk = handleStreamEvent(event, streamState);
     if (chunk) yield chunk;
   }
 }

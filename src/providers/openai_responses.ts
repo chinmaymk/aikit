@@ -6,9 +6,10 @@ import type {
   StreamingGenerateFunction,
 } from '../types';
 import { OpenAIClientFactory, OpenAIRequestBuilder, OpenAIStreamProcessor } from './openai_util';
+import { StreamState } from './utils';
 
 /**
- * Creates an OpenAI Responses API generation function with pre-configured defaults.
+ * Creates an OpenAI Responses generation function with pre-configured defaults.
  * Returns a simple function that takes messages and options.
  *
  * @example
@@ -44,9 +45,12 @@ export function createOpenAIResponses(
     }
 
     const params = OpenAIRequestBuilder.buildResponsesParams(messages, mergedOptions);
+
+    // Create StreamState at request time for accurate timing
+    const streamState = new StreamState();
     const stream = await client.stream('/responses', params);
     const lineStream = client.processStreamAsLines(stream);
-    yield* OpenAIStreamProcessor.processResponsesStream(lineStream);
+    yield* OpenAIStreamProcessor.processResponsesStream(lineStream, streamState);
   };
 }
 

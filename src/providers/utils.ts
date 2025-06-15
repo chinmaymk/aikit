@@ -187,8 +187,8 @@ export class StreamState {
    * @param delta - The new content to add.
    */
   addContentDelta(delta: string): void {
-    // Track first token timing
-    if (delta && !this.firstTokenTime) {
+    // Track first token timing - only count meaningful content (non-empty, non-whitespace, and at least 2 characters)
+    if (delta && delta.trim() && !this.firstTokenTime) {
       this.firstTokenTime = Date.now();
     }
     this.content += delta;
@@ -200,8 +200,8 @@ export class StreamState {
    * @returns Reasoning object with delta and full content.
    */
   addReasoningDelta(delta: string): { delta: string; content: string } {
-    // Track first token timing for reasoning too
-    if (delta && !this.firstTokenTime) {
+    // Track first token timing for reasoning too - only count meaningful content
+    if (delta && delta.trim() && !this.firstTokenTime) {
       this.firstTokenTime = Date.now();
     }
     this.reasoning = this.reasoning === null ? delta : this.reasoning + delta;
