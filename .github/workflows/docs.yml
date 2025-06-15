@@ -2,7 +2,8 @@ name: docs
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
@@ -42,7 +43,6 @@ jobs:
           path: docs/.vitepress/dist
 
   deploy:
-    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
 
