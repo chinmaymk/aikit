@@ -105,8 +105,6 @@ When you want streaming, multimodal inputs, consistent typings across providers,
 
 </details>
 
-![image](https://github.com/user-attachments/assets/f9f94bb6-5911-4ecf-89d7-4a9f19101bf4)
-
 ---
 
 ## Documentation
