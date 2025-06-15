@@ -767,7 +767,7 @@ describe('OpenAIProvider', () => {
       );
 
       const chunks: StreamChunk[] = [];
-      for await (const chunk of openai({ apiKey: 'test-api-key', model: 'gpt-4o' }, mockMessages)) {
+      for await (const chunk of openai(mockMessages, { apiKey: 'test-api-key', model: 'gpt-4o' })) {
         chunks.push(chunk);
       }
 

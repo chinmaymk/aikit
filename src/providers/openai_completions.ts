@@ -61,8 +61,8 @@ export function createOpenAI(
  * ```
  */
 export async function* openai(
-  config: WithApiKey<OpenAIOptions>,
-  messages: Message[]
+  messages: Message[],
+  config: WithApiKey<OpenAIOptions>
 ): AsyncIterable<StreamChunk> {
   const provider = createOpenAI(config);
   yield* provider(messages);

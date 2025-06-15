@@ -435,10 +435,61 @@ export async function processStream(
   };
 }
 
+// Environment detection utilities
+const isNodeJS = (): boolean => {
+  return (
+    typeof process !== 'undefined' && process.stdout && typeof process.stdout.write === 'function'
+  );
+};
+
+/**
+ * Universal write function that works in both Node.js and browser environments
+ */
+const writeToOutput = (text: string): boolean => {
+  if (isNodeJS()) {
+    return process.stdout.write(text);
+  } else {
+    console.log(text);
+    return true;
+  }
+};
+
+/**
+ * Universal flush function to ensure all output is written before continuing
+ */
+const flushOutput = async (): Promise<void> => {
+  if (isNodeJS()) {
+    // Node.js environment - ensure stdout is flushed
+    return new Promise(resolve => {
+      if (process.stdout.write('\n')) {
+        // Data was flushed immediately
+        resolve();
+      } else {
+        // Wait for drain event
+        const onDrain = () => {
+          process.stdout.removeListener('drain', onDrain);
+          resolve();
+        };
+        process.stdout.once('drain', onDrain);
+
+        // Fallback timeout to prevent hanging
+        setTimeout(() => {
+          process.stdout.removeListener('drain', onDrain);
+          resolve();
+        }, 100);
+      }
+    });
+  } else {
+    // Browser/other environments - small delay for consistency
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+};
+
 /**
  * Prints stream deltas to stdout as they arrive.
  * The classic "typewriter effect" - watch the AI think in real-time!
  * Perfect for demos, debugging, or when you just want to see magic happen.
+ * Works universally in Node.js, browsers, and other JavaScript environments.
  * @param stream - The async iterable stream of chunks
  * @returns A promise that resolves to the complete stream result
  * @group Stream Helpers
@@ -450,9 +501,15 @@ export async function processStream(
  * ```
  */
 export async function printStream(stream: AsyncIterable<StreamChunk>): Promise<StreamResult> {
-  return processStream(stream, {
-    onDelta: delta => process.stdout.write(delta),
+  const result = await processStream(stream, {
+    onDelta: delta => writeToOutput(delta),
   });
+
+  // Ensure all output is flushed before returning
+  // This prevents truncated output when the process exits quickly
+  await flushOutput();
+
+  return result;
 }
 
 /**

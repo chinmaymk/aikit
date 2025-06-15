@@ -269,8 +269,13 @@ describe('Utils', () => {
     });
 
     it('should print stream to stdout', async () => {
+      const originalWrite = process.stdout.write;
       const originalLog = console.log;
+      const mockWrite = jest.fn().mockReturnValue(true);
       const mockLog = jest.fn();
+
+      // Mock both process.stdout.write (Node.js) and console.log (browser/fallback)
+      process.stdout.write = mockWrite;
       console.log = mockLog;
 
       try {
@@ -281,9 +286,12 @@ describe('Utils', () => {
 
         await printStream(createMockStream(chunks));
 
-        expect(mockLog).toHaveBeenCalledWith('Hello');
-        expect(mockLog).toHaveBeenCalledWith(' world');
+        // In Node.js environment, should use process.stdout.write
+        expect(mockWrite).toHaveBeenCalledWith('Hello');
+        expect(mockWrite).toHaveBeenCalledWith(' world');
+        expect(mockWrite).toHaveBeenCalledWith('\n'); // Final newline from flush
       } finally {
+        process.stdout.write = originalWrite;
         console.log = originalLog;
       }
     });
