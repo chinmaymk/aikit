@@ -768,6 +768,12 @@ export type AnthropicProvider = StreamingGenerateFunction<AnthropicOptions>;
 export type GoogleProvider = StreamingGenerateFunction<GoogleOptions>;
 
 /**
+ * Proxy provider - delegates to backend AIKit providers
+ * @group Types
+ */
+export type ProxyProvider = StreamingGenerateFunction<Record<string, unknown>>;
+
+/**
  * OpenAI Responses API provider
  */
 export type OpenAIResponsesProvider = StreamingGenerateFunction<OpenAIResponsesOptions>;
@@ -789,6 +795,7 @@ export type AnyGenerationProvider =
   | OpenAIProvider
   | AnthropicProvider
   | GoogleProvider
+  | ProxyProvider
   | OpenAIResponsesProvider;
 
 export type AnyEmbeddingProvider = OpenAIEmbeddingProvider | GoogleEmbeddingProvider;

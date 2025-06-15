@@ -33,6 +33,7 @@ export default defineConfig({
             { text: 'Reasoning Models', link: '/guide/reasoning' },
             { text: 'Embeddings', link: '/guide/embeddings' },
             { text: 'Usage Tracking', link: '/guide/usage-tracking' },
+            { text: 'Express Integration', link: '/examples/express-integration' },
           ],
         },
       ],
@@ -262,8 +263,13 @@ export default defineConfig({
       '/examples/': [
         {
           text: 'Examples',
-          collapsed: false,
-          items: [{ text: 'Overview', link: '/examples/README' }],
+          items: [
+            { text: 'Overview', link: '/examples/' },
+            {
+              text: 'Express Integration',
+              link: '/examples/express-integration',
+            },
+          ],
         },
       ],
       '/': [

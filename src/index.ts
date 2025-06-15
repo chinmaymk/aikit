@@ -5,6 +5,10 @@ export type * from './types';
 export { createOpenAI, openai } from './providers/openai_completions';
 export { createAnthropic, anthropic } from './providers/anthropic';
 export { createGoogle, google } from './providers/google';
+export {
+  createProxyProvider as createProxy,
+  callProxyProvider as resolveProxyProvider,
+} from './providers/proxy';
 export { createOpenAIResponses, openaiResponses } from './providers/openai_responses';
 
 // Export functional embedding APIs (primary)

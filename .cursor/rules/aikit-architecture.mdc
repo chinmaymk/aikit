@@ -15,12 +15,15 @@ alwaysApply: true
 - DO import node modules with explicit indication "node:path"
 - DO organize imports after editing a file
 - DO enfore typesafety, avoid using any
+- DO NOT use as any type assertions
 - DO NOT add import first, auto reorganize will remove it if its not used, DO add code block using the import first and then add the import
 - DO NOT add | undefined or | null type, never
 - DO NOT overuse type assertions and casting
 - DO focus on readability, maintainability and simplicity
 - DO NOT use emojis
 - DO follow a professional, clear, and concise approach to write code and comments
+- DO run `npm run build` after changes and ensure it passes
+- DO NOT reduce coverage, or exclude files from coverage
 
 ## Project Overview
 [README.md](mdc:README.md)
