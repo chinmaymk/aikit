@@ -745,35 +745,36 @@ export const generate = async (
 };
 
 /**
- * Executes a tool call by matching it to a service function.
+ * Executes a tool call using a selector function to retrieve the appropriate service.
  * The bridge between AI intentions and real-world actions.
  * Your AI says "call get_weather", this function makes it happen.
  * @param toolCall - The tool call from the AI
- * @param services - Object mapping tool names to actual functions
- * @returns The stringified result of the tool execution
+ * @param selector - Function that takes the tool name and returns the service function
+ * @returns The result of the tool execution with proper typing
  * @group Tool Helpers
  * @example
  * ```typescript
- * const result = executeToolCall(toolCall, {
- *   get_weather: (location, unit) => getWeatherData(location, unit),
- *   calculate: (expression) => eval(expression) // Don't actually do this!
+ * const services = {
+ *   get_weather: (args) => getWeatherData(args.location, args.unit),
+ *   calculate: (args) => performCalculation(args.operation, args.a, args.b)
+ * };
+ * const result = executeToolCall(toolCall, (toolName) => {
+ *   return services[toolName];
  * });
  * ```
  */
-export const executeToolCall = (
+export function executeToolCall<T, TArgs extends Record<string, unknown> = Record<string, unknown>>(
   toolCall: ToolCall,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  services: Record<string, (...args: any[]) => any>
-): string => {
-  const service = services[toolCall.name];
-  if (!service) {
-    throw new Error(`No service found for tool: ${toolCall.name}`);
-  }
-
+  selector: (toolName: string) => ((args: TArgs) => T) | undefined
+): T {
   try {
-    const result = service(...Object.values(toolCall.arguments));
-    return typeof result === 'string' ? result : JSON.stringify(result);
+    const serviceFunction = selector(toolCall.name);
+    if (!serviceFunction) {
+      throw new Error(`No service found for tool: ${toolCall.name}`);
+    }
+
+    return serviceFunction(toolCall.arguments as TArgs);
   } catch (error) {
-    throw new Error(`Tool execution failed: ${error}`);
+    throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : error}`);
   }
-};
+}

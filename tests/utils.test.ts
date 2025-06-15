@@ -708,9 +708,15 @@ describe('Stream Utilities', () => {
   });
 
   describe('executeToolCall', () => {
-    const mockServices = {
-      get_weather: jest.fn((location: string) => `Weather in ${location}`),
-      calculate: jest.fn((a: number, b: number) => a + b),
+    const mockServices: Record<string, (args: Record<string, unknown>) => any> = {
+      get_weather: jest.fn((args: Record<string, unknown>) => {
+        const { location } = args as { location: string };
+        return `Weather in ${location}`;
+      }),
+      calculate: jest.fn((args: Record<string, unknown>) => {
+        const { a, b } = args as { a: number; b: number };
+        return a + b;
+      }),
       return_object: jest.fn(() => ({ result: 'success' })),
     };
 
@@ -725,9 +731,9 @@ describe('Stream Utilities', () => {
         arguments: { location: 'New York' },
       };
 
-      const result = executeToolCall(toolCall, mockServices);
+      const result = executeToolCall(toolCall, toolName => mockServices[toolName]);
 
-      expect(mockServices.get_weather).toHaveBeenCalledWith('New York');
+      expect(mockServices.get_weather).toHaveBeenCalledWith({ location: 'New York' });
       expect(result).toBe('Weather in New York');
     });
 
@@ -738,10 +744,10 @@ describe('Stream Utilities', () => {
         arguments: { a: 5, b: 3 },
       };
 
-      const result = executeToolCall(toolCall, mockServices);
+      const result = executeToolCall(toolCall, toolName => mockServices[toolName]);
 
-      expect(mockServices.calculate).toHaveBeenCalledWith(5, 3);
-      expect(result).toBe('8');
+      expect(mockServices.calculate).toHaveBeenCalledWith({ a: 5, b: 3 });
+      expect(result).toBe(8);
     });
 
     it('should stringify non-string results', () => {
@@ -751,10 +757,10 @@ describe('Stream Utilities', () => {
         arguments: {},
       };
 
-      const result = executeToolCall(toolCall, mockServices);
+      const result = executeToolCall(toolCall, toolName => mockServices[toolName]);
 
       expect(mockServices.return_object).toHaveBeenCalled();
-      expect(result).toBe('{"result":"success"}');
+      expect(result).toEqual({ result: 'success' });
     });
 
     it('should throw error for unknown tool', () => {
@@ -764,13 +770,13 @@ describe('Stream Utilities', () => {
         arguments: {},
       };
 
-      expect(() => executeToolCall(toolCall, mockServices)).toThrow(
+      expect(() => executeToolCall(toolCall, toolName => mockServices[toolName])).toThrow(
         'No service found for tool: unknown_tool'
       );
     });
 
     it('should handle tool execution errors', () => {
-      const errorService = {
+      const errorService: Record<string, (args: Record<string, unknown>) => any> = {
         failing_tool: jest.fn(() => {
           throw new Error('Tool failed');
         }),
@@ -782,8 +788,8 @@ describe('Stream Utilities', () => {
         arguments: {},
       };
 
-      expect(() => executeToolCall(toolCall, errorService)).toThrow(
-        'Tool execution failed: Error: Tool failed'
+      expect(() => executeToolCall(toolCall, toolName => errorService[toolName])).toThrow(
+        'Tool execution failed: Tool failed'
       );
     });
   });
