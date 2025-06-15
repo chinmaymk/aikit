@@ -2,34 +2,6 @@
 
 AIKit provides access to AI model reasoning processes, allowing you to see how models think through problems step-by-step. It's like having a window into the AI's brain—fascinating and occasionally terrifying.
 
-## Supported Models
-
-**OpenAI**
-
-- `o1`
-- `o1-mini`
-- `o1-preview`
-- `o1-pro`
-- `o3-mini`
-- `o4-mini`
-
-**Anthropic**
-
-- `claude-opus-4-20250514`
-- `claude-sonnet-4-20250514`
-- `claude-3-7-sonnet-20250219`
-- `claude-3-5-sonnet-20241022`
-- `claude-3-5-haiku-20241022`
-- `claude-3-opus-20240229`
-
-**Google**
-
-- `gemini-2.5-pro-preview-06-05`
-- `gemini-2.5-flash-preview-05-20`
-- `gemini-2.0-flash`
-- `gemini-1.5-pro`
-- `gemini-1.5-flash`
-
 ## Quick Start
 
 ### Anthropic Claude
@@ -268,3 +240,31 @@ try {
 ---
 
 **Pro tip:** Reasoning models are like having a really smart friend who shows their work. They're incredibly powerful but use more tokens, so use them when you actually need to see the thinking process—not just for simple Q&A.
+
+## Supported Models
+
+**OpenAI**
+
+- `o1`
+- `o1-mini`
+- `o1-preview`
+- `o1-pro`
+- `o3-mini`
+- `o4-mini`
+
+**Anthropic**
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+
+**Google**
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-1.5-pro`
+- `gemini-1.5-flash`

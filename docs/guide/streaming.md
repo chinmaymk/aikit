@@ -1,10 +1,8 @@
 # Streaming Responses
 
-Real-time AI responses make your app feel alive. AIKit gives you multiple ways to handle streaming, from simple console output to advanced progress tracking. Let's explore them all.
+Real-time AI responses make your app feel alive. Streaming provides immediate feedback to users instead of making them wait for complete responses—it's the difference between watching paint dry and watching a movie. Both take time, but one keeps you engaged.
 
-## Why Stream?
-
-Streaming provides immediate feedback to users instead of making them wait for complete responses. It's the difference between watching paint dry and watching a movie—both take time, but one keeps you engaged.
+AIKit gives you multiple ways to handle streaming, from simple console output to advanced progress tracking. Let's explore them all.
 
 ## Basic Streaming
 

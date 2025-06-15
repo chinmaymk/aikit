@@ -2,13 +2,9 @@
 
 Welcome to the world of AI tools! This is where your AI stops being just a chatbot and becomes your personal assistant that can actually DO things. Weather data, calculations, database queries, API calls—your AI can do them all.
 
+Pure text generation is useful, but sometimes you need your AI to _do_ things: fetch data, perform calculations, trigger actions. Function calling bridges the gap between AI reasoning and real-world functionality. It's like giving your AI hands to interact with the world, instead of just a mouth to talk about it.
+
 Think of it as teaching your AI to use tools. First a calculator, then a whole toolbox!
-
-## Why Function Calling?
-
-Pure text generation is useful, but sometimes you need your AI to _do_ things: fetch data, perform calculations, trigger actions. Function calling bridges the gap between AI reasoning and real-world functionality.
-
-It's like giving your AI hands to interact with the world, instead of just a mouth to talk about it.
 
 ## The Basic Pattern
 

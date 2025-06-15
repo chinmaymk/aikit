@@ -17,8 +17,6 @@ hero:
       link: https://www.npmjs.com/package/@chinmaymk/aikit
 ---
 
-## Why AIKit?
-
 AIKit is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 
 **Use AIKit for:** Generation & streaming, multimodal prompts (text + images), tool/function calling, and embeddings.

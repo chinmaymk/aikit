@@ -1,10 +1,8 @@
 # Conversation Management
 
-Great AI conversations are more than single exchanges—they're contextual, coherent, and purposeful. AIKit gives you the tools to build conversations that remember, adapt, and engage. Let's turn your AI from a parrot into a conversation partner.
+Great AI conversations are more than single exchanges—they're contextual, coherent, and purposeful. Single-shot AI interactions are like speed dating—quick, but shallow. Real conversations build context, maintain state, and develop over time. Whether you're building a chatbot, a coding assistant, or an AI tutor, good context management is crucial.
 
-## Why Conversation Management?
-
-Single-shot AI interactions are like speed dating—quick, but shallow. Real conversations build context, maintain state, and develop over time. Whether you're building a chatbot, a coding assistant, or an AI tutor, good context management is crucial.
+AIKit gives you the tools to build conversations that remember, adapt, and engage. Let's turn your AI from a parrot into a conversation partner.
 
 ## Basic Conversation Flow
 

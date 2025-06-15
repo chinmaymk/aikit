@@ -1,48 +1,8 @@
 # Multimodal AI with Images
 
-Modern AI models can see and understand images just like humans do. AIKit makes it easy to combine text and images in your conversations. Turn your AI into an art critic, diagram analyzer, or photo detective.
+Modern AI models can see and understand images just like humans do. Images contain information that's difficult to describe in words—a chart, photo, or diagram can be worth more than a thousand words, especially to an AI that can analyze visual patterns, read text in images, and understand spatial relationships.
 
-## Why Multimodal?
-
-Images contain information that's difficult to describe in words. A chart, photo, or diagram can be worth more than a thousand words—especially to an AI that can analyze visual patterns, read text in images, and understand spatial relationships.
-
-## Supported Models
-
-Not all models support images. Here are vision-capable models (but AIKit doesn't restrict which models you can use—try any model string the provider accepts):
-
-**OpenAI**
-
-- `gpt-4o`
-- `gpt-4o-mini`
-- `gpt-4-turbo`
-- `gpt-4.1`
-- `gpt-4.1-mini`
-- `gpt-4`
-
-**Anthropic**
-
-- `claude-opus-4-20250514`
-- `claude-sonnet-4-20250514`
-- `claude-3-7-sonnet-20250219`
-- `claude-3-5-sonnet-20241022`
-- `claude-3-5-haiku-20241022`
-- `claude-3-opus-20240229`
-- `claude-3-sonnet-20240229`
-- `claude-3-haiku-20240307`
-
-**Google**
-
-- `gemini-2.5-pro-preview-06-05`
-- `gemini-2.5-flash-preview-05-20`
-- `gemini-2.0-flash`
-- `gemini-2.0-flash-001`
-- `gemini-1.5-pro`
-- `gemini-1.5-pro-002`
-- `gemini-1.5-flash`
-- `gemini-1.5-flash-002`
-- `gemini-pro-vision`
-
-_AIKit includes a reference list of available models in the library, but you can use any model string that the provider API accepts, including new releases and beta models._
+AIKit makes it easy to combine text and images in your conversations. Turn your AI into an art critic, diagram analyzer, or photo detective.
 
 ## Image Format Requirements
 
@@ -332,3 +292,41 @@ const bestMessage = userImage(
 - [API Reference](/api/generated/README) - Technical details on image content types
 
 Remember: A picture is worth a thousand tokens, but a good question is worth ten thousand. Be specific about what you want the AI to see and analyze!
+
+## Supported Models
+
+Not all models support images. Here are vision-capable models (but AIKit doesn't restrict which models you can use—try any model string the provider accepts):
+
+**OpenAI**
+
+- `gpt-4o`
+- `gpt-4o-mini`
+- `gpt-4-turbo`
+- `gpt-4.1`
+- `gpt-4.1-mini`
+- `gpt-4`
+
+**Anthropic**
+
+- `claude-opus-4-20250514`
+- `claude-sonnet-4-20250514`
+- `claude-3-7-sonnet-20250219`
+- `claude-3-5-sonnet-20241022`
+- `claude-3-5-haiku-20241022`
+- `claude-3-opus-20240229`
+- `claude-3-sonnet-20240229`
+- `claude-3-haiku-20240307`
+
+**Google**
+
+- `gemini-2.5-pro-preview-06-05`
+- `gemini-2.5-flash-preview-05-20`
+- `gemini-2.0-flash`
+- `gemini-2.0-flash-001`
+- `gemini-1.5-pro`
+- `gemini-1.5-pro-002`
+- `gemini-1.5-flash`
+- `gemini-1.5-flash-002`
+- `gemini-pro-vision`
+
+_AIKit includes a reference list of available models in the library, but you can use any model string that the provider API accepts, including new releases and beta models._
