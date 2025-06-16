@@ -23,13 +23,27 @@
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-inferrable-types": "off",
     "prefer-const": "error",
-    "no-var": "error"
+    "no-var": "error",
+    "complexity": ["error", 12],
+    "max-depth": ["error", 4],
+    "max-lines": ["error", { "max": 300, "skipComments": true, "skipBlankLines": true }],
+    "no-magic-numbers": "off",
+    "no-nested-ternary": "error",
+    "no-unneeded-ternary": "error",
+    "prefer-object-spread": "error",
+    "yoda": "error"
   },
   "overrides": [
     {
       "files": ["tests/**/*.ts"],
       "rules": {
         "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": ["tests/smoke/**/*.ts"],
+      "rules": {
+        "jest/no-standalone-expect": "off"
       }
     }
   ],

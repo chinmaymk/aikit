@@ -24,6 +24,7 @@ alwaysApply: true
 - DO follow a professional, clear, and concise approach to write code and comments
 - DO run `npm run build` after changes and ensure it passes
 - DO NOT reduce coverage, or exclude files from coverage
+- DO NOT disable or modify eslint, fix the code to adhere to standards
 
 ## Project Overview
 [README.md](mdc:README.md)

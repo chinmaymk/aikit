@@ -1,6 +1,6 @@
 import { createProxyProvider, callProxyProvider } from '../../src/providers/proxy';
 import type { ProxyRequest } from '../../src/providers/proxy';
-import { userText, toReadableStream, mapStream } from '../../src/utils';
+import { userText, toReadableStream } from '../../src/utils';
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import { createOpenAI } from '../../src/providers/openai_completions';
 import { StreamChunk } from '../../src/types';

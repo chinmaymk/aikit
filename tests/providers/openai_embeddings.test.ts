@@ -11,14 +11,11 @@ describe('OpenAIEmbeddingProvider', () => {
     model: 'text-embedding-3-small',
   };
 
-  let provider: OpenAIEmbeddingProvider;
-
   beforeAll(() => {
     nock.disableNetConnect();
   });
 
   beforeEach(() => {
-    provider = createOpenAIEmbeddings(defaultOptions);
     nock.cleanAll();
   });
 
@@ -157,6 +154,37 @@ describe('OpenAIEmbeddingProvider', () => {
       await expect(provider(tooManyTexts)).rejects.toThrow(
         'OpenAI embedding API supports up to 2048 texts per request'
       );
+    });
+
+    it('should throw error for non-string inputs', async () => {
+      const invalidInputs = ['valid text', 123 as any, 'another valid text'];
+
+      await expect(provider(invalidInputs)).rejects.toThrow('Text at index 1 must be a string');
+    });
+
+    it('should handle response without usage', async () => {
+      const mockResponse = {
+        object: 'list',
+        data: [
+          {
+            object: 'embedding',
+            index: 0,
+            embedding: [0.1, 0.2, 0.3],
+          },
+        ],
+        model: 'text-embedding-3-small',
+        // No usage field
+      };
+
+      const scope = nock('https://api.openai.com/v1')
+        .post('/embeddings')
+        .reply(200, JSON.stringify(mockResponse));
+
+      const result = await provider(['Hello world']);
+
+      expect(scope.isDone()).toBe(true);
+      expect(result.embeddings).toHaveLength(1);
+      expect(result.usage).toBeUndefined();
     });
 
     it('should handle API errors gracefully', async () => {

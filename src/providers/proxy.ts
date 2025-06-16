@@ -76,25 +76,14 @@ export function createProxyProvider(
     messages: Message[],
     callOptions?: Record<string, unknown>
   ): AsyncIterable<StreamChunk> {
-    const clientHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (typeof apiKey === 'string' && apiKey) {
-      clientHeaders.Authorization = `Bearer ${apiKey}`;
-    }
-    if (headers && typeof headers === 'object' && !Array.isArray(headers)) {
-      Object.assign(clientHeaders, headers as Record<string, string>);
-    }
-
-    const client = new APIClient(
-      baseURL.replace(/\/$/, ''),
-      clientHeaders,
-      typeof timeout === 'number' ? timeout : undefined,
-      typeof maxRetries === 'number' ? maxRetries : undefined,
-      typeof mutateHeaders === 'function'
-        ? (mutateHeaders as (headers: Record<string, string>) => void)
-        : undefined
-    );
+    const client = createProxyClient({
+      baseURL,
+      apiKey,
+      headers,
+      timeout,
+      maxRetries,
+      mutateHeaders,
+    });
 
     const request: ProxyRequest = {
       messages,
@@ -107,26 +96,72 @@ export function createProxyProvider(
       typeof endpoint === 'string' ? endpoint : '/aikit/proxy',
       request
     );
-    const lineStream = client.processStreamAsLines(stream);
 
-    for await (const line of lineStream) {
-      if (!line.trim() || !line.startsWith('data: ')) {
-        continue;
-      }
-
-      const data = line.slice(6);
-      if (data.trim() === '[DONE]') {
-        break;
-      }
-
-      try {
-        const chunk = JSON.parse(data) as StreamChunk;
-        yield chunk;
-      } catch (error) {
-        console.warn('Failed to parse streaming response:', error);
-      }
-    }
+    yield* processProxyStream(stream, client);
   };
+}
+
+function createProxyClient({
+  baseURL,
+  apiKey,
+  headers,
+  timeout,
+  maxRetries,
+  mutateHeaders,
+}: {
+  baseURL: string;
+  apiKey?: unknown;
+  headers?: unknown;
+  timeout?: unknown;
+  maxRetries?: unknown;
+  mutateHeaders?: unknown;
+}): APIClient {
+  const clientHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (typeof apiKey === 'string' && apiKey) {
+    clientHeaders.Authorization = `Bearer ${apiKey}`;
+  }
+
+  if (headers && typeof headers === 'object' && !Array.isArray(headers)) {
+    Object.assign(clientHeaders, headers as Record<string, string>);
+  }
+
+  return new APIClient(
+    baseURL.replace(/\/$/, ''),
+    clientHeaders,
+    typeof timeout === 'number' ? timeout : undefined,
+    typeof maxRetries === 'number' ? maxRetries : undefined,
+    typeof mutateHeaders === 'function'
+      ? (mutateHeaders as (headers: Record<string, string>) => void)
+      : undefined
+  );
+}
+
+async function* processProxyStream(
+  stream: ReadableStream,
+  client: APIClient
+): AsyncIterable<StreamChunk> {
+  const lineStream = client.processStreamAsLines(stream);
+
+  for await (const line of lineStream) {
+    if (!line.trim() || !line.startsWith('data: ')) {
+      continue;
+    }
+
+    const data = line.slice(6);
+    if (data.trim() === '[DONE]') {
+      break;
+    }
+
+    try {
+      const chunk = JSON.parse(data) as StreamChunk;
+      yield chunk;
+    } catch (error) {
+      console.warn('Failed to parse streaming response:', error);
+    }
+  }
 }
 
 function getStreamingProvider<T extends GenerationProviderType>({

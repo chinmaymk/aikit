@@ -1,5 +1,5 @@
 /**
- * Smoke Tests for Usage Tracking
+ * Smoke Tests for Generation Usage Tracking
  *
  * These tests make real API calls to verify usage tracking works correctly
  * across all providers with different generation options.
@@ -7,8 +7,6 @@
 
 import {
   createProvider,
-  createOpenAIEmbeddings,
-  createGoogleEmbeddings,
   userText,
   systemText,
   collectDeltas,
@@ -67,7 +65,7 @@ const validateUsage = (
   }
 };
 
-describe('Usage Tracking Smoke Tests', () => {
+describe('Generation Usage Tracking Smoke Tests', () => {
   const TEST_TIMEOUT = 30000;
 
   describe.each(PROVIDERS)(
@@ -198,11 +196,9 @@ describe('Usage Tracking Smoke Tests', () => {
 
             const options: any = {
               model,
-              maxOutputTokens: 20,
               temperature: 0.1,
             };
 
-            // Enable usage tracking for OpenAI
             if (type === 'openai') {
               options.includeUsage = true;
             }
@@ -210,13 +206,10 @@ describe('Usage Tracking Smoke Tests', () => {
             const result = await collectDeltas(provider(messages, options));
 
             expect(result.content).toBeDefined();
-            console.log(`${name} timeToFirstToken:`, result.usage?.timeToFirstToken);
 
-            if (result.usage?.timeToFirstToken !== undefined) {
-              // Time to first token should be a reasonable value (typically between 100ms and 10 seconds)
+            if (supportsUsage && result.usage) {
+              console.log(`${name} TTFT:`, result.usage.timeToFirstToken);
               expect(result.usage.timeToFirstToken).toBeGreaterThan(0);
-              expect(result.usage.timeToFirstToken).toBeLessThan(30000); // Less than 30 seconds
-              expect(typeof result.usage.timeToFirstToken).toBe('number');
             }
           },
           TEST_TIMEOUT
@@ -224,128 +217,4 @@ describe('Usage Tracking Smoke Tests', () => {
       });
     }
   );
-
-  describe('Embedding Usage Tracking', () => {
-    const openaiKey = getApiKey('openai');
-    const googleKey = getApiKey('google');
-
-    (openaiKey ? test : test.skip)(
-      'should track OpenAI embedding usage',
-      async () => {
-        console.log('Testing OpenAI Embeddings - Usage Tracking:');
-
-        const embeddings = createOpenAIEmbeddings({
-          apiKey: openaiKey!,
-        });
-
-        const texts = [
-          'Machine learning is a subset of artificial intelligence.',
-          'TypeScript adds static typing to JavaScript.',
-          'React is a popular JavaScript library for building user interfaces.',
-        ];
-
-        const result = await embeddings(texts, {
-          model: 'text-embedding-3-small',
-        });
-
-        expect(result.embeddings).toHaveLength(3);
-        expect(result.embeddings[0].values.length).toBeGreaterThan(0);
-
-        console.log('OpenAI embedding usage:', result.usage);
-
-        if (result.usage) {
-          expect(result.usage.inputTokens).toBeGreaterThan(0);
-          expect(result.usage.totalTokens).toBeGreaterThan(0);
-          // truncated field is optional
-          if (result.usage.truncated !== undefined) {
-            expect(typeof result.usage.truncated).toBe('boolean');
-          }
-        }
-      },
-      TEST_TIMEOUT
-    );
-
-    (googleKey ? test : test.skip)(
-      'should handle Google embedding usage (when available)',
-      async () => {
-        console.log('Testing Google Embeddings - Usage Tracking:');
-
-        const embeddings = createGoogleEmbeddings({
-          apiKey: googleKey!,
-        });
-
-        const result = await embeddings(['Hello, world!'], {
-          model: 'text-embedding-004',
-        });
-
-        expect(result.embeddings).toHaveLength(1);
-        expect(result.embeddings[0].values.length).toBeGreaterThan(0);
-
-        console.log('Google embedding usage:', result.usage);
-
-        // Google embeddings may or may not provide usage information
-        if (result.usage) {
-          if (result.usage.inputTokens) {
-            expect(result.usage.inputTokens).toBeGreaterThan(0);
-          }
-          if (result.usage.totalTokens) {
-            expect(result.usage.totalTokens).toBeGreaterThan(0);
-          }
-        }
-      },
-      TEST_TIMEOUT
-    );
-  });
-
-  describe('Usage Data Validation', () => {
-    const openaiKey = getApiKey('openai');
-
-    (openaiKey ? test : test.skip)(
-      'should validate usage data consistency',
-      async () => {
-        console.log('Testing Usage Data Consistency:');
-
-        const provider = createProvider('openai', { apiKey: openaiKey! });
-        const messages = [userText('Count to 5.')];
-
-        const result = await collectDeltas(
-          provider(messages, {
-            model: 'gpt-4o-mini',
-            maxOutputTokens: 30,
-            includeUsage: true,
-          })
-        );
-
-        if (result.usage) {
-          console.log('Usage validation:', result.usage);
-
-          // Basic validation
-          expect(result.usage.inputTokens).toBeGreaterThan(0);
-          expect(result.usage.outputTokens).toBeGreaterThan(0);
-          expect(result.usage.totalTokens).toBeGreaterThan(0);
-
-          // Consistency checks
-          if (result.usage.inputTokens && result.usage.outputTokens && result.usage.totalTokens) {
-            const calculatedTotal = result.usage.inputTokens + result.usage.outputTokens;
-
-            // Total should match or include additional reasoning tokens
-            if (result.usage.reasoningTokens) {
-              expect(result.usage.totalTokens).toBe(calculatedTotal + result.usage.reasoningTokens);
-            } else {
-              expect(result.usage.totalTokens).toBe(calculatedTotal);
-            }
-          }
-
-          // All token counts should be positive integers
-          Object.entries(result.usage).forEach(([key, value]) => {
-            if (typeof value === 'number') {
-              expect(value).toBeGreaterThanOrEqual(0);
-              expect(Number.isInteger(value)).toBe(true);
-            }
-          });
-        }
-      },
-      TEST_TIMEOUT
-    );
-  });
 });

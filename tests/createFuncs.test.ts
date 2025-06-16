@@ -18,6 +18,8 @@ import {
   printStream,
   type Content,
 } from '@chinmaymk/aikit';
+import { OpenAIClientFactory } from '@chinmaymk/aikit/providers/openai_client';
+import { createOpenAI } from '@chinmaymk/aikit';
 
 describe('Utils', () => {
   describe('Message Creation Helpers', () => {
@@ -268,6 +270,58 @@ describe('Utils', () => {
         process.stdout.write = originalWrite;
         console.log = originalLog;
       }
+    });
+  });
+
+  describe('conversation helper', () => {
+    it('should create a conversation', () => {
+      const messages = conversation()
+        .system('You are helpful')
+        .user('Hello')
+        .assistant('Hi!')
+        .build();
+
+      expect(messages).toHaveLength(3);
+    });
+  });
+
+  describe('OpenAI Client Configuration', () => {
+    it('should create client with organization and project headers', () => {
+      // This test covers lines 13-14 in openai_client.ts
+      const config = {
+        apiKey: 'test-key',
+        organization: 'org-123',
+        project: 'proj-456',
+        baseURL: 'https://custom.openai.com/v1',
+        timeout: 5000,
+        maxRetries: 3,
+        mutateHeaders: (headers: Record<string, string>) => {
+          headers['X-Custom'] = 'value';
+        },
+      };
+
+      // Import and test the client factory directly
+      const client = OpenAIClientFactory.createClient(config);
+
+      expect(client).toBeDefined();
+    });
+
+    it('should handle missing API key in createOpenAI', async () => {
+      // This covers line 44 in openai_completions.ts
+      expect(() => createOpenAI({ apiKey: '' })).toThrow('OpenAI API key is required');
+    });
+
+    it('should handle missing model in openai function call', async () => {
+      // This covers lines 71-72 in openai_completions.ts
+      const provider = createOpenAI({ apiKey: 'test-key' });
+
+      await expect(async () => {
+        const generator = provider([{ role: 'user', content: [{ type: 'text', text: 'test' }] }]);
+        for await (const chunk of generator) {
+          void chunk;
+          break;
+        }
+      }).rejects.toThrow('Model is required in config or options');
     });
   });
 });

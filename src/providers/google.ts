@@ -1,7 +1,6 @@
 import type {
   Message,
   StreamChunk,
-  Tool,
   ToolCall,
   GoogleOptions,
   WithApiKey,
@@ -17,13 +16,7 @@ import {
   GoogleContent,
   GooglePart,
   ModelConfig,
-  FunctionDeclaration,
-  GoogleFunctionCallingMode,
 } from './google.d';
-
-// ============================================================================
-// CONSTANTS & MAPPINGS
-// ============================================================================
 
 const GOOGLE_CONSTANTS = {
   BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
@@ -37,26 +30,17 @@ const GOOGLE_CONSTANTS = {
   } as const,
 } as const;
 
-// ============================================================================
-// CLIENT FACTORY
-// ============================================================================
-
 export class GoogleClientFactory {
   static createClient(config: WithApiKey<GoogleOptions>): APIClient {
-    const headers = { 'Content-Type': 'application/json' };
     return new APIClient(
       config.baseURL ?? GOOGLE_CONSTANTS.BASE_URL,
-      headers,
+      { 'Content-Type': 'application/json' },
       config.timeout,
       config.maxRetries,
       config.mutateHeaders
     );
   }
 }
-
-// ============================================================================
-// MESSAGE TRANSFORMERS
-// ============================================================================
 
 export class GoogleMessageTransformer {
   static transform(messages: Message[]): {
@@ -70,9 +54,7 @@ export class GoogleMessageTransformer {
     for (const msg of messages) {
       if (msg.role === 'system') {
         const systemText = MessageTransformer.extractTextContent(msg.content);
-        if (systemText) {
-          systemInstructions.push(systemText);
-        }
+        if (systemText) systemInstructions.push(systemText);
         continue;
       }
 
@@ -86,15 +68,11 @@ export class GoogleMessageTransformer {
       }
     }
 
-    return {
-      systemInstruction: systemInstructions.join('\n\n'),
-      googleMessages,
-    };
+    return { systemInstruction: systemInstructions.join('\n\n'), googleMessages };
   }
 
   private static buildToolCallMap(messages: Message[]): Map<string, string> {
     const toolCallIdToName = new Map<string, string>();
-
     for (const msg of messages) {
       if (msg.role === 'assistant' && msg.toolCalls) {
         for (const toolCall of msg.toolCalls) {
@@ -102,7 +80,6 @@ export class GoogleMessageTransformer {
         }
       }
     }
-
     return toolCallIdToName;
   }
 
@@ -112,7 +89,7 @@ export class GoogleMessageTransformer {
   ): GoogleContent | GoogleContent[] | null {
     switch (msg.role) {
       case 'system':
-        return null; // Already handled in transform
+        return null;
       case 'tool':
         return this.mapToolResultMessage(msg, toolCallIdToName);
       case 'user':
@@ -130,7 +107,6 @@ export class GoogleMessageTransformer {
     toolCallIdToName: Map<string, string>
   ): GoogleContent[] {
     const { toolResults } = MessageTransformer.groupContentByType(msg.content);
-
     return toolResults.map(toolResult => ({
       role: 'function' as const,
       parts: [
@@ -146,42 +122,29 @@ export class GoogleMessageTransformer {
 
   private static mapStandardMessage(msg: Message): GoogleContent {
     const parts: GooglePart[] = [];
-
-    // Add text content
     const { text, images } = MessageTransformer.groupContentByType(msg.content);
+
     if (text.length > 0) {
       const combinedText = text.map(t => t.text).join('\n');
-      if (combinedText.trim()) {
-        parts.push({ text: combinedText });
-      }
+      if (combinedText.trim()) parts.push({ text: combinedText });
     }
 
-    // Add image content
     for (const imageContent of images) {
       if (ValidationUtils.isValidDataUrl(imageContent.image)) {
         const [mimeTypePart, data] = imageContent.image.split(',');
         let mimeType = mimeTypePart.replace('data:', '').replace(';base64', '');
 
-        // Validate and fallback MIME type
         if (!mimeType.startsWith('image/')) {
           mimeType = 'image/jpeg';
         } else {
           const knownFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-          if (!knownFormats.includes(mimeType)) {
-            mimeType = 'image/jpeg';
-          }
+          if (!knownFormats.includes(mimeType)) mimeType = 'image/jpeg';
         }
 
-        parts.push({
-          inlineData: {
-            mimeType,
-            data,
-          },
-        });
+        parts.push({ inlineData: { mimeType, data } });
       }
     }
 
-    // Add tool calls for assistant messages
     if (msg.role === 'assistant' && msg.toolCalls) {
       for (const toolCall of msg.toolCalls) {
         parts.push({
@@ -200,109 +163,74 @@ export class GoogleMessageTransformer {
   }
 }
 
-// ============================================================================
-// REQUEST BUILDER
-// ============================================================================
-
 export class GoogleRequestBuilder {
   static build(
     messages: Message[],
     options: GoogleOptions
-  ): {
-    endpoint: string;
-    payload: GenerateContentRequestBody;
-  } {
+  ): { endpoint: string; payload: GenerateContentRequestBody } {
     const { systemInstruction, googleMessages } = GoogleMessageTransformer.transform(messages);
     const modelConfig = this.buildModelConfig(systemInstruction, options);
-
-    const payload: GenerateContentRequestBody = {
-      ...modelConfig,
-      contents: googleMessages,
-    };
-
+    const payload: GenerateContentRequestBody = { ...modelConfig, contents: googleMessages };
     const endpoint = `/models/${options.model!}:streamGenerateContent?key=${options.apiKey}&alt=sse`;
-
     return { endpoint, payload };
   }
 
   private static buildModelConfig(systemInstruction: string, options: GoogleOptions): ModelConfig {
     const config: ModelConfig = {};
-
-    // Add generation config
     const generationConfig = this.buildGenerationConfig(options);
-    if (generationConfig && Object.keys(generationConfig).length > 0) {
+    if (generationConfig && Object.keys(generationConfig).length > 0)
       config.generationConfig = generationConfig;
-    }
-
-    // Add system instruction
-    if (systemInstruction) {
-      config.systemInstruction = { parts: [{ text: systemInstruction }] };
-    }
-
-    // Add tools
+    if (systemInstruction) config.systemInstruction = { parts: [{ text: systemInstruction }] };
     if (options.tools) {
-      config.tools = [{ functionDeclarations: this.formatTools(options.tools) }];
-
-      if (options.toolChoice) {
+      config.tools = [
+        {
+          functionDeclarations: options.tools.map(tool => ({
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
+          })),
+        },
+      ];
+      if (options.toolChoice)
         config.toolConfig = { functionCallingConfig: this.formatToolChoice(options.toolChoice) };
-      }
     }
-
     return config;
   }
 
   private static buildGenerationConfig(options: GoogleOptions): ModelConfig['generationConfig'] {
     const config: ModelConfig['generationConfig'] = {};
-
-    if (options.temperature !== undefined) config.temperature = options.temperature;
-    if (options.topP !== undefined) config.topP = options.topP;
-    if (options.topK !== undefined) config.topK = options.topK;
-    if (options.maxOutputTokens !== undefined) config.maxOutputTokens = options.maxOutputTokens;
-    if (options.candidateCount !== undefined) config.candidateCount = options.candidateCount;
-    if (options.presencePenalty !== undefined) config.presencePenalty = options.presencePenalty;
-    if (options.frequencyPenalty !== undefined) config.frequencyPenalty = options.frequencyPenalty;
-    if (options.responseMimeType !== undefined) config.responseMimeType = options.responseMimeType;
-    if (options.responseSchema !== undefined) config.responseSchema = options.responseSchema;
-    if (options.seed !== undefined) config.seed = options.seed;
-    if (options.responseLogprobs !== undefined) config.responseLogprobs = options.responseLogprobs;
-    if (options.logprobs !== undefined) config.logprobs = options.logprobs;
-    if (options.audioTimestamp !== undefined) config.audioTimestamp = options.audioTimestamp;
-
-    if (options.stopSequences?.length) {
-      config.stopSequences = options.stopSequences;
+    const directMappings: Array<keyof GoogleOptions> = [
+      'temperature',
+      'topP',
+      'topK',
+      'maxOutputTokens',
+      'candidateCount',
+      'presencePenalty',
+      'frequencyPenalty',
+      'responseMimeType',
+      'responseSchema',
+      'seed',
+      'responseLogprobs',
+      'logprobs',
+      'audioTimestamp',
+    ];
+    for (const key of directMappings) {
+      if (options[key] !== undefined) (config as any)[key] = options[key];
     }
-
+    if (options.stopSequences?.length) config.stopSequences = options.stopSequences;
     return config;
   }
 
-  private static formatTools(tools: Tool[]): FunctionDeclaration[] {
-    return tools.map(tool => ({
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters,
-    }));
-  }
-
   private static formatToolChoice(toolChoice: GoogleOptions['toolChoice']) {
-    const build = (mode: GoogleFunctionCallingMode, allowedFunctionNames?: string[]) => ({
-      mode,
-      ...(allowedFunctionNames && { allowedFunctionNames }),
-    });
-
-    if (toolChoice === 'required') return build('ANY');
-    if (toolChoice === 'auto') return build('AUTO');
-    if (toolChoice === 'none') return build('NONE');
+    if (toolChoice === 'required') return { mode: 'ANY' };
+    if (toolChoice === 'auto') return { mode: 'AUTO' };
+    if (toolChoice === 'none') return { mode: 'NONE' };
     if (typeof toolChoice === 'object' && toolChoice && 'name' in toolChoice) {
-      return build('ANY', [toolChoice.name]);
+      return { mode: 'ANY', allowedFunctionNames: [toolChoice.name] };
     }
-
-    return build('AUTO');
+    return { mode: 'AUTO' };
   }
 }
-
-// ============================================================================
-// STREAM PROCESSOR
-// ============================================================================
 
 export class GoogleStreamProcessor {
   static async *process(
@@ -310,20 +238,14 @@ export class GoogleStreamProcessor {
     state?: StreamState
   ): AsyncIterable<StreamChunk> {
     const streamState = state ?? new StreamState();
-
     for await (const line of lineStream) {
       if (!line.trim() || !line.startsWith('data: ')) continue;
-
       const data = line.slice(6);
       if (data.trim() === '[DONE]') break;
-
       const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
       if (!chunk) continue;
-
       const result = this.processChunk(chunk, streamState);
-      if (result) {
-        yield result;
-      }
+      if (result) yield result;
     }
   }
 
@@ -333,124 +255,58 @@ export class GoogleStreamProcessor {
   ): StreamChunk | null {
     const usage = this.extractUsage(chunk);
     const candidate = chunk.candidates?.[0];
-
     if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) {
-      // Return usage-only chunk if available
-      if (usage) {
-        return state.createChunk('', undefined, usage);
-      }
-      return null;
+      return usage ? state.createChunk('', undefined, usage) : null;
     }
-
     let delta = '';
     const newToolCalls: ToolCall[] = [];
-
     for (const part of candidate.content.parts) {
       if ('text' in part) {
         delta += part.text;
         state.addContentDelta(part.text);
       } else if ('functionCall' in part) {
-        const toolCall: ToolCall = {
+        newToolCalls.push({
           id: part.functionCall.name,
           name: part.functionCall.name,
           arguments: part.functionCall.args,
-        };
-        newToolCalls.push(toolCall);
+        });
         state.hasToolCalls = true;
       }
     }
-
     const finishReason = candidate.finishReason
-      ? this.mapFinishReason(candidate.finishReason)
+      ? (GOOGLE_CONSTANTS.FINISH_REASON_MAPPINGS as Record<string, 'stop' | 'length' | 'tool_use'>)[
+          candidate.finishReason
+        ] || 'stop'
       : undefined;
-
-    // Create chunk using state for consistent timing
     const streamChunk = state.createChunk(delta, finishReason, usage);
-
-    // Add tool calls if present
-    if (newToolCalls.length > 0) {
-      streamChunk.toolCalls = newToolCalls;
-    } else if (state.hasToolCalls) {
-      streamChunk.toolCalls = [];
-    }
-
+    if (newToolCalls.length > 0) streamChunk.toolCalls = newToolCalls;
+    else if (state.hasToolCalls) streamChunk.toolCalls = [];
     return streamChunk;
-  }
-
-  private static mapFinishReason(reason: string): 'stop' | 'length' | 'tool_use' | undefined {
-    return (
-      (GOOGLE_CONSTANTS.FINISH_REASON_MAPPINGS as Record<string, 'stop' | 'length' | 'tool_use'>)[
-        reason
-      ] || 'stop'
-    );
   }
 
   private static extractUsage(chunk: StreamGenerateContentChunk): GenerationUsage | undefined {
     const usage = chunk.usageMetadata;
     if (!usage) return undefined;
-
     const result: GenerationUsage = {};
-
-    if (usage.promptTokenCount) {
-      result.inputTokens = usage.promptTokenCount;
-    }
-
-    if (usage.candidatesTokenCount) {
-      result.outputTokens = usage.candidatesTokenCount;
-    }
-
-    if (usage.totalTokenCount) {
-      result.totalTokens = usage.totalTokenCount;
-    }
-
-    if (usage.cachedContentTokenCount) {
-      result.cacheTokens = usage.cachedContentTokenCount;
-    }
-
+    if (usage.promptTokenCount) result.inputTokens = usage.promptTokenCount;
+    if (usage.candidatesTokenCount) result.outputTokens = usage.candidatesTokenCount;
+    if (usage.totalTokenCount) result.totalTokens = usage.totalTokenCount;
+    if (usage.cachedContentTokenCount) result.cacheTokens = usage.cachedContentTokenCount;
     return Object.keys(result).length > 0 ? result : undefined;
   }
 }
 
-// ============================================================================
-// MAIN PROVIDER FUNCTIONS
-// ============================================================================
-
-/**
- * Creates a Google Gemini generation function with pre-configured defaults.
- * Returns a simple function that takes messages and options.
- *
- * @example
- * ```typescript
- * const google = createGoogle({ apiKey: '...', model: 'gemini-1.5-pro' });
- *
- * // Use like any function
- * const result = await collectDeltas(google([userText('Hello')]));
- *
- * // Override options
- * const creative = await collectDeltas(google([userText('Be creative')], { temperature: 0.9 }));
- * ```
- */
 export function createGoogle(
   config: WithApiKey<GoogleOptions>
 ): StreamingGenerateFunction<Partial<GoogleOptions>> {
-  if (!config.apiKey) {
-    throw new Error('Google API key is required');
-  }
-
+  if (!config.apiKey) throw new Error('Google API key is required');
   const client = GoogleClientFactory.createClient(config);
   const { apiKey, ...defaultGenerationOptions } = config;
   const defaultOptions = { apiKey, ...defaultGenerationOptions };
-
   return async function* google(messages: Message[], options: Partial<GoogleOptions> = {}) {
     const mergedOptions = { ...defaultOptions, ...options };
-
-    if (!mergedOptions.model) {
-      throw new Error('Model is required in config or options');
-    }
-
+    if (!mergedOptions.model) throw new Error('Model is required in config or options');
     const { endpoint, payload } = GoogleRequestBuilder.build(messages, mergedOptions);
-
-    // Create StreamState at request time for accurate timing
     const streamState = new StreamState();
     const stream = await client.stream(endpoint, payload);
     const lineStream = client.processStreamAsLines(stream);
@@ -458,16 +314,6 @@ export function createGoogle(
   };
 }
 
-/**
- * Direct Google function - no configuration step needed
- *
- * @example
- * ```typescript
- * const result = await collectDeltas(
- *   google({ apiKey: '...', model: 'gemini-1.5-pro' }, [userText('Hello')])
- * );
- * ```
- */
 export async function* google(
   messages: Message[],
   config: WithApiKey<GoogleOptions>
