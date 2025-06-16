@@ -190,8 +190,6 @@ const apiSidebar = [
   createAPISection('Other Types', otherTypes),
 ];
 
-
-
 const homeSidebar = [
   {
     text: 'Documentation',
