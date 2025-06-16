@@ -11,14 +11,11 @@ describe('OpenAIEmbeddingProvider', () => {
     model: 'text-embedding-3-small',
   };
 
-  let provider: OpenAIEmbeddingProvider;
-
   beforeAll(() => {
     nock.disableNetConnect();
   });
 
   beforeEach(() => {
-    provider = createOpenAIEmbeddings(defaultOptions);
     nock.cleanAll();
   });
 

@@ -23,3 +23,10 @@ export { createProvider, createEmbeddingsProvider, type GenerationProviderType }
 
 // Export utility functions
 export * from './utils';
+export * from './message-helpers';
+export * from './stream-utils';
+export * from './conversation-builder';
+
+// Export provider-specific utilities
+export * from './providers/anthropic-transformers';
+export * from './providers/anthropic-stream';

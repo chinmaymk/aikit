@@ -35,6 +35,7 @@ describe('Factory Functions', () => {
         const provider = fn(options as any);
         expect(typeof provider).toBe('function');
         if (name) {
+          // eslint-disable-next-line jest/no-conditional-expect
           expect(provider.name).toBe(name);
         }
       });
