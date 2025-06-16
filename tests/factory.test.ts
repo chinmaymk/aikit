@@ -13,10 +13,13 @@ import {
 
 describe('Factory Functions', () => {
   const mockOptions = {
-    openai: { apiKey: 'test-openai-key' },
-    anthropic: { apiKey: 'test-anthropic-key' },
-    google: { apiKey: 'test-google-key' },
-    openai_responses: { apiKey: 'test-openai-key' } as WithApiKey<OpenAIResponsesOptions>,
+    openai: { apiKey: 'test-openai-key', model: 'gpt-4o' },
+    anthropic: { apiKey: 'test-anthropic-key', model: 'claude-3-5-sonnet-20241022' },
+    google: { apiKey: 'test-google-key', model: 'gemini-1.5-pro' },
+    openai_responses: {
+      apiKey: 'test-openai-key',
+      model: 'gpt-4o',
+    } as WithApiKey<OpenAIResponsesOptions>,
     embeddings: { apiKey: 'test-key' },
   };
 
@@ -35,6 +38,7 @@ describe('Factory Functions', () => {
         const provider = fn(options as any);
         expect(typeof provider).toBe('function');
         if (name) {
+          // eslint-disable-next-line jest/no-conditional-expect
           expect(provider.name).toBe(name);
         }
       });
@@ -153,10 +157,13 @@ describe('Factory Functions', () => {
   describe('Direct function body execution', () => {
     it('should execute all individual factory function bodies', () => {
       // These calls ensure each individual function implementation gets executed
-      const openaiProvider = createOpenAI({ apiKey: 'test' });
-      const anthropicProvider = createAnthropic({ apiKey: 'test' });
-      const googleProvider = createGoogle({ apiKey: 'test' });
-      const openaiResponsesProvider = createOpenAIResponses({ apiKey: 'test' });
+      const openaiProvider = createOpenAI({ apiKey: 'test', model: 'gpt-4o' });
+      const anthropicProvider = createAnthropic({
+        apiKey: 'test',
+        model: 'claude-3-5-sonnet-20241022',
+      });
+      const googleProvider = createGoogle({ apiKey: 'test', model: 'gemini-1.5-pro' });
+      const openaiResponsesProvider = createOpenAIResponses({ apiKey: 'test', model: 'gpt-4o' });
       const openaiEmbeddingsProvider = createOpenAIEmbeddings({ apiKey: 'test' });
       const googleEmbeddingsProvider = createGoogleEmbeddings({ apiKey: 'test' });
 
@@ -175,10 +182,19 @@ describe('Factory Functions', () => {
       const embeddingProvider2 = createEmbeddingsProvider('google_embeddings', { apiKey: 'test' });
 
       // Execute createProvider switch statement
-      const generationProvider1 = createProvider('openai', { apiKey: 'test' });
-      const generationProvider2 = createProvider('anthropic', { apiKey: 'test' });
-      const generationProvider3 = createProvider('google', { apiKey: 'test' });
-      const generationProvider4 = createProvider('openai_responses', { apiKey: 'test' });
+      const generationProvider1 = createProvider('openai', { apiKey: 'test', model: 'gpt-4o' });
+      const generationProvider2 = createProvider('anthropic', {
+        apiKey: 'test',
+        model: 'claude-3-5-sonnet-20241022',
+      });
+      const generationProvider3 = createProvider('google', {
+        apiKey: 'test',
+        model: 'gemini-1.5-pro',
+      });
+      const generationProvider4 = createProvider('openai_responses', {
+        apiKey: 'test',
+        model: 'gpt-4o',
+      });
 
       // Verify all are functions
       expect(typeof embeddingProvider1).toBe('function');
@@ -198,6 +214,64 @@ describe('Factory Functions', () => {
       expect(() => createOpenAIResponses({} as any)).toThrow('OpenAI API key is required');
       expect(() => createOpenAIEmbeddings({} as any)).toThrow('OpenAI API key is required');
       expect(() => createGoogleEmbeddings({} as any)).toThrow('Google API key is required');
+    });
+  });
+
+  describe('Individual factory function coverage', () => {
+    it('should call each individual factory function directly', () => {
+      // Call each individual factory function to ensure 100% function coverage
+      const openai = createOpenAI({ apiKey: 'test', model: 'gpt-4o' });
+      const anthropic = createAnthropic({ apiKey: 'test', model: 'claude-3-5-sonnet-20241022' });
+      const google = createGoogle({ apiKey: 'test', model: 'gemini-1.5-pro' });
+      const openaiResponses = createOpenAIResponses({ apiKey: 'test', model: 'gpt-4o' });
+      const openaiEmbeddings = createOpenAIEmbeddings({
+        apiKey: 'test',
+        model: 'text-embedding-3-large',
+      });
+      const googleEmbeddings = createGoogleEmbeddings({
+        apiKey: 'test',
+        model: 'text-embedding-004',
+      });
+
+      expect(typeof openai).toBe('function');
+      expect(typeof anthropic).toBe('function');
+      expect(typeof google).toBe('function');
+      expect(typeof openaiResponses).toBe('function');
+      expect(typeof openaiEmbeddings).toBe('function');
+      expect(typeof googleEmbeddings).toBe('function');
+    });
+
+    it('should ensure factory wrapper functions are covered', () => {
+      // This test specifically targets the wrapper functions in factory.ts
+      // to ensure lines 61, 80, 99, 120, 141, 162 are covered
+
+      // Test each wrapper function return statement
+      const openaiWrapper = createOpenAI({ apiKey: 'test-key', model: 'gpt-4o' });
+      expect(openaiWrapper.name).toBe('openai');
+
+      const anthropicWrapper = createAnthropic({
+        apiKey: 'test-key',
+        model: 'claude-3-5-sonnet-20241022',
+      });
+      expect(anthropicWrapper.name).toBe('anthropic');
+
+      const googleWrapper = createGoogle({ apiKey: 'test-key', model: 'gemini-1.5-pro' });
+      expect(googleWrapper.name).toBe('google');
+
+      const openaiResponsesWrapper = createOpenAIResponses({ apiKey: 'test-key', model: 'gpt-4o' });
+      expect(openaiResponsesWrapper.name).toBe('openaiResponses');
+
+      const openaiEmbeddingsWrapper = createOpenAIEmbeddings({
+        apiKey: 'test-key',
+        model: 'text-embedding-3-large',
+      });
+      expect(typeof openaiEmbeddingsWrapper).toBe('function');
+
+      const googleEmbeddingsWrapper = createGoogleEmbeddings({
+        apiKey: 'test-key',
+        model: 'text-embedding-004',
+      });
+      expect(typeof googleEmbeddingsWrapper).toBe('function');
     });
   });
 });
