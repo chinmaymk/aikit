@@ -255,6 +255,10 @@ export function createProvider(
   type: GenerationProviderType,
   options: WithApiKey<OpenAIOptions | AnthropicOptions | GoogleOptions | OpenAIResponsesOptions>
 ): AnyGenerationProvider {
+  // Enforce model presence for OpenAI, Google, and Anthropic providers
+  if ((type === 'openai' || type === 'google' || type === 'anthropic') && !(options as any).model) {
+    throw new Error(`'model' is required for provider: ${type}`);
+  }
   switch (type) {
     case 'openai':
       return generationProviders[type](options as WithApiKey<OpenAIOptions>);

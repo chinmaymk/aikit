@@ -133,9 +133,9 @@ describe('Proxy Provider', () => {
         const messages = [userText('Test')];
 
         await expect(async () => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          for await (const _chunk of proxy(messages)) {
+          for await (const chunk of proxy(messages)) {
             // Should not reach here
+            void chunk;
           }
         }).rejects.toThrow('API error: 400 Bad Request - Invalid request format');
       });
@@ -166,8 +166,8 @@ describe('Proxy Provider', () => {
         const messages = [userText('Test')];
 
         const chunks = [];
-        for await (const chunk2 of proxy(messages)) {
-          chunks.push(chunk2);
+        for await (const chunk of proxy(messages)) {
+          chunks.push(chunk);
         }
 
         expect(chunks).toHaveLength(2);
@@ -201,7 +201,7 @@ describe('Proxy Provider', () => {
         const messages = [userText('Test')];
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        for await (const _chunk of proxy(messages)) {
+        for await (const chunk of proxy(messages)) {
           // Just consume the stream
         }
 
@@ -229,7 +229,7 @@ describe('Proxy Provider', () => {
         const messages = [userText('Test')];
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        for await (const _chunk of proxy(messages)) {
+        for await (const chunk of proxy(messages)) {
           // Just consume the stream
         }
 
