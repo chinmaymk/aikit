@@ -324,7 +324,7 @@ Ready to dive deeper? Here's where to go:
 
 - **[Getting Started Guide](/guide/getting-started)** - Your first steps with AIKit
 - **[API Reference](/api/generated/README)** - Complete API documentation
-- **[Examples](/examples/README)** - Copy-paste ready code snippets
+- **[Examples](https://github.com/chinmaymk/aikit/tree/main/examples)** - Copy-paste ready code snippets
 - **[GitHub](https://github.com/chinmaymk/aikit)** - Source code and issues
 
 ---

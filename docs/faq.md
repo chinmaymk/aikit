@@ -285,7 +285,7 @@ Check:
 
 ## Where can I find more examples?
 
-- **[Examples documentation](/examples/README)** - Comprehensive examples with explanations
+- **[Examples documentation](https://github.com/chinmaymk/aikit/tree/main/examples)** - Comprehensive examples with explanations
 - **[GitHub examples folder](https://github.com/chinmaymk/aikit/tree/main/examples)** - Runnable code
 - **[Guide sections](/guide/getting-started)** - Feature-specific tutorials
 

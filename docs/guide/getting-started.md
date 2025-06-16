@@ -377,7 +377,7 @@ for await (const chunk of mockProvider(messages, options)) {
 You've mastered the basics! Here's where to level up:
 
 - **[API Reference](/api/generated/README)** - All the technical details
-- **[Examples](/examples/README)** - More copy-paste-able code
+- **[Examples](https://github.com/chinmaymk/aikit/tree/main/examples)** - More copy-paste-able code
 - **[GitHub Issues](https://github.com/chinmaymk/aikit/issues)** - Report bugs or request features
 
 Remember: AIKit is all about keeping things simple. If something feels too complex, it probably is. File an issue and let's make it better together!
