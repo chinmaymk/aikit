@@ -208,7 +208,7 @@ function getStreamingProvider<T extends GenerationProviderType>({
  * // In your backend server (e.g., Express)
  * app.post('/ai/proxy', async (req, res) => {
  *   const requestWithApiKey = { ...req.body, providerOptions: { apiKey: '...' } };
- *   const stream = resolveProxyProvider(requestWithApiKey);
+ *   const stream = callProxyProvider(requestWithApiKey);
  *
  *   res.setHeader('Content-Type', 'text/event-stream');
  *   for await (const chunk of stream) {

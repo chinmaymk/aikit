@@ -13,10 +13,7 @@ export {
 export { openai } from './providers/openai_completions';
 export { anthropic } from './providers/anthropic';
 export { google } from './providers/google';
-export {
-  createProxyProvider as createProxy,
-  callProxyProvider as resolveProxyProvider,
-} from './providers/proxy';
+export { createProxyProvider, callProxyProvider } from './providers/proxy';
 export { openaiResponses } from './providers/openai_responses';
 
 // Export functional embedding APIs (primary)

@@ -19,7 +19,7 @@ AIKit's proxy provider allows you to:
 
 ```javascript
 import express from 'express';
-import { resolveProxyProvider } from '@chinmaymk/aikit';
+import { callProxyProvider } from '@chinmaymk/aikit';
 
 const app = express();
 app.use(express.json());
@@ -43,7 +43,7 @@ app.post('/aikit/proxy', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
 
-  const stream = resolveProxyProvider({
+  const stream = callProxyProvider({
     messages,
     providerType,
     providerOptions: { ...(providerOptions || {}), apiKey },
@@ -63,7 +63,7 @@ app.listen(3000);
 
 ```javascript
 // app/api/aikit/proxy/route.js
-import { resolveProxyProvider, toReadableStream } from '@chinmaymk/aikit';
+import { callProxyProvider, toReadableStream } from '@chinmaymk/aikit';
 
 const apiKeys = {
   openai: process.env.OPENAI_API_KEY,
@@ -80,7 +80,7 @@ export async function POST(request) {
     return Response.json({ error: `API key not found for ${providerType}` }, { status: 400 });
   }
 
-  const stream = resolveProxyProvider({
+  const stream = callProxyProvider({
     messages,
     providerType,
     providerOptions: { ...(providerOptions || {}), apiKey },
