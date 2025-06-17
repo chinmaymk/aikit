@@ -2,6 +2,12 @@ import type { Message, Content } from '../types';
 import { MessageTransformer } from './utils';
 import { OpenAI } from './openai';
 
+interface ContentPartBuilders {
+  text: (text: string) => any;
+  image: (url: string) => any;
+  toolResult: (toolCallId: string, result: string) => any;
+}
+
 export class OpenAIMessageTransformer {
   static toChatCompletions(messages: Message[]): OpenAI.Chat.MessageParam[] {
     return messages.flatMap(msg => this.mapChatMessage(msg));
@@ -34,7 +40,7 @@ export class OpenAIMessageTransformer {
         return [
           {
             role: 'user',
-            content: this.buildChatContentParts(msg.content),
+            content: this.buildContentParts(msg.content, this.chatContentBuilders),
           },
         ];
 
@@ -92,7 +98,7 @@ export class OpenAIMessageTransformer {
         return [
           {
             role: 'user',
-            content: this.buildResponsesContentParts(msg.content),
+            content: this.buildContentParts(msg.content, this.responsesContentBuilders),
           },
         ];
 
@@ -108,7 +114,7 @@ export class OpenAIMessageTransformer {
         return [
           {
             role: 'assistant',
-            content: this.buildResponsesContentParts(msg.content),
+            content: this.buildContentParts(msg.content, this.responsesContentBuilders),
           },
         ];
 
@@ -120,34 +126,67 @@ export class OpenAIMessageTransformer {
   }
 
   private static extractAllTextContent(content: Content[]): string {
-    const { text } = MessageTransformer.groupContentByType(content);
-    return text.length > 0 ? text.map(t => t.text).join('\n') : '';
-  }
+    const { text, toolResults } = MessageTransformer.groupContentByType(content);
+    const textParts: string[] = [];
 
-  private static buildChatContentParts(content: Message['content']): OpenAI.Chat.ContentPart[] {
-    return content
-      .map(c => {
-        if (c.type === 'text') return { type: 'text' as const, text: c.text };
-        if (c.type === 'image') return { type: 'image_url' as const, image_url: { url: c.image } };
-        return null;
-      })
-      .filter(Boolean) as OpenAI.Chat.ContentPart[];
-  }
-
-  private static buildResponsesContentParts(
-    content: Message['content']
-  ): OpenAI.Responses.ContentPart[] {
-    const parts: OpenAI.Responses.ContentPart[] = [];
-    for (const item of content) {
-      switch (item.type) {
-        case 'text':
-          parts.push({ type: 'input_text', text: item.text });
-          break;
-        case 'image':
-          parts.push({ type: 'input_image', image_url: item.image });
-          break;
+    // Preserve individual text blocks
+    for (const textContent of text) {
+      if (textContent.text.trim()) {
+        textParts.push(textContent.text);
       }
     }
+
+    // Include tool results as text if present in non-tool messages
+    for (const toolResult of toolResults) {
+      textParts.push(`Tool result from ${toolResult.toolCallId}: ${toolResult.result}`);
+    }
+
+    return textParts.join('\n');
+  }
+
+  // Shared content part building logic
+  private static buildContentParts<T>(
+    content: Message['content'],
+    builders: ContentPartBuilders
+  ): T[] {
+    const parts: T[] = [];
+    const { text, images, toolResults } = MessageTransformer.groupContentByType(content);
+
+    // Handle multiple text blocks separately to preserve structure
+    for (const textContent of text) {
+      parts.push(builders.text(textContent.text));
+    }
+
+    // Handle images
+    for (const imageContent of images) {
+      parts.push(builders.image(imageContent.image));
+    }
+
+    // Handle tool results that appear in non-tool messages
+    for (const toolResult of toolResults) {
+      parts.push(builders.toolResult(toolResult.toolCallId, toolResult.result));
+    }
+
     return parts;
   }
+
+  // Chat API content builders
+  private static chatContentBuilders: ContentPartBuilders = {
+    text: (text: string) => ({ type: 'text' as const, text }),
+    image: (url: string) => ({ type: 'image_url' as const, image_url: { url } }),
+    toolResult: (toolCallId: string, result: string) => ({
+      type: 'text' as const,
+      text: `Tool result from ${toolCallId}: ${result}`,
+    }),
+  };
+
+  // Responses API content builders
+  private static responsesContentBuilders: ContentPartBuilders = {
+    text: (text: string) => ({ type: 'input_text', text }),
+    image: (url: string) => ({ type: 'input_image', image_url: url }),
+    toolResult: (toolCallId: string, result: string) => ({
+      type: 'input_text',
+      text: `Tool result from ${toolCallId}: ${result}`,
+    }),
+  };
 }

@@ -280,35 +280,5 @@ describe('OpenAI Message Transformer', () => {
       const result = OpenAIMessageTransformer['extractAllTextContent'](content);
       expect(result).toBe('');
     });
-
-    it('should build chat content parts correctly', () => {
-      const content = [
-        { type: 'text' as const, text: 'Hello' },
-        { type: 'image' as const, image: 'data:image/jpeg;base64,abc' },
-        { type: 'text' as const, text: 'World' },
-      ];
-
-      const result = OpenAIMessageTransformer['buildChatContentParts'](content);
-
-      expect(result).toEqual([
-        { type: 'text', text: 'Hello' },
-        { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,abc' } },
-        { type: 'text', text: 'World' },
-      ]);
-    });
-
-    it('should build responses content parts correctly', () => {
-      const content = [
-        { type: 'text' as const, text: 'Analyze this' },
-        { type: 'image' as const, image: 'data:image/png;base64,xyz' },
-      ];
-
-      const result = OpenAIMessageTransformer['buildResponsesContentParts'](content);
-
-      expect(result).toEqual([
-        { type: 'input_text', text: 'Analyze this' },
-        { type: 'input_image', image_url: 'data:image/png;base64,xyz' },
-      ]);
-    });
   });
 });

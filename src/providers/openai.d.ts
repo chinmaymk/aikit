@@ -39,7 +39,7 @@ export namespace OpenAI {
     }
 
     export interface MessageParam {
-      role: 'system' | 'user' | 'assistant' | 'developer' | 'tool';
+      role: 'system' | 'user' | 'assistant' | 'tool';
       content: string | ContentPart[] | null;
       tool_calls?: ToolCallParam[];
       tool_call_id?: string;

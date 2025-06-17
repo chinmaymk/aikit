@@ -6,61 +6,27 @@ describe('OpenAI Utils - Basic Coverage Tests', () => {
     it('should handle unsupported message roles in chat completions', () => {
       const messages = [
         {
-          role: 'developer' as any,
+          role: 'unknown' as any,
           content: [{ type: 'text' as const, text: 'Test' }],
         },
       ];
 
       expect(() => OpenAIMessageTransformer.toChatCompletions(messages)).toThrow(
-        "Unsupported message role 'developer' for OpenAI Chat provider"
+        "Unsupported message role 'unknown' for OpenAI Chat provider"
       );
     });
 
     it('should handle unsupported message roles in responses', () => {
       const messages = [
         {
-          role: 'developer' as any,
+          role: 'unknown' as any,
           content: [{ type: 'text' as const, text: 'Test' }],
         },
       ];
 
       expect(() => OpenAIMessageTransformer.toResponses(messages)).toThrow(
-        "Unsupported message role 'developer' for OpenAI Responses provider"
+        "Unsupported message role 'unknown' for OpenAI Responses provider"
       );
-    });
-
-    it('should handle content parts that are not text or image in chat', () => {
-      const messages: Message[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'Hello' },
-            { type: 'tool_result', toolCallId: 'call_123', result: 'result' } as any,
-          ],
-        },
-      ];
-
-      const result = OpenAIMessageTransformer.toChatCompletions(messages);
-      expect(result[0].content).toHaveLength(1); // Only text should be included
-    });
-
-    it('should handle content parts that are not text or image in responses', () => {
-      const messages: Message[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'Hello' },
-            { type: 'tool_result', toolCallId: 'call_123', result: 'result' } as any,
-          ],
-        },
-      ];
-
-      const result = OpenAIMessageTransformer.toResponses(messages);
-      const firstResult = result[0];
-      if ('content' in firstResult) {
-        // eslint-disable-next-line jest/no-conditional-expect
-        expect(firstResult.content).toHaveLength(1); // Only text should be included
-      }
     });
 
     it('should handle assistant messages without tool calls in responses', () => {

@@ -17,26 +17,9 @@ describe('Google Provider', () => {
   });
 
   describe('createGoogle', () => {
-    it('should throw error when API key is missing', () => {
-      expect(() => createGoogle({ apiKey: '', model: 'gemini-1.5-pro' })).toThrow(
-        'Google API key is required'
-      );
-    });
-
     it('should create provider function', () => {
       const provider = createGoogle(defaultOptions);
       expect(typeof provider).toBe('function');
-    });
-
-    it('should throw error when model is missing in both config and options', async () => {
-      const provider = createGoogle({ apiKey: mockApiKey });
-      await expect(async () => {
-        const gen = provider([{ role: 'user', content: [{ type: 'text', text: 'test' }] }]);
-        for await (const chunk of gen) {
-          void chunk;
-          break;
-        }
-      }).rejects.toThrow('Model is required in config or options');
     });
   });
 

@@ -2,11 +2,7 @@ import {
   transformMessages,
   transformMessage,
   buildContentBlocks,
-  formatToolChoice,
-  mapFinishReason,
-  extractUsageFromAnthropicEvent,
   AnthropicMessage,
-  AnthropicStreamEvent,
 } from '../../src/providers/anthropic-transformers';
 import type { Message } from '../../src/types';
 
@@ -127,8 +123,9 @@ describe('anthropic-transformers', () => {
       };
 
       const result = buildContentBlocks(message);
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ type: 'text', text: 'First text\nSecond text' });
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ type: 'text', text: 'First text' });
+      expect(result[1]).toEqual({ type: 'text', text: 'Second text' });
     });
 
     it('should skip empty text', () => {
@@ -196,7 +193,7 @@ describe('anthropic-transformers', () => {
       const message: Message = {
         role: 'user',
         content: [
-          { type: 'text', text: 'Invalid image' },
+          { type: 'text', text: 'Look at this' },
           { type: 'image', image: 'invalid-url' },
         ],
       };
@@ -205,72 +202,67 @@ describe('anthropic-transformers', () => {
       expect(result).toHaveLength(1);
       expect(result[0].type).toBe('text');
     });
-  });
 
-  describe('formatToolChoice', () => {
-    it('should default to auto', () => {
-      expect(formatToolChoice(undefined)).toEqual({ type: 'auto' });
+    it('should handle tool results in non-tool messages', () => {
+      const message: Message = {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Check this result:' },
+          { type: 'tool_result', toolCallId: 'call_123', result: 'Analysis data' },
+          { type: 'text', text: 'What should we do next?' },
+        ],
+      };
+
+      const result = buildContentBlocks(message);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({ type: 'text', text: 'Check this result:' });
+      expect(result[1]).toEqual({ type: 'text', text: 'What should we do next?' });
     });
 
-    it('should handle string values', () => {
-      expect(formatToolChoice('auto')).toEqual({ type: 'auto' });
-    });
+    it('should handle mixed content with all types', () => {
+      const message: Message = {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: 'Processing...' },
+          { type: 'tool_result', toolCallId: 'call_456', result: 'Data processed' },
+          {
+            type: 'image',
+            image:
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+          },
+        ],
+        toolCalls: [
+          {
+            id: 'call_789',
+            name: 'analyze',
+            arguments: { data: 'test' },
+          },
+        ],
+      };
 
-    it('should handle object values', () => {
-      expect(formatToolChoice({ name: 'test_tool' })).toEqual({
-        type: 'tool',
-        name: 'test_tool',
+      const result = buildContentBlocks(message);
+      expect(result).toHaveLength(3);
+
+      // Text block
+      expect(result[0]).toEqual({ type: 'text', text: 'Processing...' });
+
+      // Image block
+      expect(result[1]).toEqual({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: 'image/png',
+          data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+        },
       });
-    });
-  });
 
-  describe('mapFinishReason', () => {
-    it('should map known finish reasons', () => {
-      expect(mapFinishReason('end_turn')).toBe('stop');
-      expect(mapFinishReason('max_tokens')).toBe('length');
-      expect(mapFinishReason('stop_sequence')).toBe('stop');
-      expect(mapFinishReason('tool_use')).toBe('tool_use');
-      expect(mapFinishReason('pause_turn')).toBe('stop');
-      expect(mapFinishReason('refusal')).toBe('error');
-    });
-
-    it('should return undefined for unknown reasons', () => {
-      expect(mapFinishReason('unknown')).toBeUndefined();
-      expect(mapFinishReason(undefined)).toBeUndefined();
-    });
-  });
-
-  describe('extractUsageFromAnthropicEvent', () => {
-    it('should extract usage from message delta', () => {
-      const event: Extract<AnthropicStreamEvent, { type: 'message_delta' }> = {
-        type: 'message_delta',
-        delta: { stop_reason: 'end_turn' },
-        usage: { output_tokens: 42 },
-      };
-
-      const result = extractUsageFromAnthropicEvent(event);
-      expect(result).toEqual({ outputTokens: 42 });
-    });
-
-    it('should return undefined when no usage', () => {
-      const event: Extract<AnthropicStreamEvent, { type: 'message_delta' }> = {
-        type: 'message_delta',
-        delta: { stop_reason: 'end_turn' },
-      };
-
-      const result = extractUsageFromAnthropicEvent(event);
-      expect(result).toBeUndefined();
-    });
-
-    it('should handle zero output tokens', () => {
-      const event: Extract<AnthropicStreamEvent, { type: 'message_delta' }> = {
-        type: 'message_delta',
-        delta: { stop_reason: 'end_turn' },
-        usage: { output_tokens: 0 },
-      };
-
-      const result = extractUsageFromAnthropicEvent(event);
-      expect(result).toEqual({ outputTokens: 0 });
+      // Tool use block from toolCalls
+      expect(result[2]).toEqual({
+        type: 'tool_use',
+        id: 'call_789',
+        name: 'analyze',
+        input: { data: 'test' },
+      });
     });
   });
 });

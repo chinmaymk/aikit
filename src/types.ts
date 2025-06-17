@@ -94,8 +94,8 @@ export interface ToolCall {
  * @group Types
  */
 export interface Message {
-  /** Who's talking? A user, the assistant, the system, a developer, or a tool. */
-  role: 'user' | 'assistant' | 'system' | 'developer' | 'tool';
+  /** Who's talking? A user, the assistant, the system, or a tool. */
+  role: 'user' | 'assistant' | 'system' | 'tool';
   /** The actual content of the message. It's an array, because life is complicated. */
   content: Content[];
   /** If the assistant is calling a tool, the details will be in here. */

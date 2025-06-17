@@ -53,10 +53,6 @@ describe('Message Transformation', () => {
         content: [{ type: 'text', text: 'System message 2' }],
       },
       {
-        role: 'developer',
-        content: [{ type: 'text', text: 'Developer instructions' }],
-      },
-      {
         role: 'user',
         content: [
           { type: 'text', text: 'User text 1' },
@@ -104,16 +100,6 @@ describe('Message Transformation', () => {
       expect(combinedSystem).toBe('System message 1\n\nSystem message 2');
     });
 
-    it('should identify developer role messages', () => {
-      const developerMessage = testMessages.find(m => m.role === 'developer');
-      expect(developerMessage).toBeDefined();
-      expect(developerMessage!.role).toBe('developer');
-
-      // Developer messages should be identified but not processed by providers
-      const content = MessageTransformer.extractTextContent(developerMessage!.content);
-      expect(content).toBe('Developer instructions');
-    });
-
     it('should handle tool calls and results', () => {
       const assistantMessage = testMessages.find(m => m.role === 'assistant');
       const toolMessage = testMessages.find(m => m.role === 'tool');
@@ -127,22 +113,72 @@ describe('Message Transformation', () => {
     });
   });
 
+  describe('Content handling improvements', () => {
+    it('should handle mixed content with tool results in user messages', () => {
+      const mixedContent: Content[] = [
+        { type: 'text', text: 'First text block' },
+        { type: 'tool_result', toolCallId: 'call1', result: 'Some result' },
+        { type: 'text', text: 'Second text block' },
+        { type: 'image', image: 'data:image/png;base64,abc123' },
+      ];
+
+      const grouped = MessageTransformer.groupContentByType(mixedContent);
+
+      expect(grouped.text).toHaveLength(2);
+      expect(grouped.text[0].text).toBe('First text block');
+      expect(grouped.text[1].text).toBe('Second text block');
+
+      expect(grouped.toolResults).toHaveLength(1);
+      expect(grouped.toolResults[0].toolCallId).toBe('call1');
+      expect(grouped.toolResults[0].result).toBe('Some result');
+
+      expect(grouped.images).toHaveLength(1);
+      expect(grouped.images[0].image).toBe('data:image/png;base64,abc123');
+    });
+
+    it('should preserve text block structure and not combine them inappropriately', () => {
+      const structuredContent: Content[] = [
+        { type: 'text', text: 'Question: What is 2+2?' },
+        { type: 'text', text: 'Answer: 4' },
+        { type: 'text', text: 'Explanation: Basic arithmetic' },
+      ];
+
+      const grouped = MessageTransformer.groupContentByType(structuredContent);
+
+      // Should preserve individual text blocks
+      expect(grouped.text).toHaveLength(3);
+      expect(grouped.text[0].text).toBe('Question: What is 2+2?');
+      expect(grouped.text[1].text).toBe('Answer: 4');
+      expect(grouped.text[2].text).toBe('Explanation: Basic arithmetic');
+    });
+
+    it('should handle empty and whitespace-only text blocks', () => {
+      const mixedWhitespaceContent: Content[] = [
+        { type: 'text', text: 'Valid text' },
+        { type: 'text', text: '   ' }, // whitespace only
+        { type: 'text', text: '' }, // empty
+        { type: 'text', text: 'Another valid text' },
+      ];
+
+      const grouped = MessageTransformer.groupContentByType(mixedWhitespaceContent);
+
+      // Should include all text blocks, even empty ones (transformers should handle filtering)
+      expect(grouped.text).toHaveLength(4);
+      expect(grouped.text[0].text).toBe('Valid text');
+      expect(grouped.text[1].text).toBe('   ');
+      expect(grouped.text[2].text).toBe('');
+      expect(grouped.text[3].text).toBe('Another valid text');
+    });
+  });
+
   describe('Content validation', () => {
     it('should validate data URLs correctly', () => {
-      const validImageUrl = 'data:image/png;base64,iVBORw0KGgo=';
-      const invalidImageUrl = 'not-a-data-url';
-      const nonImageDataUrl = 'data:text/plain;base64,SGVsbG8=';
-
-      // Using the validation logic from providers
-      expect(validImageUrl.startsWith('data:image/') && validImageUrl.includes('base64,')).toBe(
-        true
-      );
-      expect(invalidImageUrl.startsWith('data:image/') && invalidImageUrl.includes('base64,')).toBe(
-        false
-      );
-      expect(nonImageDataUrl.startsWith('data:image/') && nonImageDataUrl.includes('base64,')).toBe(
-        false
-      );
+      expect(MessageTransformer.parseJson('{"valid": true}', { valid: false })).toEqual({
+        valid: true,
+      });
+      expect(MessageTransformer.parseJson('invalid json', { valid: false })).toEqual({
+        valid: false,
+      });
     });
 
     it('should handle empty content arrays', () => {

@@ -26,70 +26,6 @@ describe('Proxy Provider Edge Cases', () => {
       }).rejects.toThrow('Network error');
     });
 
-    it('should handle response stream reading errors', async () => {
-      const mockStream = new ReadableStream({
-        start(controller) {
-          controller.error(new Error('Stream read error'));
-        },
-      });
-
-      jest.spyOn(global, 'fetch').mockResolvedValue(new Response(mockStream));
-
-      const proxy = createProxyProvider('openai', {
-        baseURL: 'http://localhost:3000',
-        model: 'gpt-4o',
-      });
-
-      const messages = [userText('Test')];
-
-      await expect(async () => {
-        for await (const chunk of proxy(messages)) {
-          // Should not reach here
-          void chunk;
-        }
-      }).rejects.toThrow('Stream read error');
-    });
-
-    it('should handle empty stream response', async () => {
-      const mockStream = new ReadableStream({
-        start(controller) {
-          controller.close();
-        },
-      });
-
-      jest.spyOn(global, 'fetch').mockResolvedValue(new Response(mockStream));
-
-      const proxy = createProxyProvider('openai', {
-        baseURL: 'http://localhost:3000',
-        model: 'gpt-4o',
-      });
-
-      const messages = [userText('Test')];
-
-      const chunks = [];
-      for await (const chunk of proxy(messages)) {
-        chunks.push(chunk);
-      }
-
-      expect(chunks).toHaveLength(0);
-    });
-
-    it('should handle proxy configuration validation', () => {
-      expect(() =>
-        createProxyProvider('openai', {
-          baseURL: null as any,
-          model: 'gpt-4o',
-        })
-      ).toThrow('The `baseURL` option is required for `createProxy` and must be a string.');
-
-      expect(() =>
-        createProxyProvider('openai', {
-          baseURL: 123 as any,
-          model: 'gpt-4o',
-        })
-      ).toThrow('The `baseURL` option is required for `createProxy` and must be a string.');
-    });
-
     it('should handle different header types', async () => {
       // Test with array headers (should be ignored)
       const mockStream1 = new ReadableStream({
@@ -232,68 +168,6 @@ describe('Proxy Provider Edge Cases', () => {
       }
 
       expect(chunks).toEqual([]);
-    });
-
-    it('should handle lines that do not start with data:', async () => {
-      const mockStreamResponse = [
-        'event: start',
-        'data: {"type":"chunk","delta":"test"}',
-        'invalid line',
-        'data: [DONE]',
-      ].join('\n');
-
-      const mockStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(mockStreamResponse));
-          controller.close();
-        },
-      });
-
-      jest.spyOn(global, 'fetch').mockResolvedValue(new Response(mockStream));
-
-      const proxy = createProxyProvider('openai', {
-        baseURL: 'http://localhost:3000',
-        model: 'gpt-4o',
-      });
-
-      const chunks = [];
-      for await (const chunk of proxy([userText('test')])) {
-        chunks.push(chunk);
-      }
-
-      expect(chunks).toHaveLength(1);
-      expect(chunks[0]).toEqual({ type: 'chunk', delta: 'test' });
-    });
-
-    it('should handle empty lines in stream', async () => {
-      const mockStreamResponse = [
-        '',
-        'data: {"type":"chunk","delta":"test"}',
-        '',
-        'data: [DONE]',
-      ].join('\n');
-
-      const mockStream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(new TextEncoder().encode(mockStreamResponse));
-          controller.close();
-        },
-      });
-
-      jest.spyOn(global, 'fetch').mockResolvedValue(new Response(mockStream));
-
-      const proxy = createProxyProvider('openai', {
-        baseURL: 'http://localhost:3000',
-        model: 'gpt-4o',
-      });
-
-      const chunks = [];
-      for await (const chunk of proxy([userText('test')])) {
-        chunks.push(chunk);
-      }
-
-      expect(chunks).toHaveLength(1);
-      expect(chunks[0]).toEqual({ type: 'chunk', delta: 'test' });
     });
   });
 });

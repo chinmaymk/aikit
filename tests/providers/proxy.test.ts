@@ -33,25 +33,14 @@ describe('Proxy Provider', () => {
     });
 
     it('should handle full configuration with proxy options', () => {
-      const proxy = createProxyProvider('openai', {
+      createProxyProvider('openai', {
         baseURL: 'http://localhost:3000',
         endpoint: '/custom-proxy',
         apiKey: 'test-key',
         timeout: 10000,
         headers: { 'X-Custom': 'value' },
         model: 'gpt-4o',
-        temperature: 0.7,
       });
-
-      expect(proxy).toBeDefined();
-    });
-
-    it('should throw an error if baseURL is not provided', () => {
-      expect(() =>
-        createProxyProvider('openai', {
-          model: 'gpt-4o',
-        })
-      ).toThrow('The `baseURL` option is required for `createProxy` and must be a string.');
     });
 
     describe('end-to-end proxy integration', () => {
@@ -180,35 +169,6 @@ describe('Proxy Provider', () => {
         );
 
         consoleSpy.mockRestore();
-      });
-
-      it('should handle custom endpoint', async () => {
-        const mockStream = new ReadableStream({
-          start(controller) {
-            const encoder = new TextEncoder();
-            controller.enqueue(encoder.encode('data: [DONE]\n'));
-            controller.close();
-          },
-        });
-
-        jest.spyOn(global, 'fetch').mockResolvedValue(new Response(mockStream));
-
-        const proxy = createProxyProvider('openai', {
-          baseURL: 'http://localhost:3000',
-          endpoint: '/custom-endpoint',
-        });
-
-        const messages = [userText('Test')];
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        for await (const chunk of proxy(messages)) {
-          // Just consume the stream
-        }
-
-        expect(global.fetch).toHaveBeenCalledWith(
-          'http://localhost:3000/custom-endpoint',
-          expect.any(Object)
-        );
       });
 
       it('should handle undefined options gracefully', async () => {

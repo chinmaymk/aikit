@@ -124,11 +124,14 @@ export class GoogleMessageTransformer {
     const parts: GooglePart[] = [];
     const { text, images } = MessageTransformer.groupContentByType(msg.content);
 
-    if (text.length > 0) {
-      const combinedText = text.map(t => t.text).join('\n');
-      if (combinedText.trim()) parts.push({ text: combinedText });
+    // Handle multiple text blocks separately to preserve structure
+    for (const textContent of text) {
+      if (textContent.text.trim()) {
+        parts.push({ text: textContent.text });
+      }
     }
 
+    // Handle images
     for (const imageContent of images) {
       if (ValidationUtils.isValidDataUrl(imageContent.image)) {
         const [mimeTypePart, data] = imageContent.image.split(',');
@@ -145,6 +148,7 @@ export class GoogleMessageTransformer {
       }
     }
 
+    // Handle tool calls for assistant messages
     if (msg.role === 'assistant' && msg.toolCalls) {
       for (const toolCall of msg.toolCalls) {
         parts.push({

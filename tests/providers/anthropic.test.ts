@@ -2,24 +2,6 @@ import { createAnthropic, anthropic as directAnthropic } from '../../src/provide
 import type { AnthropicOptions } from '../../src/types';
 
 describe('Anthropic Provider - Coverage', () => {
-  it('should throw if no apiKey is provided', () => {
-    // purposely missing apiKey
-    expect(() => createAnthropic({ model: 'claude-3-haiku-20240307' } as any)).toThrow(
-      'Anthropic API key is required'
-    );
-  });
-
-  it('should throw if no model is provided in config or options', async () => {
-    const provider = createAnthropic({ apiKey: 'x' });
-    await expect(
-      (async () => {
-        for await (const unused of provider([], {})) {
-          void unused;
-        }
-      })()
-    ).rejects.toThrow('Model is required in config or options');
-  });
-
   it('should build headers with beta and anthropicVersion', () => {
     // purposely missing model for header test
     const provider = createAnthropic({

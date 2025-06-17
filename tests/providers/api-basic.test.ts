@@ -175,4 +175,122 @@ describe('API Client - Basic Functionality', () => {
       expect(clientWithMaxRetries).toBeInstanceOf(APIClient);
     });
   });
+
+  describe('retry logic', () => {
+    it('should retry on failed requests', async () => {
+      let attempts = 0;
+
+      global.fetch = jest.fn().mockImplementation(() => {
+        attempts++;
+        if (attempts === 1) {
+          throw new Error('Network error');
+        }
+        return Promise.resolve(new Response('Success', { status: 200 }));
+      });
+
+      const client = new APIClient('http://example.com', {}, 5000, 2);
+      const stream = await client.stream('/test', {});
+
+      expect(attempts).toBe(2);
+      expect(stream).toBeDefined();
+    });
+
+    it('should throw error after max retries exceeded', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const client = new APIClient('http://example.com', {}, 5000, 2);
+
+      await expect(client.stream('/test', {})).rejects.toThrow('Network error');
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle timeout errors', async () => {
+      global.fetch = jest
+        .fn()
+        .mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+
+      const client = new APIClient('http://example.com', {}, 50, 1);
+
+      await expect(client.stream('/test', {})).rejects.toThrow();
+    });
+
+    it('should handle API errors with status codes', async () => {
+      global.fetch = jest
+        .fn()
+        .mockResolvedValue(new Response('Bad Request', { status: 400, statusText: 'Bad Request' }));
+
+      const client = new APIClient('http://example.com', {}, 5000, 1);
+
+      await expect(client.stream('/test', {})).rejects.toThrow(
+        'API error: 400 Bad Request - Bad Request'
+      );
+    });
+
+    it('should handle missing response body', async () => {
+      global.fetch = jest.fn().mockResolvedValue(new Response(null, { status: 200 }));
+
+      const client = new APIClient('http://example.com', {}, 5000, 1);
+
+      await expect(client.stream('/test', {})).rejects.toThrow('No response body from API');
+    });
+  });
+
+  describe('header mutation', () => {
+    it('should call mutateHeaders before each request', async () => {
+      const mutateHeaders = jest.fn();
+      const client = new APIClient(
+        'http://example.com',
+        { 'X-Test': 'value' },
+        undefined,
+        1,
+        mutateHeaders
+      );
+
+      const mockResponseStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('test'));
+          controller.close();
+        },
+      });
+      global.fetch = jest.fn().mockResolvedValue(new Response(mockResponseStream, { status: 200 }));
+
+      await client.stream('/test', {});
+
+      expect(mutateHeaders).toHaveBeenCalledWith({ 'X-Test': 'value' });
+    });
+
+    it('should mutate headers correctly', async () => {
+      const mutateHeaders = (headers: Record<string, string>) => {
+        headers['X-Dynamic'] = 'added';
+      };
+
+      const client = new APIClient(
+        'http://example.com',
+        { 'X-Test': 'value' },
+        undefined,
+        1,
+        mutateHeaders
+      );
+
+      const mockResponseStream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('test'));
+          controller.close();
+        },
+      });
+      global.fetch = jest.fn().mockResolvedValue(new Response(mockResponseStream, { status: 200 }));
+
+      await client.stream('/test', {});
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://example.com/test',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'X-Test': 'value',
+            'X-Dynamic': 'added',
+          }),
+        })
+      );
+    });
+  });
 });

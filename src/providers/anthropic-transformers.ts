@@ -59,10 +59,15 @@ export function transformMessage(msg: Message): AnthropicMessage | AnthropicMess
 export function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
   const blocks: AnthropicContentBlock[] = [];
   const { text, images } = MessageTransformer.groupContentByType(msg.content);
-  if (text.length > 0) {
-    const combinedText = text.map(t => t.text).join('\n');
-    if (combinedText.trim()) blocks.push({ type: 'text', text: combinedText });
+
+  // Handle multiple text blocks separately to preserve structure
+  for (const textContent of text) {
+    if (textContent.text.trim()) {
+      blocks.push({ type: 'text', text: textContent.text });
+    }
   }
+
+  // Handle images
   for (const imageContent of images) {
     if (ValidationUtils.isValidDataUrl(imageContent.image)) {
       blocks.push({
@@ -75,6 +80,8 @@ export function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
       });
     }
   }
+
+  // Handle tool calls for assistant messages
   if (msg.role === 'assistant' && msg.toolCalls) {
     blocks.push(
       ...msg.toolCalls.map(toolCall => ({
@@ -85,6 +92,7 @@ export function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
       }))
     );
   }
+
   return blocks;
 }
 
