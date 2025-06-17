@@ -67,7 +67,7 @@ describe('E2E Proxy Provider Flow', () => {
       { type: 'chunk', delta: ' mocked provider' },
     ]);
 
-    // Check if createOpenAI was called correctly by resolveProxyProvider
+    // Check if createOpenAI was called correctly by callProxyProvider
     expect(mockedCreateOpenAI).toHaveBeenCalledWith({
       model: 'gpt-4o-test',
       apiKey: 'sk-test-key',
