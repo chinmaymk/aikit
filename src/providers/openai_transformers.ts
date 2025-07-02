@@ -5,6 +5,7 @@ import { OpenAI } from './openai';
 interface ContentPartBuilders {
   text: (text: string) => any;
   image: (url: string) => any;
+  audio: (audioData: string, format?: string) => any;
   toolResult: (toolCallId: string, result: string) => any;
 }
 
@@ -150,7 +151,7 @@ export class OpenAIMessageTransformer {
     builders: ContentPartBuilders
   ): T[] {
     const parts: T[] = [];
-    const { text, images, toolResults } = MessageTransformer.groupContentByType(content);
+    const { text, images, audio, toolResults } = MessageTransformer.groupContentByType(content);
 
     // Handle multiple text blocks separately to preserve structure
     for (const textContent of text) {
@@ -160,6 +161,11 @@ export class OpenAIMessageTransformer {
     // Handle images
     for (const imageContent of images) {
       parts.push(builders.image(imageContent.image));
+    }
+
+    // Handle audio
+    for (const audioContent of audio) {
+      parts.push(builders.audio(audioContent.audio, audioContent.format));
     }
 
     // Handle tool results that appear in non-tool messages
@@ -174,6 +180,13 @@ export class OpenAIMessageTransformer {
   private static chatContentBuilders: ContentPartBuilders = {
     text: (text: string) => ({ type: 'text' as const, text }),
     image: (url: string) => ({ type: 'image_url' as const, image_url: { url } }),
+    audio: (audioData: string, format?: string) => ({
+      type: 'input_audio' as const,
+      input_audio: {
+        data: MessageTransformer.extractAudioBase64Data(audioData),
+        format: format || 'wav',
+      },
+    }),
     toolResult: (toolCallId: string, result: string) => ({
       type: 'text' as const,
       text: `Tool result from ${toolCallId}: ${result}`,
@@ -184,6 +197,11 @@ export class OpenAIMessageTransformer {
   private static responsesContentBuilders: ContentPartBuilders = {
     text: (text: string) => ({ type: 'input_text', text }),
     image: (url: string) => ({ type: 'input_image', image_url: url }),
+    audio: (audioData: string, format?: string) => ({
+      type: 'input_audio',
+      data: MessageTransformer.extractAudioBase64Data(audioData),
+      format: format || 'wav',
+    }),
     toolResult: (toolCallId: string, result: string) => ({
       type: 'input_text',
       text: `Tool result from ${toolCallId}: ${result}`,

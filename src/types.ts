@@ -40,6 +40,19 @@ export interface ImageContent {
 }
 
 /**
+ * Audio content for speech-to-text and audio understanding. Perfect for voice interactions.
+ * @group Types
+ */
+export interface AudioContent {
+  /** It's audio, ready to be understood. */
+  type: 'audio';
+  /** Base64 encoded audio or a data URL. Supports various audio formats like mp3, wav, etc. */
+  audio: string;
+  /** Optional format hint for the audio (e.g., 'mp3', 'wav', 'webm'). Helps with processing. */
+  format?: string;
+}
+
+/**
  * The model used a tool, and this is what it brought back.
  * Like a cat presenting you with a mouse, but hopefully more useful.
  * @group Types
@@ -58,7 +71,7 @@ export interface ToolResultContent {
  * It's like a bento box of content. Mmm, bento.
  * @group Types
  */
-export type Content = TextContent | ImageContent | ToolResultContent;
+export type Content = TextContent | ImageContent | AudioContent | ToolResultContent;
 
 /**
  * Teach the AI new tricks. This is how you define a tool it can use.

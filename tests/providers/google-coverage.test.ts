@@ -1,9 +1,9 @@
 import {
   GoogleMessageTransformer,
   GoogleRequestBuilder,
-  GoogleStreamProcessor,
   createGoogle,
 } from '../../src/providers/google';
+import { GoogleStreamProcessor } from '../../src/providers/google-utils';
 import { StreamState } from '../../src/providers/utils';
 import type { Message } from '../../src/types';
 
@@ -26,6 +26,58 @@ describe('Google Provider - Coverage', () => {
     const result = GoogleMessageTransformer.transform(messages);
     expect(result.systemInstruction).toContain('sys');
     expect(result.googleMessages.length).toBeGreaterThan(0);
+  });
+
+  it('GoogleMessageTransformer should handle audio content correctly', () => {
+    const messages: Message[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Please analyze this audio' },
+          { type: 'audio', audio: 'data:audio/mp3;base64,dGVzdA==', format: 'mp3' },
+        ],
+      },
+    ];
+
+    const result = GoogleMessageTransformer.transform(messages);
+    expect(result.googleMessages).toHaveLength(1);
+
+    const userMessage = result.googleMessages[0];
+    expect(userMessage.role).toBe('user');
+    expect(userMessage.parts).toHaveLength(2);
+
+    // Check text part
+    expect(userMessage.parts[0]).toEqual({ text: 'Please analyze this audio' });
+
+    // Check audio part - Google should extract just the base64 data, not the full data URL
+    expect(userMessage.parts[1]).toEqual({
+      inlineData: {
+        mimeType: 'audio/mp3',
+        data: 'dGVzdA==', // Just the base64 data, not the full data URL
+      },
+    });
+  });
+
+  it('GoogleMessageTransformer should handle audio with fallback MIME type', () => {
+    const messages: Message[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'audio', audio: 'data:application/octet-stream;base64,dGVzdA==', format: 'wav' },
+        ],
+      },
+    ];
+
+    const result = GoogleMessageTransformer.transform(messages);
+    const userMessage = result.googleMessages[0];
+
+    // Should use format hint when MIME type doesn't start with 'audio/'
+    expect(userMessage.parts[0]).toEqual({
+      inlineData: {
+        mimeType: 'audio/wav',
+        data: 'dGVzdA==',
+      },
+    });
   });
 
   it('GoogleMessageTransformer.mapMessage should throw on unknown role', () => {

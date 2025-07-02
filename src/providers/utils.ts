@@ -2,6 +2,7 @@ import type {
   Content,
   TextContent,
   ImageContent,
+  AudioContent,
   ToolResultContent,
   ToolCall,
   StreamChunk,
@@ -33,6 +34,7 @@ export interface DynamicParams {
 export interface GroupedContent {
   text: TextContent[];
   images: ImageContent[];
+  audio: AudioContent[];
   toolResults: ToolResultContent[];
 }
 
@@ -63,6 +65,7 @@ export class MessageTransformer {
     return {
       text: content.filter(c => c.type === 'text') as TextContent[],
       images: content.filter(c => c.type === 'image') as ImageContent[],
+      audio: content.filter(c => c.type === 'audio') as AudioContent[],
       toolResults: content.filter(c => c.type === 'tool_result') as ToolResultContent[],
     };
   }
@@ -104,6 +107,31 @@ export class MessageTransformer {
     if (dataUrl.includes('image/gif')) return 'image/gif';
     if (dataUrl.includes('image/webp')) return 'image/webp';
     return 'image/jpeg'; // fallback
+  }
+
+  /**
+   * Strips the 'data:audio/...' prefix from an audio data URL.
+   * For when you need the raw audio data without the wrapper.
+   * @param dataUrl - The audio data URL to clean up.
+   * @returns The base64 encoded audio data.
+   */
+  static extractAudioBase64Data(dataUrl: string): string {
+    return dataUrl.replace(/^data:audio\/[^;]+;base64,/, '');
+  }
+
+  /**
+   * Detects the MIME type of audio from a data URL.
+   * Like a DJ for audio files - knows what format you're spinning.
+   * @param dataUrl - The audio data URL to analyze.
+   * @returns The detected MIME type, with wav as fallback.
+   */
+  static detectAudioMimeType(dataUrl: string): string {
+    if (dataUrl.includes('audio/wav')) return 'audio/wav';
+    if (dataUrl.includes('audio/mp3') || dataUrl.includes('audio/mpeg')) return 'audio/mp3';
+    if (dataUrl.includes('audio/webm')) return 'audio/webm';
+    if (dataUrl.includes('audio/ogg')) return 'audio/ogg';
+    if (dataUrl.includes('audio/mp4') || dataUrl.includes('audio/m4a')) return 'audio/mp4';
+    return 'audio/wav'; // fallback
   }
 
   /**
@@ -302,13 +330,13 @@ export class StreamState {
  */
 export class ValidationUtils {
   /**
-   * Validates if a string is a proper data URL for images.
-   * Because not all strings claiming to be images are trustworthy.
+   * Validates if a string is a proper data URL.
+   * Because not all strings claiming to be data URLs are trustworthy.
    * @param url - The URL to validate.
-   * @returns True if it looks like a valid image data URL.
+   * @returns True if it looks like a valid data URL.
    */
   static isValidDataUrl(url: string): boolean {
-    return url.startsWith('data:image/') && url.includes('base64,');
+    return url.startsWith('data:') && url.includes('base64,');
   }
 
   /**

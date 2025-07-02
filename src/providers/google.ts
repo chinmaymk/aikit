@@ -1,33 +1,21 @@
 import type {
   Message,
   StreamChunk,
-  ToolCall,
   GoogleOptions,
   WithApiKey,
   StreamingGenerateFunction,
-  GenerationUsage,
+  TextContent,
+  ImageContent,
+  AudioContent,
 } from '../types';
 
-import { MessageTransformer, StreamUtils, StreamState, ValidationUtils } from './utils';
+import { MessageTransformer, StreamState, ValidationUtils } from './utils';
 import { APIClient } from './api';
-import {
-  GenerateContentRequestBody,
-  StreamGenerateContentChunk,
-  GoogleContent,
-  GooglePart,
-  ModelConfig,
-} from './google.d';
+import { GenerateContentRequestBody, GoogleContent, GooglePart, ModelConfig } from './google.d';
+import { GoogleStreamProcessor } from './google-utils';
 
 const GOOGLE_CONSTANTS = {
   BASE_URL: 'https://generativelanguage.googleapis.com/v1beta',
-  FINISH_REASON_MAPPINGS: {
-    STOP: 'stop',
-    MAX_TOKENS: 'length',
-    TOOL_CODE_EXECUTED: 'tool_use',
-    OTHER: 'stop',
-    SAFETY: 'stop',
-    RECITATION: 'stop',
-  } as const,
 } as const;
 
 export class GoogleClientFactory {
@@ -122,16 +110,33 @@ export class GoogleMessageTransformer {
 
   private static mapStandardMessage(msg: Message): GoogleContent {
     const parts: GooglePart[] = [];
-    const { text, images } = MessageTransformer.groupContentByType(msg.content);
+    const { text, images, audio } = MessageTransformer.groupContentByType(msg.content);
 
-    // Handle multiple text blocks separately to preserve structure
-    for (const textContent of text) {
-      if (textContent.text.trim()) {
-        parts.push({ text: textContent.text });
+    // Handle text content
+    this.addTextParts(text, parts);
+
+    // Handle media content
+    this.addImageParts(images, parts);
+    this.addAudioParts(audio, parts);
+
+    // Handle tool calls for assistant messages
+    this.addToolCallParts(msg, parts);
+
+    return {
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts,
+    };
+  }
+
+  private static addTextParts(textContent: TextContent[], parts: GooglePart[]): void {
+    for (const text of textContent) {
+      if (text.text.trim()) {
+        parts.push({ text: text.text });
       }
     }
+  }
 
-    // Handle images
+  private static addImageParts(images: ImageContent[], parts: GooglePart[]): void {
     for (const imageContent of images) {
       if (ValidationUtils.isValidDataUrl(imageContent.image)) {
         const [mimeTypePart, data] = imageContent.image.split(',');
@@ -147,8 +152,29 @@ export class GoogleMessageTransformer {
         parts.push({ inlineData: { mimeType, data } });
       }
     }
+  }
 
-    // Handle tool calls for assistant messages
+  private static addAudioParts(audioContent: AudioContent[], parts: GooglePart[]): void {
+    for (const audio of audioContent) {
+      if (ValidationUtils.isValidDataUrl(audio.audio)) {
+        const [mimeTypePart, data] = audio.audio.split(',');
+        let mimeType = mimeTypePart.replace('data:', '').replace(';base64', '');
+
+        if (!mimeType.startsWith('audio/')) {
+          mimeType = audio.format ? `audio/${audio.format}` : 'audio/wav';
+        } else {
+          const knownFormats = ['audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/webm', 'audio/ogg'];
+          if (!knownFormats.includes(mimeType)) {
+            mimeType = audio.format ? `audio/${audio.format}` : 'audio/wav';
+          }
+        }
+
+        parts.push({ inlineData: { mimeType, data } });
+      }
+    }
+  }
+
+  private static addToolCallParts(msg: Message, parts: GooglePart[]): void {
     if (msg.role === 'assistant' && msg.toolCalls) {
       for (const toolCall of msg.toolCalls) {
         parts.push({
@@ -159,11 +185,6 @@ export class GoogleMessageTransformer {
         });
       }
     }
-
-    return {
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts,
-    };
   }
 }
 
@@ -233,70 +254,6 @@ export class GoogleRequestBuilder {
       return { mode: 'ANY', allowedFunctionNames: [toolChoice.name] };
     }
     return { mode: 'AUTO' };
-  }
-}
-
-export class GoogleStreamProcessor {
-  static async *process(
-    lineStream: AsyncIterable<string>,
-    state?: StreamState
-  ): AsyncIterable<StreamChunk> {
-    const streamState = state ?? new StreamState();
-    for await (const line of lineStream) {
-      if (!line.trim() || !line.startsWith('data: ')) continue;
-      const data = line.slice(6);
-      if (data.trim() === '[DONE]') break;
-      const chunk = StreamUtils.parseStreamEvent<StreamGenerateContentChunk>(data);
-      if (!chunk) continue;
-      const result = this.processChunk(chunk, streamState);
-      if (result) yield result;
-    }
-  }
-
-  private static processChunk(
-    chunk: StreamGenerateContentChunk,
-    state: StreamState
-  ): StreamChunk | null {
-    const usage = this.extractUsage(chunk);
-    const candidate = chunk.candidates?.[0];
-    if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts)) {
-      return usage ? state.createChunk('', undefined, usage) : null;
-    }
-    let delta = '';
-    const newToolCalls: ToolCall[] = [];
-    for (const part of candidate.content.parts) {
-      if ('text' in part) {
-        delta += part.text;
-        state.addContentDelta(part.text);
-      } else if ('functionCall' in part) {
-        newToolCalls.push({
-          id: part.functionCall.name,
-          name: part.functionCall.name,
-          arguments: part.functionCall.args,
-        });
-        state.hasToolCalls = true;
-      }
-    }
-    const finishReason = candidate.finishReason
-      ? (GOOGLE_CONSTANTS.FINISH_REASON_MAPPINGS as Record<string, 'stop' | 'length' | 'tool_use'>)[
-          candidate.finishReason
-        ] || 'stop'
-      : undefined;
-    const streamChunk = state.createChunk(delta, finishReason, usage);
-    if (newToolCalls.length > 0) streamChunk.toolCalls = newToolCalls;
-    else if (state.hasToolCalls) streamChunk.toolCalls = [];
-    return streamChunk;
-  }
-
-  private static extractUsage(chunk: StreamGenerateContentChunk): GenerationUsage | undefined {
-    const usage = chunk.usageMetadata;
-    if (!usage) return undefined;
-    const result: GenerationUsage = {};
-    if (usage.promptTokenCount) result.inputTokens = usage.promptTokenCount;
-    if (usage.candidatesTokenCount) result.outputTokens = usage.candidatesTokenCount;
-    if (usage.totalTokenCount) result.totalTokens = usage.totalTokenCount;
-    if (usage.cachedContentTokenCount) result.cacheTokens = usage.cachedContentTokenCount;
-    return Object.keys(result).length > 0 ? result : undefined;
   }
 }
 

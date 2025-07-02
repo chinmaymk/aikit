@@ -58,7 +58,7 @@ export function transformMessage(msg: Message): AnthropicMessage | AnthropicMess
 
 export function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
   const blocks: AnthropicContentBlock[] = [];
-  const { text, images } = MessageTransformer.groupContentByType(msg.content);
+  const { text, images, audio } = MessageTransformer.groupContentByType(msg.content);
 
   // Handle multiple text blocks separately to preserve structure
   for (const textContent of text) {
@@ -79,6 +79,11 @@ export function buildContentBlocks(msg: Message): AnthropicContentBlock[] {
         },
       });
     }
+  }
+
+  // Handle audio content - currently not supported by Anthropic
+  if (audio.length > 0) {
+    throw new Error('Audio content is not supported by Anthropic provider.');
   }
 
   // Handle tool calls for assistant messages

@@ -10,7 +10,7 @@
 
 ## Features
 
-Use **AIKit** for: Generation & streaming, multimodal prompts (text + images), tool/function calling, embeddings, and usage tracking.
+Use **AIKit** for: Generation & streaming, multimodal prompts (text + images + audio), tool/function calling, embeddings, and usage tracking.
 
 _Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
 
@@ -18,7 +18,7 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 | ----------------------- | ---------------------------------------------------------------------- |
 | **Zero Dependencies**   | Uses only the built-in `fetch`; no freeloaders.                        |
 | **No Surprises**        | Every provider option is right there—no secret sauce.                  |
-| **Multimodal**          | Text and images get equal treatment.                                   |
+| **Multimodal**          | Text, images, and audio get equal treatment.                           |
 | **Embeddings Included** | Vectors are first-class citizens.                                      |
 | **Tool-Friendly**       | Utilities for tool and function calls, ready to go.                    |
 | **Reasoning Support**   | Access model reasoning for Claude and OpenAI o-series models.          |

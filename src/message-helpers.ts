@@ -25,9 +25,28 @@ export const userImage = (text: string, imageData: string): Message => ({
   ],
 });
 
+export const userAudio = (text: string, audioData: string, format?: string): Message => ({
+  role: 'user',
+  content: [
+    { type: 'text', text },
+    { type: 'audio', audio: audioData, format },
+  ],
+});
+
 export const userMultipleImages = (text: string, images: string[]): Message => ({
   role: 'user',
   content: [{ type: 'text', text }, ...images.map(image => ({ type: 'image' as const, image }))],
+});
+
+export const userMultipleAudio = (
+  text: string,
+  audioFiles: Array<{ audio: string; format?: string }>
+): Message => ({
+  role: 'user',
+  content: [
+    { type: 'text', text },
+    ...audioFiles.map(({ audio, format }) => ({ type: 'audio' as const, audio, format })),
+  ],
 });
 
 export const userContent = (content: Content[]): Message => ({
@@ -62,6 +81,12 @@ export const textContent = (text: string): Content => ({
 export const imageContent = (image: string): Content => ({
   type: 'image',
   image,
+});
+
+export const audioContent = (audio: string, format?: string): Content => ({
+  type: 'audio',
+  audio,
+  format,
 });
 
 export const toolResultContent = (toolCallId: string, result: string): Content => ({

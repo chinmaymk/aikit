@@ -17,9 +17,9 @@ hero:
       link: https://www.npmjs.com/package/@chinmaymk/aikit
 ---
 
-AIKit is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
+AIKit is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs (text, images, and audio), and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 
-**Use AIKit for:** Generation & streaming, multimodal prompts (text + images), tool/function calling, and embeddings.
+**Use AIKit for:** Generation & streaming, multimodal prompts (text + images + audio), tool/function calling, and embeddings.
 
 _Use the official provider SDKs for everything else (fine-tuning, file management, etc.)._
 
@@ -29,7 +29,7 @@ _Use the official provider SDKs for everything else (fine-tuning, file managemen
 | ----------------------- | ---------------------------------------------------------- |
 | **Zero Dependencies**   | Uses only the built-in `fetch`—no freeloaders.             |
 | **No Surprises**        | Every provider option is right there—no secret sauce.      |
-| **Multimodal**          | Text and images get equal treatment.                       |
+| **Multimodal**          | Text, images, and audio get equal treatment.               |
 | **Embeddings Included** | Vectors are first-class citizens.                          |
 | **Tool-Friendly**       | Utilities for tool and function calls, ready to go.        |
 | **Reasoning Support**   | Access model reasoning—watch AI think out loud.            |
@@ -109,10 +109,10 @@ await processStream(stream, {
 
 ## Multi-Modal, Fully Supported
 
-Send images and text together to models like GPT-4o and Claude 3.5 Sonnet. AIKit's API is designed for completeness—if the model supports it, so do we.
+Send images, audio, and text together to models like GPT-4o and Claude 3.5 Sonnet. AIKit's API is designed for completeness—if the model supports it, so do we.
 
 ```typescript
-import { createProvider, userImage } from '@chinmaymk/aikit';
+import { createProvider, userImage, userAudio } from '@chinmaymk/aikit';
 
 // Create provider
 const provider = createProvider('openai', {
@@ -120,14 +120,15 @@ const provider = createProvider('openai', {
 });
 
 // Simple helper for text + image
-const message = userImage('What is in this image?', 'data:image/jpeg;base64,...');
+const imageMessage = userImage('What is in this image?', 'data:image/jpeg;base64,...');
+const imageResult = await provider([imageMessage], { model: 'gpt-4o' });
 
-// Generate response
-const result = await provider([message], {
-  model: 'gpt-4o',
-});
+// Simple helper for text + audio
+const audioMessage = userAudio('Transcribe this audio', 'data:audio/wav;base64,...', 'wav');
+const audioResult = await provider([audioMessage], { model: 'gpt-4o-audio-preview' });
 
-console.log(result.content);
+console.log('Image analysis:', imageResult.content);
+console.log('Audio transcription:', audioResult.content);
 ```
 
 ## Tool Use, No Compromises
