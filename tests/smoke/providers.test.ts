@@ -9,11 +9,12 @@ import {
   createProvider,
   createOpenAIEmbeddings,
   createGoogleEmbeddings,
-  conversation,
   createTool,
   assistantWithToolCalls,
   toolResult,
   printStream,
+  systemText,
+  userText,
   type GenerationProviderType,
 } from '@chinmaymk/aikit';
 
@@ -82,10 +83,10 @@ describe('Provider Smoke Tests', () => {
           console.log(`Testing ${name} ${model} - Basic Generation:`);
 
           const provider = createProvider(type, { apiKey: apiKey! });
-          const messages = conversation()
-            .system('You are a helpful assistant. Keep responses concise.')
-            .user('What is 2 + 2? Answer in one sentence.')
-            .build();
+          const messages = [
+            systemText('You are a helpful assistant. Keep responses concise.'),
+            userText('What is 2 + 2? Answer in one sentence.'),
+          ];
 
           const result = await printStream(
             provider(messages, {
@@ -118,10 +119,10 @@ describe('Provider Smoke Tests', () => {
             required: ['operation', 'a', 'b'],
           });
 
-          const messages = conversation()
-            .system('You are a helpful assistant. Use the available tools when needed.')
-            .user('What is 15 multiplied by 4?')
-            .build();
+          const messages = [
+            systemText('You are a helpful assistant. Use the available tools when needed.'),
+            userText('What is 15 multiplied by 4?'),
+          ];
 
           const result = await printStream(
             provider(messages, {
@@ -163,10 +164,10 @@ describe('Provider Smoke Tests', () => {
           console.log(`Testing ${name} ${model} - Reasoning:`);
 
           const provider = createProvider(type, { apiKey: apiKey! });
-          const messages = conversation()
-            .system('You are a helpful assistant. Think step by step.')
-            .user('A farmer has 17 sheep. All but 9 die. How many sheep are left?')
-            .build();
+          const messages = [
+            systemText('You are a helpful assistant. Think step by step.'),
+            userText('A farmer has 17 sheep. All but 9 die. How many sheep are left?'),
+          ];
 
           const options = {
             model,

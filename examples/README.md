@@ -20,7 +20,6 @@ You only need to set the API keys for the providers you plan to use.
 - [`02-streaming.ts`](./02-streaming.ts) - Streaming responses
 - [`03-multimodal.ts`](./03-multimodal.ts) - Working with images
 - [`04-tools-basic.ts`](./04-tools-basic.ts) - Function calling
-- [`05-conversations.ts`](./05-conversations.ts) - Multi-turn conversations
 - [`06-configuration-patterns.ts`](./06-configuration-patterns.ts) - Advanced configuration patterns
 - [`07-reasoning-models.ts`](./07-reasoning-models.ts) - Accessing model reasoning process
 

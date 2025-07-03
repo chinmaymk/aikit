@@ -86,12 +86,12 @@ function calculateMath(args: CalculatorArgs): string {
 }
 
 // Step 4: Use the tool
-const messages = conversation()
-  .system(
+const messages = [
+  systemText(
     'You are a helpful math assistant. Use the calculator tool for any mathematical operations.'
-  )
-  .user('What is 15 multiplied by 7?')
-  .build();
+  ),
+  userText('What is 15 multiplied by 7?'),
+];
 
 const result = await generate(provider, messages, {
   model: 'gpt-4o',
@@ -102,7 +102,7 @@ console.log('AI:', result.content);
 
 // Step 5: Handle tool calls if the AI decided to use them
 if (result.toolCalls && result.toolCalls.length > 0) {
-  // Add the AI's message (with tool calls) to our conversation
+  // Add the AI's message (with tool calls) to our messages
   messages.push(assistantWithToolCalls(result.content, result.toolCalls));
 
   // Execute each tool call
@@ -114,7 +114,7 @@ if (result.toolCalls && result.toolCalls.length > 0) {
     const toolResponse = calculateMath(toolCall.arguments);
     console.log('Output:', toolResponse);
 
-    // Add the result back to the conversation
+    // Add the result back to the messages
     messages.push(toolResult(toolCall.id, toolResponse));
   }
 
@@ -271,18 +271,20 @@ function handleToolCall(toolCall: any): string {
   }
 }
 
-// Use multiple tools in one conversation
-const messages = conversation()
-  .system('You are a helpful assistant with access to weather, calculator, and time tools.')
-  .user("What's the weather in Tokyo? Also, what's 25°C in Fahrenheit? And what time is it there?")
-  .build();
+// Use multiple tools in one request
+const messages = [
+  systemText('You are a helpful assistant with access to weather, calculator, and time tools.'),
+  userText(
+    "What's the weather in Tokyo? Also, what's 25°C in Fahrenheit? And what time is it there?"
+  ),
+];
 
 // The AI might need multiple rounds to use all the tools
-let conversationComplete = false;
+let complete = false;
 let iteration = 0;
 const maxIterations = 3;
 
-while (!conversationComplete && iteration < maxIterations) {
+while (!complete && iteration < maxIterations) {
   iteration++;
   console.log(`--- Round ${iteration} ---`);
 
@@ -305,11 +307,11 @@ while (!conversationComplete && iteration < maxIterations) {
       const toolResponse = handleToolCall(toolCall);
       console.log('Tool result:', JSON.parse(toolResponse));
 
-      // Add tool result to conversation
+      // Add tool result to messages
       messages.push(toolResult(toolCall.id, toolResponse));
     }
   } else {
-    conversationComplete = true;
+    complete = true;
   }
 }
 ```
@@ -538,7 +540,6 @@ await processStream(stream, {
 
 You've mastered AI tools! Here's what to explore next:
 
-- **[Conversations Guide](./conversations.md)** - Manage context with tools
 - **[Streaming Guide](./streaming.md)** - Stream responses with tool results
 - **[API Reference](/api/generated/README)** - Technical details on tool interfaces
 

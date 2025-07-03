@@ -30,7 +30,6 @@ export { createProvider, createEmbeddingsProvider, type GenerationProviderType }
 export * from './utils';
 export * from './message-helpers';
 export * from './stream-utils';
-export * from './conversation-builder';
 
 // Export provider-specific utilities
 export * from './providers/anthropic-transformers';

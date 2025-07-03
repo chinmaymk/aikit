@@ -1,23 +1,22 @@
 /**
  * Audio Handling with AIKit
  *
- * This example demonstrates working with audio content in AI conversations:
+ * This example demonstrates working with audio content in AI:
  * 1. Single audio analysis with helper functions
  * 2. Manual content creation with audio
  * 3. Multiple audio processing
- * 4. Audio in conversation flows
+ * 4. Audio in sequential analysis
  * 5. Audio format handling and best practices
  */
 
 import {
-  userText,
   userAudio,
   userMultipleAudio,
   userContent,
   audioContent,
   textContent,
   generate,
-  conversation,
+  systemText,
 } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
@@ -149,8 +148,8 @@ async function step3_MultipleAudioAnalysis() {
   }
 }
 
-async function step4_AudioInConversation() {
-  printSectionHeader('Audio in Conversation Flow');
+async function step4_AudioInSequentialAnalysis() {
+  printSectionHeader('Audio in Sequential Analysis');
 
   const { provider, type } = createProviderFromEnv();
 
@@ -161,11 +160,10 @@ async function step4_AudioInConversation() {
 
   const sampleAudio = createSampleAudio('speech');
 
-  const messages = conversation()
-    .system('You are a helpful audio analysis assistant. Be specific about what you hear.')
-    .build();
-
-  messages.push(userAudio('What do you hear in this audio?', sampleAudio, 'wav'));
+  const messages = [
+    systemText('You are a helpful audio analysis assistant. Be specific about what you hear.'),
+    userAudio('What do you hear in this audio?', sampleAudio, 'wav'),
+  ];
 
   try {
     const response1 = await generate(provider!, messages, {
@@ -177,11 +175,13 @@ async function step4_AudioInConversation() {
     console.log('Question: What do you hear in this audio?');
     console.log(response1.content + '\n');
 
-    // Continue conversation
-    messages.push({ role: 'assistant', content: [textContent(response1.content)] });
-    messages.push(userText('Can you identify any specific words or sounds in the audio?'));
+    // Continue with follow-up analysis
+    const followUpMessages = [
+      systemText('You are a helpful audio analysis assistant. Be specific about what you hear.'),
+      userAudio('Can you identify any specific words or sounds in this audio?', sampleAudio, 'wav'),
+    ];
 
-    const response2 = await generate(provider!, messages, {
+    const response2 = await generate(provider!, followUpMessages, {
       model: getModelName(type!),
       maxOutputTokens: 200,
       temperature: 0.5,
@@ -190,7 +190,7 @@ async function step4_AudioInConversation() {
     console.log('Question: Can you identify any specific words or sounds?');
     console.log(response2.content + '\n');
   } catch {
-    console.log('Audio conversation may not be supported by this model version.\n');
+    console.log('Audio analysis may not be supported by this model version.\n');
   }
 }
 
@@ -238,7 +238,7 @@ async function main() {
     await step1_SingleAudioAnalysis();
     await step2_ManualAudioContentCreation();
     await step3_MultipleAudioAnalysis();
-    await step4_AudioInConversation();
+    await step4_AudioInSequentialAnalysis();
     await step5_AudioFormatHandling();
 
     printDelimiter('Examples Complete!', '-');

@@ -264,34 +264,6 @@ if (result.toolCalls) {
 }
 ```
 
-## Conversation Management
-
-Keep context across multiple exchanges. Because good conversations need memory.
-
-```typescript
-import { createProvider, conversation, userText, assistantText } from '@chinmaymk/aikit';
-
-const provider = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-// Build conversations fluently
-const messages = conversation()
-  .system('You are a helpful programming tutor.')
-  .user('What is the difference between let and const?')
-  .build();
-
-const response1 = await provider(messages, { model: 'gpt-4o' });
-console.log('AI:', response1.content);
-
-// Continue the conversation
-messages.push(assistantText(response1.content));
-messages.push(userText('Can you show me an example?'));
-
-const response2 = await provider(messages, { model: 'gpt-4o' });
-console.log('AI:', response2.content);
-```
-
 ## Configuration Options
 
 Fine-tune your AI's personality and behavior.

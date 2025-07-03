@@ -273,7 +273,7 @@ await streamMarkdown(stream);
 
 ## What's Next?
 
-- [Multimodal Guide](./multimodal.md) - Add images to your streaming conversations
+- [Multimodal Guide](./multimodal.md) - Add images to your streaming responses
 - [Tools Guide](./tools.md) - Stream responses that include function calls
 - [API Reference](/api/generated/README) - Technical details on all streaming functions
 

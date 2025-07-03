@@ -5,8 +5,7 @@
  * 1. Simple text generation
  * 2. Configuration options
  * 3. System messages for behavior control
- * 4. Conversation builder pattern
- * 5. Multiple provider comparison
+ * 4. Multiple provider comparison
  */
 
 import {
@@ -15,7 +14,6 @@ import {
   generate,
   userText,
   systemText,
-  conversation,
 } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
@@ -79,26 +77,7 @@ async function step3_SystemMessages() {
   console.log(withSystem.content + '\n');
 }
 
-async function step4_ConversationBuilder() {
-  printSectionHeader('Conversation Builder Pattern');
-
-  const { provider, type } = createProviderFromEnv();
-
-  const messages = conversation()
-    .system('You are a helpful programming assistant')
-    .user('What is the difference between let and const in JavaScript?')
-    .build();
-
-  const result = await generate(provider, messages, {
-    model: getModelName(type!),
-    maxOutputTokens: 150,
-  });
-
-  console.log('Conversation builder:');
-  console.log(result.content + '\n');
-}
-
-async function step5_MultipleProviders() {
+async function step4_MultipleProviders() {
   printSectionHeader('Multiple Provider Comparison');
 
   const providers = [
@@ -142,8 +121,7 @@ async function main() {
     await step1_SimpleGeneration();
     await step2_ConfigurationOptions();
     await step3_SystemMessages();
-    await step4_ConversationBuilder();
-    await step5_MultipleProviders();
+    await step4_MultipleProviders();
 
     printDelimiter('Getting Started Complete!', '-');
   } catch (error) {

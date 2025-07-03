@@ -9,7 +9,6 @@ import type {
 // Re-export from modular files
 export * from './message-helpers';
 export * from './stream-utils';
-export * from './conversation-builder';
 
 export const generate = async (
   provider: AnyGenerationProvider,

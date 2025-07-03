@@ -4,11 +4,12 @@
  */
 
 import {
-  conversation,
   createTool,
   generate,
   assistantWithToolCalls,
   toolResult,
+  systemText,
+  userText,
 } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
@@ -132,10 +133,10 @@ async function runExample(
   const { provider, type } = createProviderFromEnv();
   const modelName = getModelName(type!);
 
-  const messages = conversation()
-    .system('You are a helpful assistant with access to tools.')
-    .user(userMessage)
-    .build();
+  const messages = [
+    systemText('You are a helpful assistant with access to tools.'),
+    userText(userMessage),
+  ];
 
   console.log(`User: ${userMessage}`);
 

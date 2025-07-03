@@ -1,23 +1,22 @@
 /**
  * Multimodal AI with Images
  *
- * This example demonstrates working with images in AI conversations:
+ * This example demonstrates working with images in AI:
  * 1. Single image analysis with helper functions
  * 2. Manual content creation (with and without helpers)
  * 3. Multiple image comparison
- * 4. Images in conversation flows
+ * 4. Images in sequential analysis
  * 5. Best practices and tips
  */
 
 import {
-  userText,
   userImage,
   userMultipleImages,
   userContent,
   imageContent,
   textContent,
   generate,
-  conversation,
+  systemText,
 } from '@chinmaymk/aikit';
 import {
   getModelName,
@@ -105,16 +104,17 @@ async function step3_MultipleImages() {
   console.log(result.content + '\n');
 }
 
-async function step4_ImagesInConversation() {
-  printSectionHeader('Images in Conversation Flow');
+async function step4_ImagesInSequentialAnalysis() {
+  printSectionHeader('Images in Sequential Analysis');
 
   const { provider, type } = createProviderFromEnv();
 
   const sampleImage = createValidSampleImage('blue');
 
-  const messages = conversation().system('You are a helpful visual analysis assistant.').build();
-
-  messages.push(userImage('What do you see in this image?', sampleImage));
+  const messages = [
+    systemText('You are a helpful visual analysis assistant.'),
+    userImage('What do you see in this image?', sampleImage),
+  ];
 
   const response1 = await generate(provider!, messages, {
     model: getModelName(type!),
@@ -125,11 +125,13 @@ async function step4_ImagesInConversation() {
   console.log('Question: What do you see in this image?');
   console.log(response1.content + '\n');
 
-  // Continue conversation
-  messages.push({ role: 'assistant', content: [textContent(response1.content)] });
-  messages.push(userText('What emotions might this color evoke in people?'));
+  // Continue with follow-up analysis
+  const followUpMessages = [
+    systemText('You are a helpful visual analysis assistant.'),
+    userImage('What emotions might this color evoke in people?', sampleImage),
+  ];
 
-  const response2 = await generate(provider!, messages, {
+  const response2 = await generate(provider!, followUpMessages, {
     model: getModelName(type!),
     maxOutputTokens: 150,
     temperature: 0.5,
@@ -146,7 +148,7 @@ async function main() {
     await step1_SingleImageAnalysis();
     await step2_ManualContentCreation();
     await step3_MultipleImages();
-    await step4_ImagesInConversation();
+    await step4_ImagesInSequentialAnalysis();
 
     printDelimiter('Examples Complete!', '-');
   } catch (error) {

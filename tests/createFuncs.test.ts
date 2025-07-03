@@ -11,8 +11,6 @@ import {
   imageContent,
   toolResultContent,
   createTool,
-  conversation,
-  ConversationBuilder,
   collectDeltas,
   processStream,
   printStream,
@@ -153,59 +151,6 @@ describe('Utils', () => {
     });
   });
 
-  describe('Conversation Builder', () => {
-    let builder: ConversationBuilder;
-
-    beforeEach(() => {
-      builder = new ConversationBuilder();
-    });
-
-    it('should build empty conversation', () => {
-      expect(builder.build()).toEqual([]);
-    });
-
-    it('should add messages and chain operations', () => {
-      const messages = builder
-        .system('You are helpful')
-        .user('Hello')
-        .assistant('Hi there!')
-        .build();
-
-      expect(messages).toHaveLength(3);
-      expect(messages[0].role).toBe('system');
-      expect(messages[1].role).toBe('user');
-      expect(messages[2].role).toBe('assistant');
-    });
-
-    it('should add tool results', () => {
-      const messages = builder.tool('call_123', 'result').build();
-      expect(messages[0].role).toBe('tool');
-    });
-
-    it('should clear conversation', () => {
-      builder.user('Hello');
-      expect(builder.build()).toHaveLength(1);
-
-      builder.clear();
-      expect(builder.build()).toHaveLength(0);
-    });
-
-    it('should return different arrays on multiple builds', () => {
-      builder.user('Hello');
-      const messages1 = builder.build();
-      const messages2 = builder.build();
-
-      expect(messages1).toEqual(messages2);
-      expect(messages1).not.toBe(messages2);
-    });
-  });
-
-  describe('Conversation Factory', () => {
-    it('should create new ConversationBuilder', () => {
-      expect(conversation()).toBeInstanceOf(ConversationBuilder);
-    });
-  });
-
   describe('Stream Functions', () => {
     async function* createMockStream(
       chunks: { delta: string; content: string; finishReason?: 'stop' }[]
@@ -270,18 +215,6 @@ describe('Utils', () => {
         process.stdout.write = originalWrite;
         console.log = originalLog;
       }
-    });
-  });
-
-  describe('conversation helper', () => {
-    it('should create a conversation', () => {
-      const messages = conversation()
-        .system('You are helpful')
-        .user('Hello')
-        .assistant('Hi!')
-        .build();
-
-      expect(messages).toHaveLength(3);
     });
   });
 

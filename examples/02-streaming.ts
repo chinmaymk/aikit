@@ -8,14 +8,7 @@
  * 4. Comparing streaming vs non-streaming approaches
  */
 
-import {
-  userText,
-  systemText,
-  conversation,
-  processStream,
-  collectDeltas,
-  printStream,
-} from '@chinmaymk/aikit';
+import { userText, systemText, processStream, collectDeltas, printStream } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
 async function step1_BasicStreaming() {
@@ -79,10 +72,10 @@ async function step3_CollectingDeltas() {
 
   const { provider, type } = createProviderFromEnv();
 
-  const messages = conversation()
-    .system('You are a senior software engineer. Provide practical, actionable advice.')
-    .user('List 5 programming best practices with brief explanations.')
-    .build();
+  const messages = [
+    systemText('You are a senior software engineer. Provide practical, actionable advice.'),
+    userText('List 5 programming best practices with brief explanations.'),
+  ];
 
   const stream = provider(messages, {
     model: getModelName(type!),

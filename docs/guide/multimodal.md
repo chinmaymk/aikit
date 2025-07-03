@@ -2,7 +2,7 @@
 
 Modern AI models can see and understand images and hear and analyze audio just like humans do. Images contain visual information that's difficult to describe in words—a chart, photo, or diagram can be worth more than a thousand words. Audio captures spoken words, music, environmental sounds, and emotional nuances that text cannot convey.
 
-AIKit makes it easy to combine text, images, and audio in your conversations. Turn your AI into an art critic, diagram analyzer, photo detective, audio transcriber, or music analyst.
+AIKit makes it easy to combine text, images, and audio in your AI interactions. Turn your AI into an art critic, diagram analyzer, photo detective, audio transcriber, or music analyst.
 
 ## Image Format Requirements
 
@@ -15,7 +15,7 @@ const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
 
 ## Simple Image Analysis
 
-The easiest way to add vision to your AI conversations:
+The easiest way to add vision to your AI interactions:
 
 ```typescript
 import { createProvider, userImage } from '@chinmaymk/aikit';
@@ -102,41 +102,43 @@ const result = await provider([message], { model: 'gpt-4o' });
 console.log(result.content);
 ```
 
-## Images in Conversations
+## Sequential Image Analysis
 
-Keep images in context throughout a conversation. The AI remembers what it saw.
+You can analyze images in multiple steps or with different questions:
 
 ```typescript
-import { createProvider, conversation, userImage, userText, assistantText } from '@chinmaymk/aikit';
+import { createProvider, userImage, systemText } from '@chinmaymk/aikit';
 
 const provider = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
 
 const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
 
-// Start with system context
-const messages = conversation()
-  .system('You are a helpful visual analysis assistant. Be specific and detailed.')
-  .build();
+// First analysis - what's in the image
+const messages1 = [
+  systemText('You are a helpful visual analysis assistant. Be specific and detailed.'),
+  userImage('What do you see in this image?', imageData),
+];
 
-// First question with image
-messages.push(userImage('What do you see in this image?', imageData));
+const response1 = await provider(messages1, { model: 'gpt-4o', maxOutputTokens: 200 });
+console.log('General analysis:', response1.content);
 
-const response1 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 200 });
-console.log('AI:', response1.content);
+// Second analysis - emotional impact
+const messages2 = [
+  systemText('You are a helpful visual analysis assistant. Focus on emotional impact.'),
+  userImage('What emotions might this image evoke in viewers?', imageData),
+];
 
-// Continue conversation - AI remembers the image
-messages.push(assistantText(response1.content));
-messages.push(userText('What emotions might this evoke in viewers?'));
+const response2 = await provider(messages2, { model: 'gpt-4o', maxOutputTokens: 150 });
+console.log('Emotional analysis:', response2.content);
 
-const response2 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 150 });
-console.log('AI:', response2.content);
+// Third analysis - text recognition
+const messages3 = [
+  systemText('You are a helpful OCR assistant. Focus on identifying text and numbers.'),
+  userImage('Can you identify any text or numbers in this image?', imageData),
+];
 
-// Ask about specific details
-messages.push(assistantText(response2.content));
-messages.push(userText('Can you identify any text or numbers in the image?'));
-
-const response3 = await provider(messages, { model: 'gpt-4o', maxOutputTokens: 100 });
-console.log('AI:', response3.content);
+const response3 = await provider(messages3, { model: 'gpt-4o', maxOutputTokens: 100 });
+console.log('Text recognition:', response3.content);
 ```
 
 ## Reading Images from Files
@@ -288,7 +290,7 @@ const bestMessage = userImage(
 ## What's Next?
 
 - [Tools Guide](./tools.md) - Combine images with function calling
-- [Conversations Guide](./conversations.md) - Manage context with images
+
 - [API Reference](/api/generated/README) - Technical details on image content types
 
 Remember: A picture is worth a thousand tokens, but a good question is worth ten thousand. Be specific about what you want the AI to see and analyze!
@@ -348,7 +350,7 @@ const audioData = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEA...';
 
 ## Simple Audio Analysis
 
-The easiest way to add audio processing to your AI conversations:
+The easiest way to add audio processing to your AI interactions:
 
 ```typescript
 import { createOpenAI, userAudio } from '@chinmaymk/aikit';
@@ -446,52 +448,54 @@ const result = await generate(openai, [message], {
 console.log(result.content);
 ```
 
-## Audio in Conversations
+## Sequential Audio Analysis
 
-Keep audio context throughout a conversation. The AI remembers what it heard:
+You can analyze audio in multiple steps or with different focus areas:
 
 ```typescript
-import { createOpenAI, conversation, userAudio, userText, assistantText } from '@chinmaymk/aikit';
+import { createOpenAI, userAudio, systemText } from '@chinmaymk/aikit';
 
 const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 const audioData = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEA...';
 
-// Start with system context
-const messages = conversation()
-  .system(
+// First analysis - general transcription and content
+const messages1 = [
+  systemText(
     'You are a helpful audio analysis assistant. Be specific and detailed about what you hear.'
-  )
-  .build();
+  ),
+  userAudio('What do you hear in this audio recording?', audioData, 'wav'),
+];
 
-// First question with audio
-messages.push(userAudio('What do you hear in this audio recording?', audioData, 'wav'));
-
-const response1 = await generate(openai, messages, {
+const response1 = await generate(openai, messages1, {
   model: 'gpt-4o-audio-preview',
   maxOutputTokens: 200,
 });
-console.log('AI:', response1.content);
+console.log('General analysis:', response1.content);
 
-// Continue conversation - AI remembers the audio
-messages.push(assistantText(response1.content));
-messages.push(userText("Can you identify the speaker's accent or regional dialect?"));
+// Second analysis - accent and dialect
+const messages2 = [
+  systemText('You are a linguistics expert. Focus on accent and dialect identification.'),
+  userAudio("Can you identify the speaker's accent or regional dialect?", audioData, 'wav'),
+];
 
-const response2 = await generate(openai, messages, {
+const response2 = await generate(openai, messages2, {
   model: 'gpt-4o-audio-preview',
   maxOutputTokens: 150,
 });
-console.log('AI:', response2.content);
+console.log('Linguistic analysis:', response2.content);
 
-// Ask about specific details
-messages.push(assistantText(response2.content));
-messages.push(userText("What emotions do you detect in the speaker's voice?"));
+// Third analysis - emotional analysis
+const messages3 = [
+  systemText('You are an emotion analysis expert. Focus on tone and emotional cues.'),
+  userAudio("What emotions do you detect in the speaker's voice?", audioData, 'wav'),
+];
 
-const response3 = await generate(openai, messages, {
+const response3 = await generate(openai, messages3, {
   model: 'gpt-4o-audio-preview',
   maxOutputTokens: 100,
 });
-console.log('AI:', response3.content);
+console.log('Emotional analysis:', response3.content);
 ```
 
 ## Loading Audio from Files
@@ -727,7 +731,7 @@ const pronunciationMessage = userAudio(
 ## What's Next?
 
 - [Tools Guide](./tools.md) - Combine audio with function calling
-- [Conversations Guide](./conversations.md) - Manage context with audio
+
 - [API Reference](/api/generated/README) - Technical details on audio content types
 
 Remember: Audio adds rich context that text cannot capture. Use it for transcription, analysis, and understanding the nuances of human communication!
