@@ -101,10 +101,10 @@ export async function POST(request) {
 ## Frontend Usage
 
 ```javascript
-import { createProxy, userText, processStream } from '@chinmaymk/aikit';
+import { createProxyProvider, userText, processStream } from '@chinmaymk/aikit';
 
 // Create proxy provider
-const provider = createProxy('openai', {
+const provider = createProxyProvider('openai', {
   baseURL: 'http://localhost:3000',
   model: 'gpt-4o',
 });
@@ -124,15 +124,15 @@ await processStream(stream, {
 ```javascript
 // Frontend - create different providers
 const providers = {
-  openai: createProxy('openai', {
+  openai: createProxyProvider('openai', {
     baseURL: origin,
     model: 'gpt-4o',
   }),
-  anthropic: createProxy('anthropic', {
+  anthropic: createProxyProvider('anthropic', {
     baseURL: origin,
     model: 'claude-3-5-sonnet-20241022',
   }),
-  google: createProxy('google', {
+  google: createProxyProvider('google', {
     baseURL: origin,
     model: 'gemini-1.5-pro',
   }),
