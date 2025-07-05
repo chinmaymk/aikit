@@ -9,9 +9,9 @@ describe('OpenAI Message Transformer - Content Handling', () => {
         { type: 'text' as const, text: 'World' },
       ];
 
-      const result = OpenAIMessageTransformer['buildContentParts'](
+      const result = OpenAIMessageTransformer.buildContentParts(
         content,
-        OpenAIMessageTransformer['chatContentBuilders']
+        OpenAIMessageTransformer.chatContentBuilders
       );
 
       expect(result).toEqual([
@@ -27,9 +27,9 @@ describe('OpenAI Message Transformer - Content Handling', () => {
         { type: 'image' as const, image: 'data:image/png;base64,xyz' },
       ];
 
-      const result = OpenAIMessageTransformer['buildContentParts'](
+      const result = OpenAIMessageTransformer.buildContentParts(
         content,
-        OpenAIMessageTransformer['responsesContentBuilders']
+        OpenAIMessageTransformer.responsesContentBuilders
       );
 
       expect(result).toEqual([
@@ -45,9 +45,9 @@ describe('OpenAI Message Transformer - Content Handling', () => {
         { type: 'text' as const, text: 'What do you think?' },
       ];
 
-      const result = OpenAIMessageTransformer['buildContentParts'](
+      const result = OpenAIMessageTransformer.buildContentParts(
         content,
-        OpenAIMessageTransformer['chatContentBuilders']
+        OpenAIMessageTransformer.chatContentBuilders
       );
 
       expect(result).toEqual([
@@ -63,9 +63,9 @@ describe('OpenAI Message Transformer - Content Handling', () => {
         { type: 'tool_result' as const, toolCallId: 'call_456', result: 'Analysis complete' },
       ];
 
-      const result = OpenAIMessageTransformer['buildContentParts'](
+      const result = OpenAIMessageTransformer.buildContentParts(
         content,
-        OpenAIMessageTransformer['responsesContentBuilders']
+        OpenAIMessageTransformer.responsesContentBuilders
       );
 
       expect(result).toEqual([
@@ -81,9 +81,89 @@ describe('OpenAI Message Transformer - Content Handling', () => {
         { type: 'text' as const, text: 'More text' },
       ];
 
-      const result = OpenAIMessageTransformer['extractAllTextContent'](content);
+      const result = OpenAIMessageTransformer.extractAllTextContent(content);
 
       expect(result).toBe('Regular text\nMore text\nTool result from call_789: Tool result data');
+    });
+
+    it('should handle audio content with explicit format for chat API', () => {
+      const content = [
+        { type: 'text' as const, text: 'Listen to this' },
+        { type: 'audio' as const, audio: 'data:audio/mp3;base64,dGVzdA==', format: 'mp3' },
+      ];
+
+      const result = OpenAIMessageTransformer.buildContentParts(
+        content,
+        OpenAIMessageTransformer.chatContentBuilders
+      );
+
+      expect(result).toEqual([
+        { type: 'text', text: 'Listen to this' },
+        {
+          type: 'input_audio',
+          input_audio: {
+            data: 'dGVzdA==',
+            format: 'mp3',
+          },
+        },
+      ]);
+    });
+
+    it('should handle audio content without format for chat API (fallback to wav)', () => {
+      const content = [{ type: 'audio' as const, audio: 'data:audio/wav;base64,dGVzdA==' }];
+
+      const result = OpenAIMessageTransformer.buildContentParts(
+        content,
+        OpenAIMessageTransformer.chatContentBuilders
+      );
+
+      expect(result).toEqual([
+        {
+          type: 'input_audio',
+          input_audio: {
+            data: 'dGVzdA==',
+            format: 'wav',
+          },
+        },
+      ]);
+    });
+
+    it('should handle audio content with explicit format for responses API', () => {
+      const content = [
+        { type: 'text' as const, text: 'Process this audio' },
+        { type: 'audio' as const, audio: 'data:audio/mp3;base64,dGVzdA==', format: 'mp3' },
+      ];
+
+      const result = OpenAIMessageTransformer.buildContentParts(
+        content,
+        OpenAIMessageTransformer.responsesContentBuilders
+      );
+
+      expect(result).toEqual([
+        { type: 'input_text', text: 'Process this audio' },
+        {
+          type: 'input_audio',
+          data: 'dGVzdA==',
+          format: 'mp3',
+        },
+      ]);
+    });
+
+    it('should handle audio content without format for responses API (fallback to wav)', () => {
+      const content = [{ type: 'audio' as const, audio: 'data:audio/wav;base64,dGVzdA==' }];
+
+      const result = OpenAIMessageTransformer.buildContentParts(
+        content,
+        OpenAIMessageTransformer.responsesContentBuilders
+      );
+
+      expect(result).toEqual([
+        {
+          type: 'input_audio',
+          data: 'dGVzdA==',
+          format: 'wav',
+        },
+      ]);
     });
   });
 });

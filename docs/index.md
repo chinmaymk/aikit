@@ -67,7 +67,7 @@ const result3 = await openai([userText('Hello!')], {
 ```
 
 > **💡 Helper Functions are Optional**  
-> Functions like `userText()`, `systemText()`, and `createProvider()` are convenience helpers. You can always construct message objects and providers manually if you prefer. For example:
+> Functions like `userText()`, `systemText()` are convenience helpers. You can always construct message objects and providers manually if you prefer. For example:
 >
 > ```typescript
 > // Using helpers (recommended)
@@ -282,30 +282,6 @@ console.log('Anthropic:', anthropicResult.content);
 console.log('Google:', googleResult.content);
 ```
 
-## Choosing the Right Model
-
-Each provider has different models optimized for different tasks. Pick the one that fits your needs:
-
-```typescript
-// OpenAI
-await openai(messages, { model: 'gpt-4o-mini' });
-await openai(messages, { model: 'gpt-4o' });
-await openai(messages, { model: 'gpt-4.1' });
-await openai(messages, { model: 'o1' });
-await openai(messages, { model: 'o3-mini' });
-
-// Anthropic
-await anthropic(messages, { model: 'claude-3-5-haiku-20241022' });
-await anthropic(messages, { model: 'claude-3-5-sonnet-20241022' });
-await anthropic(messages, { model: 'claude-opus-4-20250514' });
-await anthropic(messages, { model: 'claude-3-7-sonnet-20250219' });
-
-// Google
-await google(messages, { model: 'gemini-1.5-flash' });
-await google(messages, { model: 'gemini-2.0-flash' });
-await google(messages, { model: 'gemini-2.5-pro-preview-06-05' });
-```
-
 **Use any model the provider supports:**
 
 - New models as soon as they're released
@@ -323,9 +299,29 @@ await google(messages, { model: 'your-tuned-gemini' });
 
 Ready to dive deeper? Here's where to go:
 
+### Core Guides
+
 - **[Getting Started Guide](/guide/getting-started)** - Your first steps with AIKit
+- **[Streaming](/guide/streaming)** - Real-time response streaming
+- **[Multimodal](/guide/multimodal)** - Working with text, images, and audio
+
+### Advanced Features
+
+- **[Function Calling (Tools)](/guide/tools)** - Let AI use tools and functions
+- **[Reasoning Models](/guide/reasoning)** - Access model thinking processes
+- **[Embeddings](/guide/embeddings)** - Vector representations and similarity
+- **[Usage Tracking](/guide/usage-tracking)** - Monitor tokens and costs
+
+### Integration & Customization
+
+- **[Framework Integration](/guide/framework-integration)** - Use with popular frameworks
+- **[Custom Headers](/guide/custom-headers)** - Advanced request customization
+
+### Reference
+
 - **[API Reference](/api/generated/README)** - Complete API documentation
 - **[Examples](https://github.com/chinmaymk/aikit/tree/main/examples)** - Copy-paste ready code snippets
+- **[FAQ](/faq)** - Frequently asked questions
 - **[GitHub](https://github.com/chinmaymk/aikit)** - Source code and issues
 
 ---

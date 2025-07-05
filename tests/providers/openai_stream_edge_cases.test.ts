@@ -308,4 +308,52 @@ describe('OpenAI Stream Edge Cases', () => {
       });
     });
   });
+
+  describe('Stream processing integration edge cases', () => {
+    it('should handle chunks with no choices in stream', async () => {
+      const lineStream = (async function* () {
+        yield 'data: {"usage":{"prompt_tokens":10,"completion_tokens":5}}';
+        yield 'data: {"choices":[{"delta":{"content":"Hello"}}]}';
+      })();
+
+      const chunks = [];
+      for await (const chunk of OpenAIStreamProcessor.processChatStream(lineStream)) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(2);
+      expect(chunks[0].usage).toBeDefined();
+      expect(chunks[1].delta).toBe('Hello');
+    });
+
+    it('should handle empty choices array in stream', async () => {
+      const lineStream = (async function* () {
+        yield 'data: {"choices":[]}';
+        yield 'data: {"choices":[{"delta":{"content":"Hello"}}]}';
+      })();
+
+      const chunks = [];
+      for await (const chunk of OpenAIStreamProcessor.processChatStream(lineStream)) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].delta).toBe('Hello');
+    });
+
+    it('should handle invalid JSON gracefully in stream', async () => {
+      const lineStream = (async function* () {
+        yield 'data: invalid json';
+        yield 'data: {"choices":[{"delta":{"content":"Hello"}}]}';
+      })();
+
+      const chunks = [];
+      for await (const chunk of OpenAIStreamProcessor.processChatStream(lineStream)) {
+        chunks.push(chunk);
+      }
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].delta).toBe('Hello');
+    });
+  });
 });

@@ -185,16 +185,11 @@ Reasoning (access to model thinking processes) is supported by:
 - `claude-opus-4-20250514`
 - `claude-sonnet-4-20250514`
 - `claude-3-7-sonnet-20250219`
-- `claude-3-5-sonnet-20241022`
-- `claude-3-5-haiku-20241022`
-- `claude-3-opus-20240229`
 
 **Google**
 
 - `gemini-2.5-pro-preview-06-05`
-- `gemini-2.0-flash`
-- `gemini-1.5-pro`
-- `gemini-1.5-flash`
+- `gemini-2.5-flash`
 
 Use the `reasoning` parameter for OpenAI and `thinking` parameter for Anthropic.
 

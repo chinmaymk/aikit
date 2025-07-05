@@ -2,7 +2,7 @@ import type { Message, Content } from '../types';
 import { MessageTransformer } from './utils';
 import { OpenAI } from './openai';
 
-interface ContentPartBuilders {
+export interface ContentPartBuilders {
   text: (text: string) => any;
   image: (url: string) => any;
   audio: (audioData: string, format?: string) => any;
@@ -126,7 +126,7 @@ export class OpenAIMessageTransformer {
     }
   }
 
-  private static extractAllTextContent(content: Content[]): string {
+  public static extractAllTextContent(content: Content[]): string {
     const { text, toolResults } = MessageTransformer.groupContentByType(content);
     const textParts: string[] = [];
 
@@ -146,7 +146,7 @@ export class OpenAIMessageTransformer {
   }
 
   // Shared content part building logic
-  private static buildContentParts<T>(
+  public static buildContentParts<T>(
     content: Message['content'],
     builders: ContentPartBuilders
   ): T[] {
@@ -177,7 +177,7 @@ export class OpenAIMessageTransformer {
   }
 
   // Chat API content builders
-  private static chatContentBuilders: ContentPartBuilders = {
+  public static chatContentBuilders: ContentPartBuilders = {
     text: (text: string) => ({ type: 'text' as const, text }),
     image: (url: string) => ({ type: 'image_url' as const, image_url: { url } }),
     audio: (audioData: string, format?: string) => ({
@@ -194,7 +194,7 @@ export class OpenAIMessageTransformer {
   };
 
   // Responses API content builders
-  private static responsesContentBuilders: ContentPartBuilders = {
+  public static responsesContentBuilders: ContentPartBuilders = {
     text: (text: string) => ({ type: 'input_text', text }),
     image: (url: string) => ({ type: 'input_image', image_url: url }),
     audio: (audioData: string, format?: string) => ({

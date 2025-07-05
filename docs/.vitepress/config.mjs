@@ -4,7 +4,6 @@ import { defineConfig } from 'vitepress';
 const guideItems = [
   { text: 'Introduction', link: '/guide/getting-started' },
   { text: 'Streaming', link: '/guide/streaming' },
-  { text: 'Conversations', link: '/guide/conversations' },
 ];
 
 const advancedItems = [
