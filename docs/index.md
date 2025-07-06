@@ -133,7 +133,7 @@ console.log('Audio transcription:', audioResult.content);
 
 ## Tool Use, No Compromises
 
-Define tools (function calling) and let the model invoke them as needed. AIKit exposes all provider options, so you can build advanced, automated workflows with minimal code.
+Define tools (function calling) and let the model invoke them as needed. AIKit exposes all provider options, so you can build advanced, automated workflows with minimal code. For connecting to external data sources and tools, see our [MCP integration guide](/guide/mcp-integration).
 
 ```typescript
 import { createProvider, createTool, executeToolCall, userText } from '@chinmaymk/aikit';
@@ -315,6 +315,7 @@ Ready to dive deeper? Here's where to go:
 ### Integration & Customization
 
 - **[Framework Integration](/guide/framework-integration)** - Use with popular frameworks
+- **[MCP Integration](/guide/mcp-integration)** - Connect to external tools and data sources
 - **[Custom Headers](/guide/custom-headers)** - Advanced request customization
 
 ### Reference
