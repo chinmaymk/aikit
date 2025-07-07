@@ -33,7 +33,8 @@
     "docs:dev": "vitepress dev docs",
     "docs:build": "npm run docs:generate && vitepress build docs",
     "docs:preview": "vitepress preview docs",
-    "eg": "env-cmd npx tsx index.ts"
+    "eg": "env-cmd npx tsx index.ts",
+    "demo:mcp": "sh examples/mcp/run.sh"
   },
   "keywords": [
     "openai",
@@ -58,6 +59,8 @@
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "concurrently": "^8.2.2",
     "env-cmd": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
@@ -70,6 +73,7 @@
     "prettier": "^3.5.3",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typedoc": "0.28.5",
     "typedoc-plugin-markdown": "^4.0.0",
     "typescript": "^5.8.3",

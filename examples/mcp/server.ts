@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -12,73 +11,76 @@ const server = new Server(
 );
 
 // Register available tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'read_file',
-      description: 'Read the contents of a file',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Path to the file to read (relative to current directory)',
+server.setRequestHandler(
+  ListToolsRequestSchema,
+  async (): Promise<any> => ({
+    tools: [
+      {
+        name: 'read_file',
+        description: 'Read the contents of a file',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: 'Path to the file to read (relative to current directory)',
+            },
           },
-        },
-        required: ['path'],
-      },
-    },
-    {
-      name: 'write_file',
-      description: 'Write content to a file',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Path to write the file to (relative to current directory)',
-          },
-          content: {
-            type: 'string',
-            description: 'Content to write to the file',
-          },
-        },
-        required: ['path', 'content'],
-      },
-    },
-    {
-      name: 'list_directory',
-      description: 'List contents of a directory',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Directory path to list (relative to current directory)',
-            default: '.',
-          },
+          required: ['path'],
         },
       },
-    },
-    {
-      name: 'get_file_info',
-      description: 'Get information about a file or directory',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          path: {
-            type: 'string',
-            description: 'Path to get info about (relative to current directory)',
+      {
+        name: 'write_file',
+        description: 'Write content to a file',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: 'Path to write the file to (relative to current directory)',
+            },
+            content: {
+              type: 'string',
+              description: 'Content to write to the file',
+            },
+          },
+          required: ['path', 'content'],
+        },
+      },
+      {
+        name: 'list_directory',
+        description: 'List contents of a directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: 'Directory path to list (relative to current directory)',
+              default: '.',
+            },
           },
         },
-        required: ['path'],
       },
-    },
-  ],
-}));
+      {
+        name: 'get_file_info',
+        description: 'Get information about a file or directory',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            path: {
+              type: 'string',
+              description: 'Path to get info about (relative to current directory)',
+            },
+          },
+          required: ['path'],
+        },
+      },
+    ],
+  })
+);
 
 // Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async request => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any): Promise<any> => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -163,7 +165,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
-  } catch (error) {
+  } catch (error: any) {
     return {
       content: [
         {

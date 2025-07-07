@@ -1,11 +1,11 @@
 import {
   createProvider,
-  userText,
-  systemText,
-  createTool,
   generate,
-  assistantWithToolCalls,
+  createTool,
+  systemText,
+  userText,
   toolResult,
+  assistantWithToolCalls,
   type GenerationProviderType,
 } from '@chinmaymk/aikit';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -110,7 +110,6 @@ async function runExample(title: string, client: AIKitMCPClient, prompt: string)
 
 async function main() {
   console.log('AIKit + MCP Integration Demo');
-
   // Set a timeout to prevent hanging
   const timeout = setTimeout(() => {
     console.log('\nDemo timeout reached (60s). Exiting...');
@@ -132,7 +131,7 @@ async function main() {
 
   try {
     // Connect to MCP server (assumes server is running)
-    await client.connect(['node', 'server.mjs']);
+    await client.connect(['npx', 'tsx', 'server.ts']);
 
     console.log('Running demo (2 examples)...\n');
 
