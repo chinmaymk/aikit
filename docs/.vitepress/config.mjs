@@ -14,6 +14,7 @@ const advancedItems = [
   { text: 'Usage Tracking', link: '/guide/usage-tracking' },
   { text: 'Custom Headers', link: '/guide/custom-headers' },
   { text: 'Framework Integration', link: '/guide/framework-integration' },
+  { text: 'MCP Integration', link: '/guide/mcp-integration' },
 ];
 
 // API section builders
@@ -23,15 +24,12 @@ const createAPISection = (text, items, collapsed = true) => ({
   items,
 });
 
-const coreFunctions = [
-  'generate',
-  'createProvider',
-  'createEmbeddingsProvider',
-  'getAvailableProvider',
-].map(name => ({
-  text: name,
-  link: `/api/generated/functions/${name}`,
-}));
+const coreFunctions = ['createProvider', 'createEmbeddingsProvider', 'getAvailableProvider'].map(
+  name => ({
+    text: name,
+    link: `/api/generated/functions/${name}`,
+  })
+);
 
 const streamingFunctions = [
   'collectStream',
@@ -64,7 +62,7 @@ const messageBuilders = [
   link: `/api/generated/functions/${name}`,
 }));
 
-const toolFunctions = ['createTool', 'executeToolCall'].map(name => ({
+const toolFunctions = ['createTool'].map(name => ({
   text: name,
   link: `/api/generated/functions/${name}`,
 }));

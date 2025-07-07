@@ -10,7 +10,13 @@
  * - Compile-time error prevention
  */
 
-import { createOpenAI, createAnthropic, createGoogle, userText, generate } from '@chinmaymk/aikit';
+import {
+  createOpenAI,
+  createAnthropic,
+  createGoogle,
+  userText,
+  collectStream,
+} from '@chinmaymk/aikit';
 import { printDelimiter, printSectionHeader } from './utils';
 
 async function pattern1_BasicConfiguration() {
@@ -22,11 +28,13 @@ async function pattern1_BasicConfiguration() {
   });
 
   // All generation options provided at generation time
-  const result = await generate(provider, [userText('Explain TypeScript in one sentence.')], {
-    model: 'gpt-4o',
-    temperature: 0.7,
-    maxOutputTokens: 100,
-  });
+  const result = await collectStream(
+    provider([userText('Explain TypeScript in one sentence.')], {
+      model: 'gpt-4o',
+      temperature: 0.7,
+      maxOutputTokens: 100,
+    })
+  );
 
   console.log('Basic pattern result:');
   console.log(result.content + '\n');
@@ -44,24 +52,16 @@ async function pattern2_DefaultsAtConstruction() {
   });
 
   // Use defaults
-  const defaultResult = await generate(
-    provider,
-    [userText('What is machine learning?')]
-    // No options provided - uses construction defaults
-  );
+  const defaultResult = await collectStream(provider([userText('What is machine learning?')]));
 
   console.log('Using construction defaults:');
   console.log(defaultResult.content + '\n');
 
   // Override specific options at generation time
-  const overrideResult = await generate(
-    provider,
-    [userText('What is machine learning? Be very creative.')],
-    {
+  const overrideResult = await collectStream(
+    provider([userText('What is machine learning? Be very creative.')], {
       temperature: 0.9, // Override temperature
-      maxOutputTokens: 50, // Override maxOutputTokens
-      // model: 'gpt-4o' (uses default from construction)
-    }
+    })
   );
 
   console.log('With overridden temperature and maxOutputTokens:');
@@ -91,9 +91,9 @@ async function pattern3_AdvancedOpenAIConfiguration() {
     project: process.env.OPENAI_PROJECT_ID,
   });
 
-  const result = await generate(provider, [
-    userText('Write a short creative story about a robot learning to paint.'),
-  ]);
+  const result = await collectStream(
+    provider([userText('Write a short creative story about a robot learning to paint.')])
+  );
 
   console.log('Advanced OpenAI configuration result:');
   console.log(result.content + '\n');
@@ -128,13 +128,11 @@ async function pattern4_AnthropicConfiguration() {
   });
 
   // Use with generation-time overrides
-  const result = await generate(
-    provider,
-    [userText('Explain quantum computing in simple terms.')],
-    {
-      temperature: 0.3, // More focused response
-      maxOutputTokens: 150, // Longer response
-    }
+  const result = await collectStream(
+    provider([userText('Explain quantum computing in simple terms.')], {
+      model: 'claude-3-haiku-20240307',
+      maxOutputTokens: 100,
+    })
   );
 
   console.log('Anthropic configuration result:');
@@ -162,7 +160,9 @@ async function pattern5_GoogleConfiguration() {
     candidateCount: 1,
   });
 
-  const result = await generate(provider, [userText('What are the benefits of renewable energy?')]);
+  const result = await collectStream(
+    provider([userText('What are the benefits of renewable energy?')])
+  );
 
   console.log('Google configuration result:');
   console.log(result.content + '\n');
@@ -177,13 +177,17 @@ async function pattern6_DynamicConfiguration() {
   });
 
   // Creative vs analytical configurations
-  const creative = await generate(provider, [userText('Write a haiku about programming.')], {
-    temperature: 0.9, // High creativity
-  });
+  const creative = await collectStream(
+    provider([userText('Write a haiku about programming.')], {
+      temperature: 0.9, // High creativity
+    })
+  );
 
-  const analytical = await generate(provider, [userText('Explain bubble sort complexity.')], {
-    temperature: 0.2, // Low creativity, focused
-  });
+  const analytical = await collectStream(
+    provider([userText('Explain bubble sort complexity.')], {
+      temperature: 0.2, // Low creativity, focused
+    })
+  );
 
   console.log('Creative (temp=0.9):', creative.content.substring(0, 100) + '...\n');
   console.log('Analytical (temp=0.2):', analytical.content.substring(0, 100) + '...\n');
@@ -210,7 +214,7 @@ async function pattern7_ToolsConfiguration() {
     toolChoice: 'auto',
   });
 
-  const result = await generate(provider, [userText("What's the weather in Tokyo?")]);
+  const result = await collectStream(provider([userText("What's the weather in Tokyo?")]));
 
   console.log('Tools result:', result.content.substring(0, 100) + '...');
   if (result.toolCalls?.length) {
@@ -258,7 +262,7 @@ async function pattern8_MultiProviderConsistency() {
 
   for (const [name, provider] of providers) {
     try {
-      const result = await generate(provider, question);
+      const result = await collectStream(provider(question));
       console.log(`${name}: ${result.content.substring(0, 80)}...\n`);
     } catch {
       // Skip providers with errors

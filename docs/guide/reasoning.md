@@ -1,270 +1,96 @@
-# Reasoning Support
+---
+title: 'Model Reasoning: Showing the Work'
+description: How to peek inside an AI's "brain" and see its step-by-step thinking process.
+---
 
-AIKit provides access to AI model reasoning processes, allowing you to see how models think through problems step-by-step. It's like having a window into the AI's brain—fascinating and occasionally terrifying.
+# Model Reasoning: Showing the Work
 
-## Quick Start
+Ever wonder _how_ an AI gets to its answer? With reasoning-capable models, you can ask them to "show their work." It’s like getting a window into the model's thought process as it breaks down a problem, considers options, and formulates a plan.
 
-### Anthropic Claude
+This is incredibly powerful for:
 
-```ts
+- **Debugging**: See _why_ the model gave a weird answer.
+- **Transparency**: Understand the logic behind a recommendation.
+- **Building Agents**: Use the model's plan to orchestrate complex tool calls.
+
+AIKit normalizes the output from different providers, giving you a consistent way to access this "behind-the-scenes" thinking.
+
+## Getting the Full Thought Process
+
+The easiest way to see a model's reasoning is to let it finish completely and then inspect the `reasoning` property on the result.
+
+This example uses Anthropic's Claude 3.5 Sonnet, which has explicit support for this feature. We just have to enable it with the `thinking` parameter.
+
+```typescript
 import { createProvider, userText, collectStream } from '@chinmaymk/aikit';
 
-const anthropic = createProvider('anthropic', {
+const provider = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-const result = await collectStream(
-  anthropic([userText('Solve: 2x + 5 = 15')], {
-    model: 'claude-3-5-sonnet-20241022',
-    thinking: {
-      type: 'enabled',
-      budget_tokens: 1024,
-    },
-  })
-);
+const messages = [userText('Solve this equation: 2 * (x + 3) = 14')];
 
-console.log('Answer:', result.content);
-console.log('Reasoning:', result.reasoning);
-```
-
-### OpenAI o-series
-
-```ts
-const openai = createProvider('openai', {
-  apiKey: process.env.OPENAI_API_KEY!,
+const stream = provider(messages, {
+  model: 'claude-3-5-sonnet-20240620',
+  // Just enable thinking to get the goods
+  thinking: true,
 });
 
-const result = await collectStream(
-  openai([userText('Design a sorting algorithm')], {
-    model: 'o1-mini',
-    reasoning: { effort: 'medium' },
-  })
-);
+const { text, reasoning } = await collectStream(stream);
 
-console.log('Answer:', result.content);
-console.log('Reasoning:', result.reasoning);
+console.log('Final Answer:');
+console.log(text);
+// "The value of x is 4."
+
+console.log('\nHow it got there (Reasoning):');
+console.log(reasoning);
+/*
+  "The user wants me to solve a linear equation.
+  1.  First, I need to distribute the 2 on the left side: 2*x + 2*3 = 14, which simplifies to 2x + 6 = 14.
+  2.  Next, I'll isolate the term with x by subtracting 6 from both sides: 2x = 14 - 6, which is 2x = 8.
+  3.  Finally, I'll solve for x by dividing both sides by 2: x = 8 / 2, which gives x = 4.
+  I will now state the final answer."
+*/
 ```
 
-### Google Gemini
+For other providers, the process is similar:
 
-```ts
-const google = createProvider('google', {
-  apiKey: process.env.GOOGLE_API_KEY!,
+- **OpenAI**: Use an `o-series` model (e.g., `'o1-mini'`) and set `reasoning: { effort: 'medium' }`.
+- **Google**: Use a recent Gemini model (e.g., `'gemini-2.5-pro'`). Support is automatic but can be experimental.
+
+## Watching the Thoughts Form (Streaming)
+
+For a real-time view into the model's head, you can stream its reasoning. Use the `processStream` helper and provide an `onReasoning` handler to capture the thought process as it unfolds.
+
+```typescript
+import { createProvider, userText, processStream } from '@chinmaymk/aikit';
+
+const provider = createProvider('anthropic', {
+  apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-const result = await collectStream(
-  google([userText('Analyze this complex problem step by step')], {
-    model: 'gemini-2.0-flash',
-    // Note: Google's reasoning support is experimental
-  })
-);
+const messages = [userText('Solve this equation: 2 * (x + 3) = 14')];
 
-console.log('Answer:', result.content);
-console.log('Reasoning:', result.reasoning);
-```
+const responseStream = provider(messages, {
+  model: 'claude-3-5-sonnet-20240620',
+  thinking: true,
+});
 
-## Real-time Reasoning
-
-Access reasoning as it happens—it's like watching someone think out loud, but faster:
-
-```ts
-import { processStream } from '@chinmaymk/aikit';
-
-await processStream(
-  anthropic([userText('Explain quantum physics')], {
-    model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 1024 },
-  }),
-  {
-    onReasoning: reasoning => {
-      console.log('[THINKING]:', reasoning.delta);
-    },
-    onDelta: delta => process.stdout.write(delta),
-  }
-);
-```
-
-## Configuration
-
-### Anthropic Parameters
-
-```ts
-{
-  thinking: {
-    type: 'enabled',
-    budget_tokens: 1024, // 512-4096 recommended
+await processStream(responseStream, {
+  onReasoning: text => {
+    // In a UI, you could render this to a "thinking..." box
+    process.stdout.write(text);
   },
-  maxOutputTokens: 1500, // Should exceed budget_tokens
-}
-```
-
-### OpenAI Parameters
-
-```ts
-{
-  reasoning: {
-    effort: 'low' | 'medium' | 'high',
+  onText: text => {
+    // The final answer still comes through onText
   },
-}
+});
 ```
 
-### Google Gemini Parameters
+## The Golden Rules of Reasoning
 
-Google's reasoning support is currently experimental and may vary by model:
+- **It Costs Extra**: "Showing your work" takes more effort from the model, which means it uses more tokens and costs more. Use it when you actually need the process, not just the answer.
+- **Check for Support**: Not all models support reasoning. It's generally available on the latest flagship models from OpenAI (`o-series`), Anthropic (`Claude 3+`), and Google (`Gemini 1.5+`).
+- **It's Not Always Perfect**: Sometimes the reasoning is a better answer than the final content! It's a fascinating, powerful, and occasionally quirky feature. Experiment with it.
 
-```ts
-{
-  // Standard parameters - reasoning extraction handled automatically
-  temperature: 0.7,
-  maxOutputTokens: 1024,
-}
-```
-
-## Use Cases
-
-### Complex Problem Solving
-
-```ts
-const mathProblem = userText(`
-Two trains approach each other on parallel tracks.
-Train A: 60 mph, leaves at 2:00 PM
-Train B: 80 mph, leaves at 2:30 PM  
-Distance: 300 miles apart
-When do they meet?
-`);
-
-const result = await collectStream(
-  anthropic([mathProblem], {
-    model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 1536 },
-  })
-);
-```
-
-### Code Analysis
-
-```ts
-const result = await collectStream(
-  openai([userText('Find longest palindromic substring - optimize for time complexity')], {
-    model: 'o1',
-    reasoning: { effort: 'high' },
-  })
-);
-```
-
-### Decision Analysis
-
-```ts
-const result = await collectStream(
-  anthropic([userText('Investment advice: $10k, moderate risk, 5-year timeline')], {
-    model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 2048 },
-  })
-);
-```
-
-### Multimodal Reasoning
-
-```ts
-import { userImage } from '@chinmaymk/aikit';
-
-const result = await collectStream(
-  anthropic([userImage('Analyze this chart and explain the trends', imageData)], {
-    model: 'claude-3-5-sonnet-20241022',
-    thinking: { type: 'enabled', budget_tokens: 2048 },
-  })
-);
-```
-
-## Best Practices
-
-**Token Budget Guidelines:**
-
-- Simple problems: 512 tokens
-- Complex analysis: 1024-2048 tokens
-- Deep reasoning: 2048-4096 tokens
-
-**Error Handling:**
-
-```ts
-try {
-  const result = await collectStream(stream);
-  if (result.reasoning) {
-    console.log('Reasoning:', result.reasoning);
-  } else {
-    console.log('No reasoning available - model may not support it');
-  }
-} catch (error) {
-  console.error('Reasoning failed:', error);
-}
-```
-
-**Cost Management:**
-
-- Set appropriate `budget_tokens` limits (reasoning tokens cost extra)
-- Use `effort: 'low'` for simple tasks with OpenAI
-- Monitor reasoning token usage in your API dashboard
-- Consider caching results for repeated queries
-
-## Limitations
-
-- **Model Support**: Limited to specific model series that support reasoning
-- **API Access**: Some reasoning features may require higher API tiers
-- **Token Costs**: Reasoning significantly increases token usage and costs
-- **Streaming**: Not all reasoning content streams in real-time
-- **Availability**: Google's reasoning support is experimental
-
-## Troubleshooting
-
-**No reasoning content?**
-
-1. Verify model supports reasoning (check supported models above)
-2. Check your API access level with the provider
-3. Use correct parameters (`thinking` for Anthropic, `reasoning` for OpenAI)
-4. Ensure you're calling `collectStream()` or using `processStream()`
-5. Try a different model that definitely supports reasoning
-
-**High token usage?**
-
-1. Reduce `budget_tokens` for Anthropic
-2. Use `effort: 'low'` for OpenAI
-3. Be more specific in your prompts
-4. Consider if reasoning is necessary for your use case
-
-**Stream not working?**
-
-1. Use `processStream()` with `onReasoning` handler
-2. Check that the model actually returns reasoning content
-3. Verify your stream processing logic handles all chunk types
-
----
-
-**Pro tip:** Reasoning models are like having a really smart friend who shows their work. They're incredibly powerful but use more tokens, so use them when you actually need to see the thinking process—not just for simple Q&A.
-
-## Supported Models
-
-**OpenAI**
-
-- `o1`
-- `o1-mini`
-- `o1-preview`
-- `o1-pro`
-- `o3-mini`
-- `o4-mini`
-
-**Anthropic**
-
-- `claude-opus-4-20250514`
-- `claude-sonnet-4-20250514`
-- `claude-3-7-sonnet-20250219`
-- `claude-3-5-sonnet-20241022`
-- `claude-3-5-haiku-20241022`
-- `claude-3-opus-20240229`
-
-**Google**
-
-- `gemini-2.5-pro-preview-06-05`
-- `gemini-2.5-flash-preview-05-20`
-- `gemini-2.0-flash`
-- `gemini-1.5-pro`
-- `gemini-1.5-flash`
+Now go see what your AI is really thinking! 🚀

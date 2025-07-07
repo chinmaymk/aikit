@@ -5,11 +5,11 @@
 
 import {
   createTool,
-  generate,
   assistantWithToolCalls,
   toolResult,
   systemText,
   userText,
+  collectStream,
 } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
@@ -141,21 +141,25 @@ async function runExample(
   console.log(`User: ${userMessage}`);
 
   try {
-    const result = await generate(provider!, messages, {
-      model: modelName,
-      tools,
-      maxOutputTokens: 300,
-      ...options,
-    });
+    const result = await collectStream(
+      provider(messages, {
+        model: modelName,
+        tools,
+        maxOutputTokens: 300,
+        ...options,
+      })
+    );
 
     console.log('Assistant:', result.content);
 
     if (result.toolCalls?.length) {
       await processToolCalls(messages, result.toolCalls);
-      const finalResult = await generate(provider!, messages, {
-        model: modelName,
-        maxOutputTokens: 200,
-      });
+      const finalResult = await collectStream(
+        provider(messages, {
+          model: modelName,
+          maxOutputTokens: 200,
+        })
+      );
       console.log('Final:', finalResult.content);
     }
   } catch (error) {

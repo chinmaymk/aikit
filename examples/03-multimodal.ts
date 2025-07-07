@@ -11,12 +11,12 @@
 
 import {
   userImage,
-  userMultipleImages,
   userContent,
-  imageContent,
-  textContent,
-  generate,
   systemText,
+  collectStream,
+  textContent,
+  imageContent,
+  userMultipleImages,
 } from '@chinmaymk/aikit';
 import {
   getModelName,
@@ -35,11 +35,13 @@ async function step1_SingleImageAnalysis() {
 
   const message = userImage('What do you see in this image? Describe it briefly.', sampleImage);
 
-  const result = await generate(provider!, [message], {
-    model: getModelName(type!),
-    maxOutputTokens: 150,
-    temperature: 0.3,
-  });
+  const result = await collectStream(
+    provider([message], {
+      model: getModelName(type!),
+      maxOutputTokens: 150,
+      temperature: 0.3,
+    })
+  );
 
   console.log('Single image analysis:');
   console.log(result.content + '\n');
@@ -58,20 +60,24 @@ async function step2_ManualContentCreation() {
     imageContent(sampleImage),
   ]);
 
-  const detailedResult = await generate(provider!, [detailedMessage], {
-    model: getModelName(type!),
-    maxOutputTokens: 100,
-    temperature: 0.1,
-  });
+  const detailedResult = await collectStream(
+    provider([detailedMessage], {
+      model: getModelName(type!),
+      maxOutputTokens: 100,
+      temperature: 0.1,
+    })
+  );
 
   // Method 2: Using userImage helper (simpler)
   const simpleMessage = userImage('What color is this image? Be specific.', sampleImage);
 
-  const simpleResult = await generate(provider!, [simpleMessage], {
-    model: getModelName(type!),
-    maxOutputTokens: 100,
-    temperature: 0.1,
-  });
+  const simpleResult = await collectStream(
+    provider([simpleMessage], {
+      model: getModelName(type!),
+      maxOutputTokens: 100,
+      temperature: 0.1,
+    })
+  );
 
   console.log('Method 1 (step by step):');
   console.log(detailedResult.content + '\n');
@@ -85,20 +91,18 @@ async function step3_MultipleImages() {
 
   const { provider, type } = createProviderFromEnv();
 
-  const redImage = createValidSampleImage('red');
-  const blueImage = createValidSampleImage('blue');
-  const greenImage = createValidSampleImage('green');
+  const message = userMultipleImages('What are the differences between these two images?', [
+    createValidSampleImage('red'),
+    createValidSampleImage('blue'),
+  ]);
 
-  const message = userMultipleImages(
-    'Compare these three images. What are the main differences between them?',
-    [redImage, blueImage, greenImage]
+  const result = await collectStream(
+    provider([message], {
+      model: getModelName(type!),
+      maxOutputTokens: 200,
+      temperature: 0.4,
+    })
   );
-
-  const result = await generate(provider!, [message], {
-    model: getModelName(type!),
-    maxOutputTokens: 200,
-    temperature: 0.4,
-  });
 
   console.log('Multiple image comparison:');
   console.log(result.content + '\n');
@@ -116,11 +120,13 @@ async function step4_ImagesInSequentialAnalysis() {
     userImage('What do you see in this image?', sampleImage),
   ];
 
-  const response1 = await generate(provider!, messages, {
-    model: getModelName(type!),
-    maxOutputTokens: 100,
-    temperature: 0.3,
-  });
+  const response1 = await collectStream(
+    provider(messages, {
+      model: getModelName(type!),
+      maxOutputTokens: 100,
+      temperature: 0.3,
+    })
+  );
 
   console.log('Question: What do you see in this image?');
   console.log(response1.content + '\n');
@@ -131,11 +137,13 @@ async function step4_ImagesInSequentialAnalysis() {
     userImage('What emotions might this color evoke in people?', sampleImage),
   ];
 
-  const response2 = await generate(provider!, followUpMessages, {
-    model: getModelName(type!),
-    maxOutputTokens: 150,
-    temperature: 0.5,
-  });
+  const response2 = await collectStream(
+    provider(followUpMessages, {
+      model: getModelName(type!),
+      maxOutputTokens: 150,
+      temperature: 0.5,
+    })
+  );
 
   console.log('Question: What emotions might this color evoke?');
   console.log(response2.content + '\n');

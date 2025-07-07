@@ -60,10 +60,11 @@ const result1 = await provider([userText('Hello!')]);
 const result2 = await provider([userText('Tell me a joke')], { temperature: 0.9 });
 
 // Direct functions - configure each time
-const result3 = await openai([userText('Hello!')], {
+const result3Stream = openai([userText('Hello!')], {
   apiKey: process.env.OPENAI_API_KEY!,
   model: 'gpt-4o',
 });
+const result3 = await collectStream(result3Stream);
 ```
 
 > **💡 Helper Functions are Optional**  
@@ -253,28 +254,34 @@ const options = { temperature: 0.7, maxOutputTokens: 200 };
 const openai = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
-const openaiResult = await openai(messages, {
-  ...options,
-  model: 'gpt-4o',
-});
+const openaiResult = await collectStream(
+  openai(messages, {
+    ...options,
+    model: 'gpt-4o',
+  })
+);
 
 // Try Anthropic with the same messages
 const anthropic = createProvider('anthropic', {
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
-const anthropicResult = await anthropic(messages, {
-  ...options,
-  model: 'claude-3-5-sonnet-20241022',
-});
+const anthropicResult = await collectStream(
+  anthropic(messages, {
+    ...options,
+    model: 'claude-3-opus-20240229',
+  })
+);
 
 // Try Google with the same messages
 const google = createProvider('google', {
   apiKey: process.env.GOOGLE_API_KEY!,
 });
-const googleResult = await google(messages, {
-  ...options,
-  model: 'gemini-2.0-flash',
-});
+const googleResult = await collectStream(
+  google(messages, {
+    ...options,
+    model: 'gemini-pro',
+  })
+);
 
 // Now compare their answers!
 console.log('OpenAI:', openaiResult.content);

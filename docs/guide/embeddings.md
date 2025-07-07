@@ -1,196 +1,127 @@
+---
+title: Embeddings
+description: How to turn text into numbers that understand meaning, perfect for semantic search and recommendations.
+---
+
 # Embeddings
 
-Turn your text into numbers. Math-savvy vectors that know which words are friends. Perfect for semantic search, clustering, and making your text data actually useful.
+What if you could turn text into a set of coordinates on a giant "map of meaning"? That's exactly what embeddings do. They translate words, sentences, or entire documents into mathematical vectors—a series of numbers that represent the text's conceptual essence.
 
-## Quick Start
+On this map, "dog" is right next to "puppy," "king" is close to "queen," and "AIKit is awesome" is... well, you get the picture.
 
-```typescript
-import { createOpenAIEmbeddings } from '@chinmaymk/aikit';
+This is the magic behind semantic search, recommendations, and finding related content. AIKit gives you a simple, unified way to create these vectors with leading providers.
 
-const embeddings = createOpenAIEmbeddings({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+## How It Works
 
-// Single text → vector
-const result = await embeddings(['Hello, world!']);
-console.log(result.embeddings[0].values); // [0.123, -0.456, 0.789, ...]
+You give AIKit some text, and it gives you back a vector (or a list of them). Simple as that.
 
-// Multiple texts → multiple vectors
-const results = await embeddings([
-  'I love TypeScript',
-  'Python is cool too',
-  'The weather is nice',
-]);
-```
-
-## Supported Providers
-
-- **OpenAI**: The embedding champions. Fast, reliable, and they actually have embedding models.
-- **Google**: Also does embeddings. Different flavors for different tasks.
-- **Anthropic**: Nope. They're focused on chat, not vectors. Can't blame them.
-
-## Provider Creation
-
-### OpenAI (The Obvious Choice)
+Let's turn a few phrases into numbers.
 
 ```typescript
 import { createOpenAIEmbeddings } from '@chinmaymk/aikit';
 
-const embeddings = createOpenAIEmbeddings({
-  apiKey: process.env.OPENAI_API_KEY!,
-  model: 'text-embedding-3-small', // The sweet spot
-  dimensions: 1536, // Shrink if you need to
+// 1. Create an embeddings provider
+const embed = createOpenAIEmbeddings({
+  model: 'text-embedding-3-small',
 });
-```
 
-**Models that won't disappoint:**
-
-- `text-embedding-3-small`: 1536 dimensions, easy on the wallet
-- `text-embedding-3-large`: 3072 dimensions, maximum performance
-- `text-embedding-ada-002`: The old reliable
-
-### Google (Task-Specific)
-
-```typescript
-import { createGoogleEmbeddings } from '@chinmaymk/aikit';
-
-const embeddings = createGoogleEmbeddings({
-  apiKey: process.env.GOOGLE_API_KEY!,
-  model: 'text-embedding-004',
-  taskType: 'SEMANTIC_SIMILARITY', // Tell Google what you're up to
-});
-```
-
-**Models:**
-
-- `text-embedding-004`: The latest and greatest
-- `textembedding-gecko@003`: Still pretty good
-- `embedding-001`: The Gemini one
-
-**Task Types** (Google loves specificity):
-
-- `RETRIEVAL_QUERY`: For search queries
-- `RETRIEVAL_DOCUMENT`: For things you want to find
-- `SEMANTIC_SIMILARITY`: For "how similar are these?"
-- `CLASSIFICATION`: For sorting things into buckets
-- `CLUSTERING`: For "what goes together?"
-
-## Basic Usage
-
-### Single Text
-
-```typescript
-const result = await embeddings(['The quick brown fox']);
-console.log(result.embeddings[0].values.length); // However many dimensions
-console.log(result.usage?.totalTokens); // How much it cost you
-```
-
-### Batch Processing
-
-```typescript
-const texts = ['Machine learning is cool', 'I prefer TypeScript', 'Coffee makes everything better'];
-
-const results = await embeddings(texts);
-// OpenAI: Up to 2048 texts in one go
-// Google: One at a time, but AIKit handles it
-```
-
-## Semantic Search Example
-
-```typescript
-// Your document collection
-const docs = [
-  'Machine learning fundamentals',
-  'TypeScript best practices',
-  'Coffee brewing techniques',
-  'Neural network architectures',
+// 2. Give it some text
+const texts = [
+  'The cat sat on the mat.',
+  'My dog loves to chase squirrels.',
+  'The weather is sunny today.',
 ];
 
-// Get embeddings for all docs
-const docEmbeddings = await embeddings(docs);
+const { embeddings, usage } = await embed(texts);
 
-// Search query
-const query = 'AI and neural networks';
-const queryEmbedding = await embeddings([query]);
+// 3. Get back the vectors
+embeddings.forEach((e, i) => {
+  console.log(`Text: "${texts[e.index]}"`);
+  console.log(`Vector (first 3 dims): [${e.values.slice(0, 3).join(', ')}...]`);
+  console.log(`Vector dimensions: ${e.values.length}`);
+  console.log('---');
+});
 
-// Find similar docs using cosine similarity
-function similarity(a: number[], b: number[]): number {
-  const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
-  const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-  const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-  return dot / (magA * magB);
+console.log(`Total tokens used: ${usage.totalTokens}`);
+/*
+  Text: "The cat sat on the mat."
+  Vector (first 3 dims): [0.01, -0.02, 0.03...]
+  Vector dimensions: 1536
+  ---
+  Text: "My dog loves to chase squirrels."
+  Vector (first 3 dims): [0.02, -0.01, 0.04...]
+  Vector dimensions: 1536
+  ---
+  Text: "The weather is sunny today."
+  Vector (first 3 dims): [-0.03, 0.05, -0.01...]
+  Vector dimensions: 1536
+  ---
+  Total tokens used: 21
+*/
+```
+
+## A Real-World Example: Semantic Search
+
+This is where embeddings truly shine. Let's build a simple search engine that understands meaning, not just keywords.
+
+```typescript
+// A tiny helper for comparing vectors
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const magnitudeA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const magnitudeB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dotProduct / (magnitudeA * magnitudeB);
 }
 
-const matches = docEmbeddings.embeddings
+// 1. Our "database" of documents
+const documents = [
+  'The new AI models are powerful.',
+  'TypeScript makes JavaScript better.',
+  'How to brew the perfect cup of coffee.',
+  'Getting started with neural networks.',
+];
+
+// 2. Create embeddings for all documents
+const docEmbeddings = (await embed(documents)).embeddings;
+
+// 3. The user's search query
+const query = 'I want to learn about artificial intelligence';
+const queryEmbedding = (await embed([query])).embeddings[0].values;
+
+// 4. Find the most similar document
+const results = documents
   .map((doc, i) => ({
-    text: docs[i],
-    score: similarity(queryEmbedding.embeddings[0].values, doc.values),
+    text: doc,
+    score: cosineSimilarity(queryEmbedding, docEmbeddings[i].values),
   }))
   .sort((a, b) => b.score - a.score);
 
-console.log('Best match:', matches[0]); // Probably about neural networks
+console.log('Search Results:');
+console.log(results);
+/*
+  Search Results:
+  [
+    { text: 'Getting started with neural networks.', score: 0.85 },
+    { text: 'The new AI models are powerful.', score: 0.82 },
+    { text: 'TypeScript makes JavaScript better.', score: 0.34 },
+    { text: 'How to brew the perfect cup of coffee.', score: 0.11 }
+  ]
+*/
 ```
 
-## Provider-Specific Options
+Notice how the query "artificial intelligence" correctly matched "neural networks" and "AI models," even though the exact words were different. That's the power of semantic understanding.
 
-### OpenAI Extras
+## Provider Differences
 
-```typescript
-const result = await embeddings(['Hello'], {
-  dimensions: 512, // Smaller vectors
-  encodingFormat: 'float', // or 'base64' if you're feeling fancy
-  user: 'user-123', // For tracking
-});
-```
+- **OpenAI**: The workhorse. Fast, reliable, and offers different model sizes. The `createOpenAIEmbeddings` helper is your friend.
+- **Google**: Also a strong contender. Their models often ask for a `taskType` (e.g., `'SEMANTIC_SIMILARITY'`, `'RETRIEVAL_DOCUMENT'`) to optimize the vectors. Use `createGoogleEmbeddings` to set this.
+- **Anthropic**: Doesn't currently offer embedding models.
 
-## Universal Factory
+## The Golden Rules of Embeddings
 
-Because consistency is nice:
+- **Batch Your Texts**: Sending multiple texts in one request is much more efficient than sending them one by one.
+- **Cache Everything**: An embedding for a given text and model will not change. Store them in a database or file to avoid re-calculating and save money.
+- **Choose Your Dimensions**: Some models (like OpenAI's) let you specify the number of `dimensions` for your vector. Smaller vectors are faster and cheaper to store, but may be less accurate. Test what works for your use case.
+- **Pre-process for Clarity**: Clean up your text before embedding it. Removing irrelevant characters or HTML tags can lead to better, more focused vectors.
 
-```typescript
-import { createProvider } from '@chinmaymk/aikit';
-
-const openai = createProvider('openai_embeddings', {
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-const google = createProvider('google_embeddings', {
-  apiKey: process.env.GOOGLE_API_KEY!,
-});
-
-// Use them like any other embedding function
-const openaiResult = await openai(['Hello, world!']);
-const googleResult = await google(['Hello, world!']);
-```
-
-## Response Format
-
-All providers return the same structure (because we're nice like that):
-
-```typescript
-interface EmbeddingResponse {
-  embeddings: Array<{
-    values: number[]; // The actual vector
-    index?: number; // Position in batch
-  }>;
-  usage?: {
-    totalTokens?: number; // What it cost you
-  };
-}
-```
-
-## Common Use Cases
-
-**Semantic Search**: Find documents similar to a query
-**Text Classification**: "Is this about tech or cooking?"
-**Clustering**: "Which of these texts belong together?"
-**Recommendations**: "People who liked this also liked..."
-**Duplicate Detection**: "Have I seen this before?"
-
-## Best Practices
-
-1. **Batch when possible**: More texts per request = better performance
-2. **Cache embeddings**: Vectors don't change, so save them
-3. **Choose dimensions wisely**: Bigger isn't always better
-4. **Preprocess text**: Clean up before embedding
-5. **Pick the right model**: Small for speed, large for accuracy
+Now go turn some words into wisdom! 🚀

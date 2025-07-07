@@ -1,12 +1,11 @@
 import {
   createProvider,
-  generate,
-  createTool,
-  systemText,
   userText,
-  toolResult,
+  systemText,
+  createTool,
   assistantWithToolCalls,
-  type GenerationProviderType,
+  toolResult,
+  collectStream,
 } from '@chinmaymk/aikit';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -16,8 +15,8 @@ class AIKitMCPClient {
   private mcpClient: Client;
   private transport: StdioClientTransport | null = null;
 
-  constructor(providerType: GenerationProviderType, providerOptions: any) {
-    this.provider = createProvider(providerType, providerOptions);
+  constructor(providerType: string, providerOptions: any) {
+    this.provider = createProvider(providerType as any, providerOptions);
     this.mcpClient = new Client(
       { name: 'aikit-mcp-client', version: '1.0.0' },
       { capabilities: { sampling: {} } }
@@ -44,10 +43,12 @@ class AIKitMCPClient {
   async chat(messages: any[], options: any = {}) {
     const aikitTools = await this.convertMCPToolsToAIKit();
 
-    const result = await generate(this.provider, messages, {
-      ...options,
-      tools: aikitTools,
-    });
+    const result = await collectStream(
+      this.provider(messages, {
+        ...options,
+        tools: aikitTools,
+      })
+    );
 
     console.log('\nAssistant:', result.content);
 
@@ -69,9 +70,11 @@ class AIKitMCPClient {
         messages.push(toolResult(toolCall.id, toolResultText));
       }
 
-      const finalResult = await generate(this.provider, messages, {
-        maxOutputTokens: 200,
-      });
+      const finalResult = await collectStream(
+        this.provider(messages, {
+          maxOutputTokens: 200,
+        })
+      );
 
       console.log('\nFinal response:', finalResult.content);
       return finalResult;

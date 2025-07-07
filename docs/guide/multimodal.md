@@ -1,321 +1,119 @@
-# Multimodal AI with Images and Audio
+---
+title: 'Multimodal AI: Giving Your AI Eyes and Ears'
+description: How to use AIKit to process images and audio, turning your chatbot into a perceptive assistant.
+---
 
-Modern AI models can process images and audio alongside text. AIKit makes it easy to combine text, images, and audio in your AI conversations with simple helper functions.
+# Multimodal AI: Giving Your AI Eyes and Ears
 
-## Image Processing
+Text is great, but the world is more than just words. With AIKit, you can give your AI models eyes to see images and ears to hear audio. It’s the difference between an assistant who can only read emails and one who can analyze a chart, transcribe a meeting, or even tell you if that's a picture of a hot dog or not.
 
-### Image Format Requirements
+AIKit provides simple helpers to wrap your image and audio data, so you can stop worrying about content types and start building.
 
-AIKit accepts images as base64-encoded data URLs in formats: JPEG, PNG, GIF, WebP.
+## Working with Images
+
+Got a JPEG, PNG, GIF, or WebP? AIKit is ready for it. Just convert your image to a base64-encoded data URL, and you're good to go.
+
+Most of the time, you'll be loading a file from disk. Here’s a handy function for that:
 
 ```typescript
-const imageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...';
+import { readFileSync } from 'node:fs';
+
+function loadImageAsDataUrl(filePath: string): string {
+  const mimeType = `image/${filePath.split('.').pop() || 'jpeg'}`;
+  const base64 = readFileSync(filePath).toString('base64');
+  return `data:${mimeType};base64,${base64}`;
+}
 ```
 
-### Simple Image Analysis
+### One Image, Many Questions
+
+The `userImage` helper is your go-to for single-image prompts.
 
 ```typescript
-import { createOpenAI, userImage, generate } from '@chinmaymk/aikit';
+import { createProvider, userImage, printStream } from '@chinmaymk/aikit';
 
-const openai = createOpenAI({
+const provider = createProvider('openai', {
   apiKey: process.env.OPENAI_API_KEY!,
 });
+const imageData = loadImageAsDataUrl('./chart.png');
 
-const message = userImage(
-  'What do you see in this image?',
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...'
-);
+const messages = [userImage('What are the key takeaways from this chart?', imageData)];
 
-const result = await generate(openai, [message], {
-  model: 'gpt-4o',
-});
-
-console.log(result.content);
+await printStream(provider(messages, { model: 'gpt-4o' }));
 ```
 
-### Multiple Images
+### Comparing Multiple Images
 
-Compare several images at once:
+Need to compare, contrast, or find the odd one out? `userMultipleImages` has you covered.
 
 ```typescript
 import { userMultipleImages } from '@chinmaymk/aikit';
 
 const images = [
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...',
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...',
-  'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...',
+  loadImageAsDataUrl('./cat1.png'),
+  loadImageAsDataUrl('./cat2.png'),
+  loadImageAsDataUrl('./dog.png'),
 ];
 
-const message = userMultipleImages('Compare these images. What are the main differences?', images);
-
-const result = await generate(openai, [message], { model: 'gpt-4o' });
+const messages = [userMultipleImages('Which of these images is not like the others?', images)];
+await printStream(provider(messages, { model: 'gpt-4o' }));
+// "The third image features a dog, while the first two feature cats."
 ```
 
-### Manual Content Creation
+## Working with Audio
 
-For more control, build content manually:
+AIKit can listen to WAV, MP3, WebM, OGG, and M4A files. Just like with images, you'll need a base64-encoded data URL.
 
-```typescript
-import { userContent, textContent, imageContent } from '@chinmaymk/aikit';
+### Transcribing a Single Audio File
 
-const message = userContent([
-  textContent('Analyze this chart:'),
-  textContent('1. What does it show?'),
-  textContent('2. What trends do you notice?'),
-  imageContent(imageData),
-]);
-
-const result = await generate(openai, [message], { model: 'gpt-4o' });
-```
-
-### Loading Images from Files
-
-```typescript
-import { readFileSync } from 'node:fs';
-
-function loadImageAsBase64(filePath: string): string {
-  const imageBuffer = readFileSync(filePath);
-  const base64 = imageBuffer.toString('base64');
-
-  const extension = filePath.split('.').pop()?.toLowerCase();
-  const mimeType =
-    {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-    }[extension || 'jpeg'] || 'image/jpeg';
-
-  return `data:${mimeType};base64,${base64}`;
-}
-
-const imageData = loadImageAsBase64('./screenshot.png');
-const message = userImage('What does this screenshot show?', imageData);
-```
-
-### Streaming with Images
-
-```typescript
-const message = userImage('Describe this image in detail', imageData);
-
-for await (const chunk of openai([message], { model: 'gpt-4o' })) {
-  process.stdout.write(chunk.delta);
-}
-```
-
-## Audio Processing
-
-### Audio Format Requirements
-
-AIKit accepts audio as base64-encoded data URLs in formats: WAV, MP3, WebM, OGG, M4A.
-
-```typescript
-const audioData = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEA...';
-```
-
-### Simple Audio Analysis
+Use the `userAudio` helper to get a transcript, summarize a meeting, or analyze a sound.
 
 ```typescript
 import { userAudio } from '@chinmaymk/aikit';
 
-const message = userAudio(
-  'Please transcribe this audio.',
-  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEA...',
-  'wav' // Optional format hint
-);
-
-const result = await generate(openai, [message], {
-  model: 'gpt-4o-audio-preview',
-});
-```
-
-### Multiple Audio Files
-
-```typescript
-import { userMultipleAudio } from '@chinmaymk/aikit';
-
-const audioFiles = [
-  { audio: speechAudio, format: 'wav' },
-  { audio: musicAudio, format: 'mp3' },
-  { audio: interviewAudio, format: 'm4a' },
-];
-
-const message = userMultipleAudio('Compare these audio files. Categorize each one.', audioFiles);
-
-const result = await generate(openai, [message], {
-  model: 'gpt-4o-audio-preview',
-});
-```
-
-### Loading Audio from Files
-
-```typescript
-function loadAudioAsBase64(filePath: string): string {
-  const audioBuffer = readFileSync(filePath);
-  const base64 = audioBuffer.toString('base64');
-
-  const extension = filePath.split('.').pop()?.toLowerCase();
-  const mimeType =
-    {
-      wav: 'audio/wav',
-      mp3: 'audio/mp3',
-      webm: 'audio/webm',
-      ogg: 'audio/ogg',
-      m4a: 'audio/mp4',
-    }[extension || 'wav'] || 'audio/wav';
-
+// Helper to load audio files
+function loadAudioAsDataUrl(filePath: string): string {
+  const mimeType = `audio/${filePath.split('.').pop() || 'wav'}`;
+  const base64 = readFileSync(filePath).toString('base64');
   return `data:${mimeType};base64,${base64}`;
 }
 
-const audioData = loadAudioAsBase64('./recording.mp3');
-const message = userAudio('Transcribe this recording', audioData, 'mp3');
+const audioData = loadAudioAsDataUrl('./meeting.mp3');
+const messages = [userAudio('Please summarize this meeting.', audioData)];
+
+await printStream(provider(messages, { model: 'gpt-4o' }));
 ```
 
-## Different Providers
+## Choosing Your Senses: Provider Differences
 
-Provider support varies for multimodal content:
+Not all models are created equal when it comes to multimodal capabilities.
+
+- **OpenAI (`gpt-4o`, `gpt-4-turbo`)**: The gold standard. Excellent, reliable support for both images and audio.
+- **Anthropic (`claude-3-5-sonnet-20240620`, etc.)**: Top-tier image analysis, but currently no audio support.
+- **Google (`gemini-1.5-pro`, etc.)**: Strong contender with solid image and audio features.
+
+AIKit keeps the interface the same, so you can switch providers without changing your code.
 
 ```typescript
-import { createOpenAI, createAnthropic, createGoogle } from '@chinmaymk/aikit';
+import { createProvider, userImage, printStream } from '@chinmaymk/aikit';
 
-// OpenAI - excellent image and audio support
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const imageData = '...'; // Your base64 image data
 
-// Anthropic - great image analysis, no audio support
-const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const openai = createProvider('openai', { apiKey: process.env.OPENAI_API_KEY! });
+const anthropic = createProvider('anthropic', { apiKey: process.env.ANTHROPIC_API_KEY! });
 
-// Google - strong image and audio support
-const google = createGoogle({ apiKey: process.env.GOOGLE_API_KEY! });
+const message = userImage('Describe this image.', imageData);
 
-const imageMessage = userImage('What is this?', imageData);
-
-// Works with all providers
-const openaiResult = await generate(openai, [imageMessage], { model: 'gpt-4o' });
-const anthropicResult = await generate(anthropic, [imageMessage], {
-  model: 'claude-3-5-sonnet-20241022',
-});
-const googleResult = await generate(google, [imageMessage], { model: 'gemini-1.5-pro' });
+// This code works for both providers, just change the provider instance
+await printStream(openai([message], { model: 'gpt-4o' }));
+await printStream(anthropic([message], { model: 'claude-3-5-sonnet-20240620' }));
 ```
 
-## Error Handling
+## The Golden Rules of Multimodality
 
-```typescript
-try {
-  const message = userImage('What is this?', imageData);
-  const result = await generate(openai, [message], { model: 'gpt-4o' });
-  console.log(result.content);
-} catch (error) {
-  if (error.message.includes('invalid image')) {
-    console.error('Image format not supported or corrupted');
-  } else if (error.message.includes('too large')) {
-    console.error('File too large - try compressing it');
-  } else if (error.message.includes('content policy')) {
-    console.error('Content violates policy');
-  } else if (error.message.includes('model')) {
-    console.error('Model does not support this content type');
-  } else {
-    console.error('Processing error:', error.message);
-  }
-}
-```
+- **Size Matters**: Smaller files are faster and cheaper to process. Resize images and compress audio when you can.
+- **Context is King**: Don't just send an image; tell the AI what to look for. "What's the bug in this screenshot?" is better than "Describe this."
+- **Handle Failure**: Network errors, corrupted files, and content policy violations happen. Wrap your calls in a `try...catch` block to handle them gracefully.
+- **Be Specific with Audio**: For audio, you can provide an optional format hint (e.g., `'mp3'`) to the `userAudio` helper. It helps the model process the data more reliably.
 
-## Best Practices
-
-1. **Optimize file size** - Larger files cost more and process slower
-2. **Use appropriate resolution** - High-res for detailed analysis, lower for general questions
-3. **Provide context** - Tell the AI what to look for
-4. **Test different providers** - Each has strengths in different areas
-5. **Handle failures gracefully** - Files can be corrupted or unsupported
-6. **Specify format hints for audio** - Helps the AI understand the content better
-
-## Performance Tips
-
-```typescript
-// Good: Specific, focused questions
-const goodMessage = userImage('What is the error message in this screenshot?', imageData);
-
-// Better: Multiple targeted questions in one prompt
-const betterMessage = userImage(
-  'Analyze this error screenshot: 1) What is the exact error? 2) Which line caused it? 3) How to fix it?',
-  imageData
-);
-
-// Best: Context + specific questions
-const bestMessage = userImage(
-  'This is a Node.js error screenshot. Please: 1) Identify the exact error 2) Explain the cause 3) Suggest a fix',
-  imageData
-);
-```
-
-## Supported Models
-
-### Vision-Capable Models
-
-**OpenAI**
-
-- `gpt-4o`, `gpt-4o-mini`
-- `gpt-4-turbo`, `gpt-4`
-
-**Anthropic**
-
-- `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`
-- `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`
-
-**Google**
-
-- `gemini-2.0-flash`, `gemini-1.5-pro`, `gemini-1.5-flash`
-- `gemini-pro-vision`
-
-### Audio-Capable Models
-
-**OpenAI (Best Support)**
-
-- `gpt-4o-audio-preview` - Specialized for audio
-- `gpt-4o`, `gpt-4o-mini` - General audio support
-
-**Google (Good Support)**
-
-- `gemini-1.5-pro`, `gemini-1.5-flash`, `gemini-2.0-flash`
-
-**Anthropic**
-
-- Limited/no audio support
-
-## Common Use Cases
-
-### Document Analysis
-
-```typescript
-const message = userImage('Extract all text and summarize this document', documentImage);
-```
-
-### Audio Transcription
-
-```typescript
-const message = userAudio('Transcribe this meeting and extract action items', meetingAudio, 'mp3');
-```
-
-### Visual Q&A
-
-```typescript
-const message = userImage('What programming language is in this code screenshot?', codeImage);
-```
-
-### Music Analysis
-
-```typescript
-const message = userAudio(
-  'What genre is this music? What instruments do you hear?',
-  musicAudio,
-  'mp3'
-);
-```
-
-## What's Next?
-
-- [Tools Guide](./tools.md) - Combine multimodal content with function calling
-- [Streaming Guide](./streaming.md) - Handle real-time multimodal responses
-- [API Reference](/api/generated/README) - Technical details on content types
-
-Remember: Multimodal AI excels when you provide clear, specific instructions about what to analyze in your images and audio!
+Now go build something that sees and hears! 🚀

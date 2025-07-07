@@ -5,134 +5,65 @@ description: How to use AIKit with Model Context Protocol (MCP) for context-awar
 
 # MCP Integration
 
-AIKit seamlessly integrates with the Model Context Protocol (MCP) to enable AI applications that can access external data sources and tools in real-time using native tool calling. Finally, your AI can do more than just chat about doing things.
+Think of AIKit and the Model Context Protocol (MCP) like peanut butter and jelly. They're two great things that work even better together. AIKit handles the connection to AI providers, and MCP handles the connection to your tools and data.
 
-## Quick Start
+Much like React is an unopinionated view library, AIKit is an unopinionated provider library. It doesn't care _how_ you use MCP. For tool-calling? Great. For context injection? Perfect. You're the architect; we just provide the plumbing.
 
-Install MCP SDK alongside AIKit:
+## Installation
 
 ```bash
 npm install @chinmaymk/aikit @modelcontextprotocol/sdk
 ```
 
-> **Note**: Make sure you have Node.js 18+ as the MCP SDK requires modern Node.js features.
+> **Note**: Requires Node.js 20+, we're living in the future.
 
-## Native Tool Integration
+## The "It Just Works" Approach: Native Tools
 
-### Converting MCP Tools to AIKit Tools
+The most straightforward way to use MCP with AIKit is to convert MCP tools into AIKit's native tool format. This enables seamless, native function-calling without any fuss.
 
-The best approach is to convert MCP tools to native aikit tools, enabling proper function calling instead of manual JSON parsing (because nobody enjoys parsing JSON by hand):
-
-```typescript
-import {
-  createProvider,
-  userText,
-  systemText,
-  createTool,
-  generate,
-  assistantWithToolCalls,
-  toolResult,
-} from '@chinmaymk/aikit';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-
-class AIKitMCPClient {
-  private client: Client;
-  private provider: any;
-
-  constructor(providerType: string, providerOptions: any) {
-    this.provider = createProvider(providerType, providerOptions);
-    this.client = new Client(
-      { name: 'aikit-mcp', version: '1.0.0' },
-      { capabilities: { sampling: {} } }
-    );
-  }
-
-  async connect(serverCommand: string[]) {
-    const transport = new StdioClientTransport({
-      command: serverCommand[0],
-      args: serverCommand.slice(1),
-    });
-    await this.client.connect(transport);
-  }
-
-  // Convert MCP tools to aikit tools
-  private async convertMCPToolsToAIKitTools() {
-    const { tools } = await this.client.listTools();
-    return tools.map(tool => createTool(tool.name, tool.description, tool.inputSchema));
-  }
-
-  async chatWithTools(messages: any[], options: any = {}) {
-    // Get aikit-compatible tools
-    const aikitTools = await this.convertMCPToolsToAIKitTools();
-
-    // Generate with native tool support
-    const result = await generate(this.provider, messages, {
-      ...options,
-      tools: aikitTools,
-    });
-
-    console.log('Assistant:', result.content);
-
-    // Handle tool calls using native aikit flow
-    if (result.toolCalls?.length) {
-      messages.push(assistantWithToolCalls(result.content, result.toolCalls));
-
-      for (const toolCall of result.toolCalls) {
-        // Execute MCP tool
-        const mcpResult = await this.client.callTool({
-          name: toolCall.name,
-          arguments: toolCall.arguments,
-        });
-
-        // Add result back to conversation
-        const toolResultText = mcpResult.content[0].text;
-        messages.push(toolResult(toolCall.id, toolResultText));
-      }
-
-      // Generate final response
-      const finalResult = await generate(this.provider, messages, {
-        maxOutputTokens: 200,
-      });
-
-      return finalResult;
-    }
-
-    return result;
-  }
-}
-```
-
-### Usage Example
+Here’s the core logic, stripped of boilerplate so you can see what’s happening:
 
 ```typescript
-async function main() {
-  const client = new AIKitMCPClient('openai', {
-    apiKey: process.env.OPENAI_API_KEY!,
-    model: 'gpt-4o',
-  });
+import { createProvider, createTool, processStream, toolResult, userText } from '@chinmaymk/aikit';
+import { createClient } from '@modelcontextprotocol/sdk';
 
-  await client.connect(['node', 'your-mcp-server.js']);
+// 1. Configure your clients
+const mcpClient = createClient({ url: 'http://localhost:4000' });
+const provider = createProvider('openai', {
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
-  await client.chatWithTools(
-    [
-      systemText('You are a helpful assistant with access to external tools.'),
-      userText('Read package.json and summarize the project'),
-    ],
-    { model: 'gpt-4o', maxOutputTokens: 300 }
-  );
-}
+// 2. Convert MCP tools to AIKit's native format
+const { tools: mcpTools } = await mcpClient.listTools();
+const aikitTools = mcpTools.map(tool => createTool(tool.name, tool.description, tool.inputSchema));
+
+// 3. Get a stream from the provider, making the tools available
+const messages = [userText('Use the MCP tool to tell me a joke.')];
+const stream = provider(messages, {
+  model: 'gpt-4o',
+  tools: aikitTools,
+});
+
+// 4. Process the stream to handle tool calls
+// As chunks arrive, you would identify tool_calls, execute them via your
+// MCP client, and insert the results back into the conversation.
+// See the `processStream` helper and the full example in `examples/mcp/`
+// for a complete implementation.
 ```
 
-## Complete Working Example
+This simple loop lets the AI model natively use any tool your MCP server exposes.
 
-For a full working example with real MCP server/client integration, see the [`examples/mcp/`] directory which includes:
+## Beyond Native Tools: You're in Control
 
-- **Real MCP server** (`server.mjs`) with file system tools
-- **AIKit client** (`client.ts`) with native tool calling
-- **Setup instructions** and dependencies
-- **Multiple examples** demonstrating various use cases
+Because AIKit is unopinionated, you can implement any pattern you want:
 
-This example shows the complete implementation including proper error handling, security considerations, and multi-provider support.
+- **Context Injection**: Use an MCP tool to fetch data and stuff it directly into a prompt. No-frills, maximum control.
+- **Hybrid Architectures**: Build a complex system that pulls from multiple MCP servers, orchestrates chains of AI and tool calls, and generally does exactly what your grand vision requires.
 
-This native integration approach provides a much cleaner and more maintainable way to use MCP tools with aikit, leveraging the library's built-in tool calling capabilities instead of manual JSON parsing. Your future self will thank you for choosing the path of least resistance.
+## See It in Action: A Complete Example
+
+When you're ready to see this in a real application, check out the [`examples/mcp/`] directory. It has a fully working MCP server and an AIKit client that demonstrates these concepts with proper setup and error handling.
+
+## The Bottom Line
+
+AIKit + MCP gives you a flexible foundation. We provide the building blocks; you design the masterpiece. There's no wrong way to do it, only more or less maintainable ways. Happy building! 🚀

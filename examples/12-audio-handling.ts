@@ -15,8 +15,8 @@ import {
   userContent,
   audioContent,
   textContent,
-  generate,
   systemText,
+  collectStream,
 } from '@chinmaymk/aikit';
 import { getModelName, printDelimiter, printSectionHeader, createProviderFromEnv } from './utils';
 
@@ -53,11 +53,13 @@ async function step1_SingleAudioAnalysis() {
   );
 
   try {
-    const result = await generate(provider!, [message], {
-      model: getModelName(type!),
-      maxOutputTokens: 200,
-      temperature: 0.3,
-    });
+    const result = await collectStream(
+      provider([message], {
+        model: getModelName(type!),
+        maxOutputTokens: 200,
+        temperature: 0.5,
+      })
+    );
 
     console.log('Single audio analysis:');
     console.log(result.content + '\n');
@@ -89,17 +91,21 @@ async function step2_ManualAudioContentCreation() {
   const simpleMessage = userAudio('What genre of music is this?', sampleAudio, 'mp3');
 
   try {
-    const detailedResult = await generate(provider!, [detailedMessage], {
-      model: getModelName(type!),
-      maxOutputTokens: 150,
-      temperature: 0.1,
-    });
+    const detailedResult = await collectStream(
+      provider([detailedMessage], {
+        model: getModelName(type!),
+        maxOutputTokens: 150,
+        temperature: 0.1,
+      })
+    );
 
-    const simpleResult = await generate(provider!, [simpleMessage], {
-      model: getModelName(type!),
-      maxOutputTokens: 150,
-      temperature: 0.1,
-    });
+    const simpleResult = await collectStream(
+      provider([simpleMessage], {
+        model: getModelName(type!),
+        maxOutputTokens: 150,
+        temperature: 0.1,
+      })
+    );
 
     console.log('Method 1 (step by step):');
     console.log(detailedResult.content + '\n');
@@ -135,11 +141,13 @@ async function step3_MultipleAudioAnalysis() {
   );
 
   try {
-    const result = await generate(provider!, [message], {
-      model: getModelName(type!),
-      maxOutputTokens: 300,
-      temperature: 0.4,
-    });
+    const result = await collectStream(
+      provider([message], {
+        model: getModelName(type!),
+        maxOutputTokens: 300,
+        temperature: 0.4,
+      })
+    );
 
     console.log('Multiple audio comparison:');
     console.log(result.content + '\n');
@@ -166,11 +174,13 @@ async function step4_AudioInSequentialAnalysis() {
   ];
 
   try {
-    const response1 = await generate(provider!, messages, {
-      model: getModelName(type!),
-      maxOutputTokens: 150,
-      temperature: 0.3,
-    });
+    const response1 = await collectStream(
+      provider(messages, {
+        model: getModelName(type!),
+        maxOutputTokens: 150,
+        temperature: 0.3,
+      })
+    );
 
     console.log('Question: What do you hear in this audio?');
     console.log(response1.content + '\n');
@@ -181,11 +191,13 @@ async function step4_AudioInSequentialAnalysis() {
       userAudio('Can you identify any specific words or sounds in this audio?', sampleAudio, 'wav'),
     ];
 
-    const response2 = await generate(provider!, followUpMessages, {
-      model: getModelName(type!),
-      maxOutputTokens: 200,
-      temperature: 0.5,
-    });
+    const response2 = await collectStream(
+      provider(followUpMessages, {
+        model: getModelName(type!),
+        maxOutputTokens: 200,
+        temperature: 0.5,
+      })
+    );
 
     console.log('Question: Can you identify any specific words or sounds?');
     console.log(response2.content + '\n');

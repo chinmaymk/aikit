@@ -1,154 +1,119 @@
 ---
 title: Framework Integration
-description: Integration guide for popular web frameworks using AIKit's proxy provider pattern
+description: How to safely use AIKit in web apps by letting your backend handle the secret keys.
 ---
 
 # Framework Integration
 
-This guide demonstrates how to integrate AIKit with popular web frameworks using the proxy provider pattern for secure API key management.
+Think of your AI provider API keys like the keys to a very expensive, very fast car. You wouldn't hand them over to just anyone who walks into your web app, right? That's where AIKit's proxy pattern comes in. It's a secure valet for your API keys.
 
-## Overview
+The concept is simple:
 
-AIKit's proxy provider allows you to:
+1.  Your frontend (the browser) makes requests to your backend.
+2.  Your backend (the valet) securely holds the API keys and forwards the request to the actual AI provider (OpenAI, Anthropic, etc.).
+3.  The response is streamed back through your backend to the frontend.
 
-- Keep API keys secure on the server
-- Use the same AIKit interface on both frontend and backend
-- Stream responses using Server-Sent Events (SSE)
+This keeps your secret keys safe on the server, where they belong, while giving you a seamless experience on the client.
 
-## Express
+## The Backend
 
-```javascript
+AIKit provides a `callProxyProvider` function that makes setting up this backend endpoint a piece of cake. Here’s how you’d do it in Express and Next.js.
+
+### Express Example
+
+```typescript
+// server.ts
 import express from 'express';
-import { callProxyProvider } from '@chinmaymk/aikit';
+import { callProxyProvider } from '@chinmaymk/aikit/proxy';
 
 const app = express();
 app.use(express.json());
 
+// Your secret keys live safely here on the server
 const apiKeys = {
   openai: process.env.OPENAI_API_KEY,
   anthropic: process.env.ANTHROPIC_API_KEY,
-  google: process.env.GOOGLE_API_KEY,
 };
 
-app.post('/aikit/proxy', async (req, res) => {
-  const { messages, providerType, providerOptions, options } = req.body;
-  const apiKey = apiKeys[providerType];
-
-  if (!apiKey) {
-    return res.status(400).json({
-      error: `API key not found for ${providerType}`,
+app.post('/api/aikit', async (req, res) => {
+  try {
+    const stream = await callProxyProvider({
+      ...req.body,
+      // Securely inject the right API key
+      providerOptions: {
+        ...req.body.providerOptions,
+        apiKey: apiKeys[req.body.providerType],
+      },
     });
+
+    // Stream the response back to the client
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    for await (const chunk of stream) {
+      res.write(chunk);
+    }
+    res.end();
+  } catch (err) {
+    res.status(500).send({ error: err.message });
   }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-
-  const stream = callProxyProvider({
-    messages,
-    providerType,
-    providerOptions: { ...(providerOptions || {}), apiKey },
-    options,
-  });
-
-  for await (const chunk of stream) {
-    res.write(chunk);
-  }
-  res.end();
 });
 
 app.listen(3000);
 ```
 
-## Next.js
+### Next.js Example
 
-```javascript
-// app/api/aikit/proxy/route.js
-import { callProxyProvider, toReadableStream } from '@chinmaymk/aikit';
+The logic is identical for Next.js, just adapted for a Route Handler.
+
+```typescript
+// app/api/aikit/route.ts
+import { callProxyProvider, toReadableStream } from '@chinmaymk/aikit/proxy';
 
 const apiKeys = {
   openai: process.env.OPENAI_API_KEY,
   anthropic: process.env.ANTHROPIC_API_KEY,
-  google: process.env.GOOGLE_API_KEY,
 };
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const body = await request.json();
-  const { messages, providerType, providerOptions, options } = body;
-  const apiKey = apiKeys[providerType];
 
-  if (!apiKey) {
-    return Response.json({ error: `API key not found for ${providerType}` }, { status: 400 });
-  }
-
-  const stream = callProxyProvider({
-    messages,
-    providerType,
-    providerOptions: { ...(providerOptions || {}), apiKey },
-    options,
+  const stream = await callProxyProvider({
+    ...body,
+    providerOptions: {
+      ...body.providerOptions,
+      apiKey: apiKeys[body.providerType],
+    },
   });
 
+  // Convert to a ReadableStream for the Next.js Response
   const readable = toReadableStream(stream).pipeThrough(new TextEncoderStream());
 
   return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-    },
+    headers: { 'Content-Type': 'text/event-stream; charset=utf-8' },
   });
 }
 ```
 
-## Frontend Usage
+## The Frontend
 
-```javascript
-import { createProxyProvider, userText, processStream } from '@chinmaymk/aikit';
+Here's the magic trick: using the proxy from your frontend looks almost _exactly_ the same as using AIKit on the backend. Just use `createProxyProvider` instead of `createProvider`.
 
-// Create proxy provider
+```typescript
+// app.tsx
+import { createProxyProvider, userText, printStream } from '@chinmaymk/aikit';
+
+// Point this to your new backend endpoint
 const provider = createProxyProvider('openai', {
-  baseURL: 'http://localhost:3000',
-  model: 'gpt-4o',
+  baseURL: 'http://localhost:3000/api/aikit',
 });
 
-// Use the provider
-const messages = [userText('Hello world!')];
-const stream = provider(messages);
+// From here, the code is identical to backend-only usage!
+const messages = [userText('Why is the sky blue?')];
 
-await processStream(stream, {
-  onDelta: delta => console.log('New text:', delta),
-  onContent: content => console.log('Full content:', content),
-});
+await printStream(provider(messages, { model: 'gpt-4o' }));
 ```
 
-## Multiple Providers
+## The Bottom Line
 
-```javascript
-// Frontend - create different providers
-const providers = {
-  openai: createProxyProvider('openai', {
-    baseURL: origin,
-    model: 'gpt-4o',
-  }),
-  anthropic: createProxyProvider('anthropic', {
-    baseURL: origin,
-    model: 'claude-3-5-sonnet-20241022',
-  }),
-  google: createProxyProvider('google', {
-    baseURL: origin,
-    model: 'gemini-1.5-pro',
-  }),
-};
+The proxy pattern is the secure way to build web applications with AIKit. It gives you the best of both worlds: the full power of server-side AI processing with the interactive feel of a modern web app, all without ever exposing your secret keys.
 
-// Use the selected provider
-const stream = providers[selectedProvider](messages);
-```
-
-## Environment Setup
-
-```bash
-# .env
-OPENAI_API_KEY=sk-your-openai-key
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
-GOOGLE_API_KEY=your-google-api-key
-```
-
-This guide shows how AIKit's proxy provider system provides a consistent, secure integration pattern across different web frameworks.
+Happy (and safe) building! 🚀
