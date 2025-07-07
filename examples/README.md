@@ -48,4 +48,4 @@ The MCP integration example (`examples/mcp/`) demonstrates real Model Context Pr
 - **File system operations**: Read, write, list, and analyze files
 - **Multi-provider support**: Works with OpenAI, Anthropic, Google
 
-See [`examples/mcp/README.md`](./mcp/README.md) for setup instructions.
+See [`examples/mcp/`](./mcp/) for setup and usage instructions. Run the demo with `npm run demo:mcp` or `sh examples/mcp/run.sh`.

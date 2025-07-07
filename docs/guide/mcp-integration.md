@@ -126,7 +126,7 @@ async function main() {
 
 ## Complete Working Example
 
-For a full working example with real MCP server/client integration, see the [`examples/mcp/`](../../examples/mcp/) directory which includes:
+For a full working example with real MCP server/client integration, see the [`examples/mcp/`] directory which includes:
 
 - **Real MCP server** (`server.mjs`) with file system tools
 - **AIKit client** (`client.ts`) with native tool calling
