@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "paths": {},
     "rootDir": "./src",
-    "module": "ESNext",
+    "module": "CommonJS",
     "target": "ES2020"
   },
   "include": ["src/**/*"],
