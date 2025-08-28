@@ -3,6 +3,7 @@
 </div>
 
 [![CI](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/chinmaymk/aikit/actions/workflows/ci.yml)
+![NPM Version](https://img.shields.io/npm/v/%40chinmaymk%2Faikit)
 
 > **AIKit** is a minimal TypeScript wrapper that gives you unified access to the generation APIs of OpenAI, Anthropic, and Google Gemini—complete with streaming, multimodal inputs, and tool calling. No extra runtime packages: just the `fetch` that ships with modern Node and browsers.
 
